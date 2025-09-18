@@ -15,6 +15,9 @@ From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Theorem refl_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
 Admitted.
 
+Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
+Admitted.
+
 Theorem wk_ty : forall Γ Δ l t A ρ, ⊢ Δ -> Γ ⊢< l > t : A -> ρ : Γ ⊆ Δ -> Δ ⊢< l > (wk_tm ρ t) : (wk_tm ρ A). (* why t ⟨ ρ ⟩ doesnt work ? *)
 Admitted.
 
@@ -37,4 +40,4 @@ Theorem validity_conv : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> (Γ ⊢< l
 Admitted.
 
 Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> (l = l') /\ (Γ ⊢< Ax l > A ≡ B : Sort l).
-Admitted.
+Admitted. 

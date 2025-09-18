@@ -22,11 +22,9 @@ Definition Ax (l : level) : level :=
   end.
 
 Definition Ru (l1 l2 : level) : level := 
-  match l1, l2 with 
-  | prop, prop => prop
-  | prop, ty i => ty i 
-  | ty i, prop => prop 
-  | ty i, ty j => ty (max i j)
+  match l2 with 
+  | prop => prop 
+  | ty j => ty (match l1 with | prop => j | ty i => max i j end)
   end.
 
 
