@@ -181,7 +181,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< i > u : A →
       Γ ⊢< j > app i j A B (lam i j A B t) u ≡ t <[ u .. ] : B <[ u .. ] 
 
-| conv_eta : 
+(* | conv_eta : 
     ∀ Γ i j A B t,
       Γ ⊢< Ax i > A : Sort i →
       Γ ,, (i , A) ⊢< Ax j > B : Sort j →
@@ -189,7 +189,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       let t_wk := wk_tm (_wk_step _wk_id) t in 
       let A_wk := wk_tm (_wk_step _wk_id) A in 
       let B_wk := wk_tm (_wk_up (_wk_step _wk_id)) B in (* is this right? *)
-      Γ ⊢< Ru i j > lam i j A B (app i j A_wk B_wk t_wk (var 0)) ≡ t : Pi i j A B
+      Γ ⊢< Ru i j > lam i j A B (app i j A_wk B_wk t_wk (var 0)) ≡ t : Pi i j A B *)
 
 | conv_rec_zero : 
     ∀ Γ l P p_zero p_succ,
