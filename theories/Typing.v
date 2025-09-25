@@ -85,8 +85,8 @@ Inductive typing : ctx -> level -> term → term → Prop :=
 | type_rec : 
     ∀ Γ l P p_zero p_succ t,
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l ->
-      Γ ⊢< l > p_zero : P <[ p_zero .. ] -> 
-      Γ ,, (ty 0 , Nat) ,, (l , P <[ (var 0) .. ]) ⊢< l > p_succ : P <[ (succ (var 0)) .. ] ->
+      Γ ⊢< l > p_zero : P <[ zero .. ] -> 
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 0)) .. ] ->
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t : P <[ t .. ]
   
@@ -156,8 +156,8 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 | conv_rec : 
     ∀ Γ l P p_zero p_succ t P' p_zero' p_succ' t',
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P ≡ P' : Sort l ->
-      Γ ⊢< l > p_zero ≡ p_zero' : P <[ p_zero .. ] -> 
-      Γ ,, (ty 0 , Nat) ,, (l , P <[ (var 0) .. ]) ⊢< l > p_succ ≡ p_succ' : P <[ (succ (var 0)) .. ] ->
+      Γ ⊢< l > p_zero ≡ p_zero' : P <[ zero .. ] -> 
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ ≡ p_succ' : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] ->
       Γ ⊢< ty 0 > t ≡ t' : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t ≡ rec l P' p_zero' p_succ' t' : P <[ t .. ]
   
@@ -194,15 +194,15 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 | conv_rec_zero : 
     ∀ Γ l P p_zero p_succ,
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l ->
-      Γ ⊢< l > p_zero : P <[ p_zero .. ] -> 
-      Γ ,, (ty 0 , Nat) ,, (l , P <[ (var 0) .. ]) ⊢< l > p_succ : P <[ (succ (var 0)) .. ] ->
+      Γ ⊢< l > p_zero : P <[ zero .. ] -> 
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ]  ->
       Γ ⊢< l > rec l P p_zero p_succ zero ≡ p_zero : P <[ zero .. ]
 
 | conv_rec_succ : 
     ∀ Γ l P p_zero p_succ t,
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l ->
-      Γ ⊢< l > p_zero : P <[ p_zero .. ] -> 
-      Γ ,, (ty 0 , Nat) ,, (l , P <[ (var 0) .. ]) ⊢< l > p_succ : P <[ (succ (var 0)) .. ] ->
+      Γ ⊢< l > p_zero : P <[ zero .. ] -> 
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ]  ->
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ (succ t) ≡ 
           p_succ <[ t .: (rec l P p_zero p_succ t) ..] : P <[ (succ t) .. ]
