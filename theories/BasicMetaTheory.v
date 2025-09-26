@@ -15,6 +15,11 @@ From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Theorem refl_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
 Admitted.
 
+
+Theorem subst_id : forall Γ, ⊢ Γ -> Γ ⊢s var : Γ.
+Admitted.
+
+
 Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
 Admitted.
 

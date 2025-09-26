@@ -117,6 +117,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 
 | conv_sort :
     ∀ Γ l,
+      ⊢ Γ ->
       Γ ⊢< Ax (Ax l) > Sort l ≡ Sort l : Sort (Ax l)
 
 | conv_pi :
@@ -142,10 +143,12 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 
 | conv_nat :
     ∀ Γ,
+      ⊢ Γ ->
       Γ ⊢< ty 1 > Nat ≡ Nat : Sort (ty 0)
 
 | conv_zero : 
     ∀ Γ,
+      ⊢ Γ ->
       Γ ⊢< ty 0 > zero ≡ zero : Nat
 
 | conv_succ : 
@@ -205,7 +208,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ]  ->
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ (succ t) ≡ 
-          p_succ <[ t .: (rec l P p_zero p_succ t) ..] : P <[ (succ t) .. ]
+          p_succ <[(rec l P p_zero p_succ t) .: t ..] : P <[ (succ t) .. ]
 
 | conv_sym : 
     ∀ Γ l t u A,
