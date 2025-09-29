@@ -1,11 +1,12 @@
 (** * Typing *)
 
-From Stdlib Require Import Utf8 List Arith Bool Lia.
+From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
 From TypedConfluence.autosubst
 Require Import core unscoped AST SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Require Import Stdlib.Program.Equality.
+
 
 Reserved Notation "Γ ⊢< l > t ⟹ u : T" (at level 50, l, t, u, T at next level).
 Import CombineNotations.
@@ -460,25 +461,10 @@ Lemma aux_ortho_4 Γ l A A' l' t u B :
   Γ ,, (l , A') ⊢< l' > t ⟹ u : B.
 Admitted.
 
-Lemma aux_ortho_5 Γ : 
-  Γ ⊢s zero.. : (Γ ,, (ty 0, Nat)).
-Admitted.
-
-
-Lemma aux_ortho_6 Γ l P P' : 
-  Γ ,, (ty 0, Nat) ⊢< Ax l > P ⟹ P' : Sort l ->
-  (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
-Admitted.
-
 
 Lemma aux_ortho_6' Γ l P : 
   Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
   (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
-Admitted.
-
-Lemma aux_ortho_7 Γ l P P' : 
-  Γ ,, (ty 0, Nat) ⊢< Ax l > P ⟹ P' : Sort l ->
-  (Γ,, (ty 0, Nat)),, (l, P') ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
 Admitted.
 
 Lemma aux_ortho_8 Γ k :
@@ -505,6 +491,7 @@ Proof.
   intros ΓWf PWt.
 Admitted.
 
+(* 
 Ltac subst_auto := 
   ssimpl;
   match goal with 
@@ -556,9 +543,10 @@ Ltac use_auto :=
   | H : ?Δ ⊢< ?l > ?t ≡ ?u : ?P <[ ?n .. ] |- ?Δ ⊢< ?l > ?t ≡ ?u : ?P' <[ ?n .. ] => 
     eapply (ortho_conv Δ l _ _ t u) ; [exact H | (eapply subst_ty; eauto using ortho_to_conv)]
   | |- _ => idtac
-  end.
+  end. *)
 
 (* TODO: think of some nice tactics to make the easy cases of the proof more direct *)
+
 
 Theorem ortho_diamond_ty : 
   forall Γ i t t' t'' T,
@@ -568,12 +556,14 @@ Theorem ortho_diamond_ty :
 Proof.
   intros Γ i t. generalize t Γ i. clear Γ i t. 
   
-  refine (@well_founded_ind _ (fun t u => size t < size u) _ _ _).
-  admit. intros t IH Γ i t' t'' T t_red_t' t_red_t''.
+  refine (@well_founded_ind _ (fun t u => size t < size u) _ _ _). 
+  eauto using wf_inverse_image, lt_wf.
+  intros t IH Γ i t' t'' T t_red_t' t_red_t''.
 
-  destruct t; eapply (ortho_diamond_helper _ _ _ _ _ _ t_red_t' t_red_t''); 
-  pose proof (IH' := ortho_diamond_helper2 _ IH); clear IH; rename IH' into IH;
-  apply ortho_validity in t_red_t' as H; destruct H as (H & _); apply validity_ty in H; destruct H as (ΓWf & _).
+  destruct t.
+  all : eapply (ortho_diamond_helper _ _ _ _ _ _ t_red_t' t_red_t'').
+  all : pose proof (IH' := ortho_diamond_helper2 _ IH); clear IH; rename IH' into IH.
+  all : assert (⊢ Γ) as ΓWf by (apply ortho_validity_left in t_red_t'; apply validity_ty in t_red_t'; destruct t_red_t'; auto).
 
   (* var *)
   - ttinv t_red_t'. destruct t_red_t' as (B' & t'_eq_n & _ & lookup_n_B & _). 
@@ -631,7 +621,7 @@ Proof.
      
     (* app-cong x app-cong *)
     + do 4 eexists. exists (app l l0 A B u''' v'''). 
-    split; apply ortho_app; eauto using conv_sym, aux_ortho_3, aux_ortho_1, conv_sym, ortho_conv; eauto using conv_pi, ortho_conv.
+    split; apply ortho_app; eauto using conv_sym, aux_ortho_3, aux_ortho_1, conv_sym, ortho_conv, conv_pi.
 
     (* app-cong x beta *)
     + rename u_eq_ into u_eq. rename w_ into w. rename A0_ into A0. 
@@ -646,19 +636,13 @@ Proof.
       rename w_red_w' into temp. 
       assert (Γ,, (l, A) ⊢< ty i > w ⟹ w' : B) as w_red_w'. {eauto using aux_ortho_1, aux_ortho_3, conv_sym. }
       clear temp.
-      
-      rename B0_conv_B0' into temp.
-      assert (Γ,, (l, A) ⊢< Ax (ty i) > B0 ≡ B0' : Sort (ty i)) as B0_conv_B0'.  {eauto using aux_ortho_3, conv_sym. } 
-      clear temp.
 
       destruct (IH w ltac:(simpl; lia) _ _ _ _ _ w_red_w' w_red_w'') as (w''' & w'_red_w''' & w''_red_w'''). 
 
       do 4 eexists. exists (w''' <[ v''' ..]). split.
-      ++ eapply ortho_beta; eauto using ortho_conv, conv_sym, aux_ortho_4 , conv_sym, conv_trans.
-        eapply (conv_in_ctx_conv (Γ ,, (l, A))); 
-        eauto using refl_ctx, ConvCtx, conv_sym, conv_trans.
-      ++ eapply ortho_subst_property. eapply (ortho_scons _ _ _ Γ l A). ssimpl. apply ortho_subst_refl.  apply subst_id. auto. ssimpl. auto. eauto.
-    
+      ++ eapply ortho_beta; eauto 7 using conv_sym, conv_trans, ortho_conv, aux_ortho_4, aux_ortho_3.
+      ++ eauto using red_scons_id, ortho_subst_property. 
+
     (* beta x app-cong *)
     + admit. 
 
@@ -711,39 +695,53 @@ Proof.
     try destruct (IH p_succ ltac:(simpl; lia) _ _ _ _ _ p_succ_red_p_succ' p_succ_red_p_succ'') 
       as (p_succ''' & p_succ'_red_p_succ''' & p_succ''_red_p_succ''').
 
-
+    (* rec x rec *)
     + destruct (IH n ltac:(simpl; lia) _ _ _ _ _ n_red_n' n_red_n'') as (n''' & n'_red_n''' & n''_red_n'''). 
     
       do 4 eexists. exists (rec l P''' p_zero''' p_succ''' n'''). 
-      split; eapply ortho_rec; eauto.
-      all : assert (Γ ⊢s zero .. : Γ ,, (ty 0, Nat)); eauto using aux_ortho_8, type_zero.
-      1, 3: eauto using ortho_conv, subst_ty, subst_id, ortho_to_conv.
-      all : eapply aux_ortho_1; eauto using ortho_to_conv.
-      all : eapply subst_ty; eauto using ortho_to_conv, aux_ortho_6, ortho_validity_left.
+      split; eapply ortho_rec; 
+      eauto 7 using ortho_conv, subst_ty, aux_ortho_8, type_zero, aux_ortho_1, ortho_to_conv, aux_ortho_6', ortho_validity_left.
+
+    (* rec x rec_zero *)  
     + ttinv n_red_n'. rewrite n_red_n' in *. clear n' n_red_n'. 
     
-    do 4 eexists. exists p_zero'''. split; eauto.
-    eapply ortho_rec_zero; eauto using ortho_validity_right.
-      ++ eauto using ortho_conv, subst_ty, ortho_to_conv, aux_ortho_5.
-      ++ eapply ortho_validity_right.
-        eapply aux_ortho_1; eauto using ortho_to_conv, subst_ty, ortho_to_conv, ortho_validity_left, aux_ortho_6'.
+    do 4 eexists. exists p_zero'''. split.
+    2 : eauto.
+    eapply ortho_rec_zero; 
+    eauto 8 using aux_ortho_1, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left, 
+              ortho_validity_right, aux_ortho_6', aux_ortho_8, type_zero.
 
+    (* rec x rec_succ *)
     + ttinv n_red_n'. destruct n_red_n' as (k' & n'_eq & k_red_k'). rewrite n'_eq in *. clear n' n'_eq.
       epose proof (IH_k := IH k ltac:(simpl; lia) _ _ _ _ _ k_red_k' k_red_k''). destruct IH_k as (k''' & k'_red_k''' & k''_red_k'''). 
     
     do 4 eexists. exists ( p_succ''' <[ (rec l P''' p_zero''' p_succ''' k''') .: k''' ..]). split.
-    ++ eapply ortho_rec_succ; eauto using ortho_conv, subst_ty, ortho_to_conv, aux_ortho_5.
-      eapply aux_ortho_1; eauto using subst_ty, ortho_to_conv, aux_ortho_6', ortho_validity_left.
+    ++ eapply ortho_rec_succ; 
+        eauto 7 using aux_ortho_1, subst_ty, ortho_to_conv, aux_ortho_6', 
+                  aux_ortho_8, ortho_conv, type_zero, ortho_validity_left.
     ++ eapply ortho_subst_property; eauto. apply red_scons_id_2; eauto. 
       eapply ortho_conv. 
-      +++ eapply ortho_rec; eauto using ortho_conv, subst_ty, ortho_to_conv, aux_ortho_5.
-        eapply aux_ortho_1; eauto using subst_ty, ortho_to_conv, aux_ortho_6', ortho_validity_left.
-      +++ eapply subst_ty; eauto using subst_ty, ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
+      +++ eapply ortho_rec; 
+        eauto 7 using aux_ortho_1, subst_ty, ortho_to_conv, aux_ortho_6', 
+                  aux_ortho_8, ortho_conv, type_zero, ortho_validity_left.
+      +++ eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
+    
+    (* rec_zero x rec *)
     + admit.
+
+    (* rec_zero x rec_zero *)
     + do 4 eexists. exists p_zero'''. split; eauto.
+
+    (* rec_zero x rec_succ *)
     + inversion n_eq_.
+
+    (* rec_succ x rec *)
     + admit.
+
+    (* rec_succ x rec_zero *)
     + inversion n_eq_.
+
+    (* rec_succ x rec_succ *)
     + inversion n_eq_. rewrite H0 in *. clear m H0 n_eq_. 
       rename m' into k'. rename m_red_m' into k_red_k'.
       destruct (IH k ltac:(simpl; lia) _ _ _ _ _ k_red_k' k_red_k'') as (k''' & k'_red_k''' & k''_red_k''').
@@ -751,9 +749,10 @@ Proof.
       split; eapply ortho_subst_property; eauto.
       all : apply red_scons_id_2; eauto.
       all : eapply ortho_conv. 
-      1,3: eapply ortho_rec; eauto using ortho_conv, subst_ty, aux_ortho_5, ortho_to_conv.
-      1,2: eapply aux_ortho_1; eauto using ortho_to_conv, subst_ty, aux_ortho_6', ortho_validity_left, ortho_to_conv.
-      1,2: eapply subst_ty; eauto using ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
+      1,3: eapply ortho_rec; 
+        eauto 7 using ortho_rec, ortho_conv, subst_ty, aux_ortho_8, type_zero, 
+                  ortho_to_conv, aux_ortho_1, ortho_validity_left, aux_ortho_6'.
+      1,2: eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
 Admitted.
 
 Corollary diamond : 
@@ -768,8 +767,8 @@ Proof.
   - apply (ortho_diamond_prop _ t t' t''); auto.
 Qed.
 
-Require Import Coq.Relations.Relation_Operators.
-Require Import Coq.Relations.Relation_Definitions.
+(* Require Import Coq.Relations.Relation_Operators.
+Require Import Coq.Relations.Relation_Definitions. *)
 
 Inductive ortho_redd Γ l A : term -> term -> Prop := 
   | redd_step t u : Γ ⊢< l > t ⟹ u : A -> ortho_redd Γ l A t u
