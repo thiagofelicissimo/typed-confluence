@@ -86,7 +86,7 @@ Inductive typing : ctx -> level -> term → term → Prop :=
     ∀ Γ l P p_zero p_succ t,
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l ->
       Γ ⊢< l > p_zero : P <[ zero .. ] -> 
-      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 0)) .. ] ->
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] ->
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t : P <[ t .. ]
   
