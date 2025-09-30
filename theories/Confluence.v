@@ -129,6 +129,9 @@ Inductive ortho_subst (Γ : ctx) : ctx -> (nat -> term) -> (nat -> term) -> Prop
     Γ ⊢s σ ⟹ σ' : (Δ ,, (l , A)) 
 where "Γ ⊢s σ ⟹ τ : Δ" := (ortho_subst Γ Δ σ τ).
 
+
+(* --- Basic properties of ortho: reflexivity, included in conv, weakening, substitution, conv in ctx, etc --- *)
+
 Theorem ortho_refl : 
   forall Γ l t A, 
     Γ ⊢< l > t : A -> 
@@ -136,34 +139,6 @@ Theorem ortho_refl :
 Proof.
   intros. induction H; eauto using ortho_red, refl_ty.
 Qed.
-
-
-Lemma aux_ortho_2 Γ l A A' l' t u B B' : 
-  Γ ,, (l , A) ⊢< l' > t ≡ u : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A) ⊢< Ax l' > B ≡ B' : Sort l' ->
-  Γ ,, (l , A') ⊢< l' > t ≡ u : B'.
-Admitted.
-
-Lemma aux_ortho_3 Γ l A A' l' t u B : 
-  Γ ,, (l , A) ⊢< l' > t ≡ u : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A') ⊢< l' > t ≡ u : B.
-Admitted.
-
-
-Lemma aux_ortho_2' Γ l A A' l' t B B' : 
-  Γ ,, (l , A) ⊢< l' > t : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A) ⊢< Ax l' > B ≡ B' : Sort l' ->
-  Γ ,, (l , A') ⊢< l' > t : B'.
-Admitted.
-
-Lemma aux_ortho_3' Γ l A A' l' t B : 
-  Γ ,, (l , A) ⊢< l' > t : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A') ⊢< l' > t : B.
-Admitted.
 
 
 Theorem ortho_to_conv : 
@@ -176,20 +151,26 @@ Proof.
   - eapply conv_trans.
     + eapply conv_app; eauto.
       eapply conv_conv.
-      ++ eapply conv_lam.  1,2: eapply refl_ty; eauto using aux_ortho_3', conv_sym, validity_conv_right. 
-        eapply aux_ortho_2; eauto.
-      ++ eapply conv_pi; eauto using conv_sym, aux_ortho_3.
+      ++ eapply conv_lam.  1,2: eapply refl_ty; eauto using conv_ty_in_ctx_ty, conv_sym, validity_conv_right. 
+        eauto using conv_conv, conv_ty_in_ctx_conv.
+      ++ eapply conv_pi; eauto using conv_sym, conv_ty_in_ctx_conv.
     + eapply conv_conv.
-      eapply conv_beta; eauto using validity_conv_right, aux_ortho_2', aux_ortho_3', type_conv.
+      eapply conv_beta; eauto using validity_conv_right, conv_ty_in_ctx_ty, type_conv.
       admit.
   - eapply conv_trans. eapply conv_rec_zero; eauto using validity_conv_left. eauto.
   - admit.
 Admitted.
 
-Theorem ortho_validity : 
-  forall Γ l t u A,
-    Γ ⊢< l > t ⟹ u : A -> 
-    (Γ ⊢< l > t : A) /\ (Γ ⊢< l > u : A).
+
+Lemma ortho_validity_left Γ l t u A :
+  Γ ⊢< l > t ⟹ u : A ->
+  Γ ⊢< l > t : A.
+Admitted.
+
+
+Lemma ortho_validity_right Γ l t u A :
+  Γ ⊢< l > t ⟹ u : A ->
+  Γ ⊢< l > u : A.
 Admitted.
 
 Theorem ortho_wk :
@@ -220,23 +201,9 @@ Theorem ortho_subst_property :
     Δ ⊢< l > (t <[ σ ]) ⟹ (u <[ τ ]) : A <[ σ ].
 Admitted.
 
-(* the diamond property at sort prop is trivial *)
-
-Theorem ortho_diamond_prop : 
-  forall Γ t t' t'' A,
-    Γ ⊢< prop > t ⟹ t' : A ->
-    Γ ⊢< prop > t ⟹ t'' : A ->
-    exists t''', (Γ ⊢< prop > t' ⟹ t''' : A) /\ (Γ ⊢< prop > t'' ⟹ t''' : A).
-Proof.
-  intros.
-  apply ortho_validity in H. destruct H.
-  apply ortho_validity in H0. destruct H0.
-  exists t.
-  split; apply ortho_irrel; auto.
-Qed. 
 
 
-(* Inversion principles for ⟹ *)
+(* --- Inversion principles for ⟹ --- *)
 
 Lemma ortho_var_inv Γ i x t A :
   Γ ⊢< ty i > var x ⟹ t : A →
@@ -256,8 +223,11 @@ Lemma ortho_sort_inv Γ l l' t A :
   t = Sort l  ∧ l' = Ax (Ax l).
 Proof.
   intros.
-  dependent induction H; eauto. admit.
-Admitted.
+  dependent induction H; eauto.
+  assert (Γ ⊢< Ax (Ax l) > Sort l : Sort (Ax l)) by eauto using type_sort,validity_ty_ctx.
+  eapply sort_unicity in H; eauto. destruct l; inversion H.
+Qed.
+
 
 Lemma ortho_pi_inv Γ l1 l2 l' t' A B T :
   Γ ⊢< l' > Pi l1 l2 A B ⟹ t' : T →
@@ -377,24 +347,58 @@ Ltac ttinv h :=
     end
   end.
 
+(* --- Aux lemmas to help automation in the next proofs --- *)
 
-
-(* allows us to close the diamond with different types in the two ends *)
-Lemma ortho_diamond_helper Γ l t t' t'' A :
-  Γ ⊢< l > t ⟹ t' : A -> 
-  Γ ⊢< l > t ⟹ t'' : A -> 
-    (exists B C l' l'' t''', (Γ ⊢< l' > t' ⟹ t''' : B) /\ (Γ ⊢< l'' > t'' ⟹ t''' : C)) ->
-    exists t''', (Γ ⊢< l > t' ⟹ t''' : A) /\ (Γ ⊢< l > t'' ⟹ t''' : A).
+Lemma red_scons_id Γ l A t t' : 
+  Γ ⊢< l > t ⟹ t' : A ->
+  Γ ⊢s t .. ⟹ t' .. : Γ ,, (l , A).
 Proof.
-  intros. destruct H1. destruct H1. destruct H1. destruct H1. destruct H1. exists x3. destruct H1.
-  destruct (ortho_validity _ _ _ _ _ H). destruct (ortho_validity _ _ _ _ _ H0).
-  destruct (ortho_validity _ _ _ _ _ H1). destruct (ortho_validity _ _ _ _ _ H2).
-  split.
-  - pose (K := type_unicity _ _ _ _ _ _ H7 H4). destruct K. eapply ortho_conv. rewrite <- H11. apply H1. rewrite H11 in H12. apply H12.
-  - pose (K := type_unicity _ _ _ _ _ _ H9 H6). destruct K. eapply ortho_conv. rewrite <- H11. apply H2. rewrite H11 in H12. apply H12.
+  intro t_red_t'.
+  apply ortho_scons; ssimpl; eauto using subst_id, ortho_subst_refl, ortho_validity_left, validity_ty_ctx.
 Qed.
 
+Lemma red_scons_id_2 Γ l A t t' u u' l' B : 
+  Γ ⊢< l > t ⟹ t' : A ->
+  Γ ⊢< l' > u ⟹ u' : B <[ t .. ] ->
+  Γ ⊢s (u .: t ..) ⟹ (u' .: t' ..) : (Γ ,, (l , A)) ,, (l', B).
+Proof.
+  intros t_red_t' u_red_u'.
+  apply ortho_scons. apply ortho_scons.
+  all: (ssimpl; eauto 6 using ortho_subst_refl, subst_id, ortho_to_conv, validity_conv_left, validity_ty_ctx).
+Qed.
 
+Lemma conv_ty_in_ctx_ortho Γ l A A' l' t u B : 
+  Γ ,, (l , A) ⊢< l' > t ⟹ u : B ->
+  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
+  Γ ,, (l , A') ⊢< l' > t ⟹ u : B.
+Proof.
+  intros t_red_u A_eq_A'.
+  eapply ortho_conv_in_ctx; eauto.
+  apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+Qed.
+
+(* the following two lemmas help automation to type some substitutions that appear often in the proof *)
+Lemma aux_subst_1 Γ k :
+  Γ ⊢< ty 0 > k : Nat ->
+  Γ ⊢s k .. : (Γ ,, (ty 0, Nat)).
+Proof.
+  intro kWt.
+  apply well_scons; ssimpl; eauto using validity_ty_ctx, subst_id.
+Qed.
+
+Lemma aux_subst_2 Γ l P : 
+  Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
+  (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
+Proof.
+  intro H.
+  apply well_scons. 
+  ssimpl.
+Admitted.
+
+
+(* --- Proof of the diamond property --- *)
+
+(* the measure we are going to use *)
 Fixpoint size (t : term) : nat := 
   match t with 
   | var _ => 0
@@ -407,6 +411,37 @@ Fixpoint size (t : term) : nat :=
   | succ t => 1 + size t
   | rec _ P p0 ps t => 1 + size P + size p0 + size ps + size t
 end.
+
+(* allows us to close the diamond with different types in the two ends *)
+Lemma ortho_diamond_helper Γ l t t' t'' A :
+  Γ ⊢< l > t ⟹ t' : A -> 
+  Γ ⊢< l > t ⟹ t'' : A -> 
+    (exists B C l' l'' t''', (Γ ⊢< l' > t' ⟹ t''' : B) /\ (Γ ⊢< l'' > t'' ⟹ t''' : C)) ->
+    exists t''', (Γ ⊢< l > t' ⟹ t''' : A) /\ (Γ ⊢< l > t'' ⟹ t''' : A).
+Proof.
+  intros t_red_t' t_red_t'' [B [C [l' [l'' [t''' [t'_red_t''' t''_red_t''']]]]]].
+  apply ortho_validity_right in t_red_t' as t'_A.
+  apply ortho_validity_right in t_red_t'' as t''_A.
+  apply ortho_validity_left in t'_red_t''' as t'_B.
+  apply ortho_validity_left in t''_red_t''' as t''_C.
+  rewrite <- (sort_unicity _ _ _ _ _ _ t'_A t'_B) in *.
+  rewrite <- (sort_unicity _ _ _ _ _ _ t''_A t''_C) in *.
+  exists t'''.
+  split; eauto using ortho_conv, type_unicity, conv_sym.
+Qed.
+
+
+(* the diamond property at sort prop is trivial *)
+Theorem ortho_diamond_prop Γ t t' t'' A :
+    Γ ⊢< prop > t ⟹ t' : A ->
+    Γ ⊢< prop > t ⟹ t'' : A ->
+    exists t''', (Γ ⊢< prop > t' ⟹ t''' : A) /\ (Γ ⊢< prop > t'' ⟹ t''' : A).
+Proof.
+  intros.
+  exists t.
+  split; apply ortho_irrel; eauto using ortho_validity_left, ortho_validity_right.
+Qed. 
+
 
 (* when applied to the ih, allows to also consider the more general case in which l can be prop.
    this allows us to avoid doing a case analysis on l in the middle of the proof. *)
@@ -421,86 +456,11 @@ Lemma ortho_diamond_helper2 u :
 Proof.
   intros.
   destruct l.
-  -  apply (H _ H0); auto.
+  - apply (H _ H0); auto.
   - apply (ortho_diamond_prop _ _ _ _ _ H1 H2).
 Qed.
 
-
-Lemma red_scons_id Γ l A t t' : 
-  Γ ⊢< l > t ⟹ t' : A ->
-  Γ ⊢s t .. ⟹ t' .. : Γ ,, (l , A).
-Proof.
-  intro t_red_t'.
-  apply ortho_scons. 
-  - ssimpl. apply ortho_subst_refl. apply subst_id. 
-    apply ortho_validity in t_red_t'. destruct t_red_t'. apply validity_ty in H.
-    destruct H. auto.
-  - ssimpl. auto.
-Qed.
-
-Lemma red_scons_id_2 Γ l A t t' u u' l' B : 
-  Γ ⊢< l > t ⟹ t' : A ->
-  Γ ⊢< l' > u ⟹ u' : B <[ t .. ] ->
-  Γ ⊢s (u .: t ..) ⟹ (u' .: t' ..) : (Γ ,, (l , A)) ,, (l', B).
-Admitted.
-
-(* Lemma aux_ortho_0 Γ l A t u : 
-  Γ ⊢< l > t ⟹ u : A ->
-  Γ ⊢< Ax l > A : Sort l.
-Admitted. *)
-
-(* Lemma aux_ortho_3 Γ l A B : 
-  Γ ⊢< Ax l > A ≡ B : Sort l ->
-  ⊢ Γ ,, (l, B).
-Admitted. *)
-
-Lemma aux_ortho_1 Γ l A A' l' t u B B' : 
-  Γ ,, (l , A) ⊢< l' > t ⟹ u : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A) ⊢< Ax l' > B ≡ B' : Sort l' ->
-  Γ ,, (l , A') ⊢< l' > t ⟹ u : B'.
-Admitted.
-
-
-Lemma aux_ortho_4 Γ l A A' l' t u B : 
-  Γ ,, (l , A) ⊢< l' > t ⟹ u : B ->
-  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
-  Γ ,, (l , A') ⊢< l' > t ⟹ u : B.
-Admitted.
-
-
-Lemma aux_ortho_6' Γ l P : 
-  Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
-  (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
-Admitted.
-
-Lemma aux_ortho_8 Γ k :
-  Γ ⊢< ty 0 > k : Nat ->
-  Γ ⊢s k .. : (Γ ,, (ty 0, Nat)).
-Admitted.
-
-Lemma ortho_validity_left Γ l t u A :
-  Γ ⊢< l > t ⟹ u : A ->
-  Γ ⊢< l > t : A.
-Admitted.
-
-
-Lemma ortho_validity_right Γ l t u A :
-  Γ ⊢< l > t ⟹ u : A ->
-  Γ ⊢< l > u : A.
-Admitted.
-
-Lemma aux_subst_auto Γ l P :
-  ⊢ Γ -> 
-  Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
-  (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ,, (ty 0, Nat).
-Proof.
-  intros ΓWf PWt.
-Admitted.
-
-(* TODO: think of some nice tactics to make the easy cases of the proof more direct *)
-
-
+(* the main proof *)
 Theorem ortho_diamond_ty : 
   forall Γ i t t' t'' T,
     Γ ⊢< ty i > t ⟹ t' : T ->
@@ -544,7 +504,7 @@ Proof.
     destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A'''). 
     destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
     do 4 eexists. exists (Pi l l0 A''' B'''). 
-    split; apply ortho_pi; eauto using aux_ortho_4, ortho_to_conv, refl_ty. 
+    split; apply ortho_pi; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, refl_ty, validity_ty_ty, validity_conv_left. 
 
   (* lam *)
   - rename t1 into A. rename t2 into B. rename t3 into u.
@@ -556,7 +516,7 @@ Proof.
     destruct (IH u ltac:(simpl; lia) _ _ _ _ _ u_red_u' u_red_u'') as (u''' & u'_red_u''' & u''_red_u'''). 
 
     do 4 eexists. exists (lam l l0 A B u'''). 
-    split; apply ortho_lam; eauto using aux_ortho_1, aux_ortho_3, conv_sym.
+    split; apply ortho_lam; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym.
 
   (* app *)
   - rename t1 into A. rename t2 into B. rename t3 into u. rename t4 into v.
@@ -574,7 +534,7 @@ Proof.
      
     (* app-cong x app-cong *)
     + do 4 eexists. exists (app l l0 A B u''' v'''). 
-    split; apply ortho_app; eauto using conv_sym, aux_ortho_3, aux_ortho_1, conv_sym, ortho_conv, conv_pi.
+    split; apply ortho_app; eauto using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_pi.
 
     (* app-cong x beta *)
     + rename u_eq_ into u_eq. rename w_ into w. rename A0_ into A0. 
@@ -587,13 +547,13 @@ Proof.
       rewrite u'_eq in *. clear u'_eq u'.
       
       rename w_red_w' into temp. 
-      assert (Γ,, (l, A) ⊢< ty i > w ⟹ w' : B) as w_red_w'. {eauto using aux_ortho_1, aux_ortho_3, conv_sym. }
+      assert (Γ,, (l, A) ⊢< ty i > w ⟹ w' : B) as w_red_w'. {eauto using conv_ty_in_ctx_ortho, conv_sym, ortho_conv. }
       clear temp.
 
       destruct (IH w ltac:(simpl; lia) _ _ _ _ _ w_red_w' w_red_w'') as (w''' & w'_red_w''' & w''_red_w'''). 
 
       do 4 eexists. exists (w''' <[ v''' ..]). split.
-      ++ eapply ortho_beta; eauto 7 using conv_sym, conv_trans, ortho_conv, aux_ortho_4, aux_ortho_3.
+      ++ eapply ortho_beta; eauto 7 using conv_sym, conv_trans, ortho_conv, conv_ty_in_ctx_ortho, conv_ty_in_ctx_conv.
       ++ eauto using red_scons_id, ortho_subst_property. 
 
     (* beta x app-cong *)
@@ -653,7 +613,7 @@ Proof.
     
       do 4 eexists. exists (rec l P''' p_zero''' p_succ''' n'''). 
       split; eapply ortho_rec; 
-      eauto 7 using ortho_conv, subst_ty, aux_ortho_8, type_zero, aux_ortho_1, ortho_to_conv, aux_ortho_6', ortho_validity_left.
+      eauto 8 using ortho_conv, subst_ty, aux_subst_1, type_zero, conv_ty_in_ctx_ortho, ortho_to_conv, aux_subst_2, ortho_validity_left.
 
     (* rec x rec_zero *)  
     + ttinv n_red_n'. rewrite n_red_n' in *. clear n' n_red_n'. 
@@ -661,8 +621,8 @@ Proof.
     do 4 eexists. exists p_zero'''. split.
     2 : eauto.
     eapply ortho_rec_zero; 
-    eauto 8 using aux_ortho_1, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left, 
-              ortho_validity_right, aux_ortho_6', aux_ortho_8, type_zero.
+    eauto 9 using conv_ty_in_ctx_ortho, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left, 
+              ortho_validity_right, aux_subst_2, aux_subst_1, type_zero.
 
     (* rec x rec_succ *)
     + ttinv n_red_n'. destruct n_red_n' as (k' & n'_eq & k_red_k'). rewrite n'_eq in *. clear n' n'_eq.
@@ -670,14 +630,14 @@ Proof.
     
     do 4 eexists. exists ( p_succ''' <[ (rec l P''' p_zero''' p_succ''' k''') .: k''' ..]). split.
     ++ eapply ortho_rec_succ; 
-        eauto 7 using aux_ortho_1, subst_ty, ortho_to_conv, aux_ortho_6', 
-                  aux_ortho_8, ortho_conv, type_zero, ortho_validity_left.
+        eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2, 
+                  aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
     ++ eapply ortho_subst_property; eauto. apply red_scons_id_2; eauto. 
       eapply ortho_conv. 
       +++ eapply ortho_rec; 
-        eauto 7 using aux_ortho_1, subst_ty, ortho_to_conv, aux_ortho_6', 
-                  aux_ortho_8, ortho_conv, type_zero, ortho_validity_left.
-      +++ eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
+        eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2, 
+                  aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
+      +++ eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
     
     (* rec_zero x rec *)
     + admit.
@@ -703,9 +663,9 @@ Proof.
       all : apply red_scons_id_2; eauto.
       all : eapply ortho_conv. 
       1,3: eapply ortho_rec; 
-        eauto 7 using ortho_rec, ortho_conv, subst_ty, aux_ortho_8, type_zero, 
-                  ortho_to_conv, aux_ortho_1, ortho_validity_left, aux_ortho_6'.
-      1,2: eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_ortho_8, ortho_validity_left.
+        eauto 8 using ortho_rec, ortho_conv, subst_ty, aux_subst_1, type_zero, 
+                  ortho_to_conv, conv_ty_in_ctx_ortho, ortho_validity_left, aux_subst_2.
+      1,2: eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
 Admitted.
 
 Corollary diamond : 
@@ -720,15 +680,43 @@ Proof.
   - apply (ortho_diamond_prop _ t t' t''); auto.
 Qed.
 
-(* Require Import Coq.Relations.Relation_Operators.
-Require Import Coq.Relations.Relation_Definitions. *)
+(* --- Proof of confluence --- *)
 
 Inductive ortho_redd Γ l A : term -> term -> Prop := 
   | redd_step t u : Γ ⊢< l > t ⟹ u : A -> ortho_redd Γ l A t u
   | redd_trans t u v : ortho_redd Γ l A t v -> ortho_redd Γ l A v u -> ortho_redd Γ l A t u.
 
-
 Notation "Γ ⊢< l > t ⟹* t' : A" := (ortho_redd Γ l A t t') (at level 50, l, t, t', A at next level).
+
+
+Lemma confluence_aux Γ l t t' t'' A :
+  Γ ⊢< l > t ⟹ t' : A -> 
+  Γ ⊢< l > t ⟹* t'' : A ->
+  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹ t''' : A.
+Proof.
+  intros t_red_t' t_redd_t''. generalize t' t_red_t'. clear t' t_red_t'.
+  induction t_redd_t''; intros.
+  - pose (K := diamond _ _ _ _ _ _ H t_red_t'). 
+    destruct K as (t''' & K1 & K2). exists t'''. split; eauto using redd_step.
+  - pose (K := IHt_redd_t''1 _ t_red_t'). destruct K as (t''' & K1 & K2). 
+    pose (K := IHt_redd_t''2 _ K2). destruct K as (s & K3 & K4).
+    exists s. split; eauto using redd_trans.
+Qed.
+
+Lemma confluence Γ l t t' t'' A :
+  Γ ⊢< l > t ⟹* t' : A -> 
+  Γ ⊢< l > t ⟹* t'' : A ->
+  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹* t''' : A.
+Proof.
+  intro t_red_t'. generalize t''. clear t''.
+  induction t_red_t'; intros.
+  - pose (K := confluence_aux _ _ _ _ _ _ H H0). destruct K as (v & K1 & K2). exists v; eauto using redd_step.
+  - pose (K := IHt_red_t'1 _ H). destruct K as (t''' & K1 & K2). 
+    pose (K := IHt_red_t'2 _ K1). destruct K as (s & K3 & K4).
+    exists s. split; eauto using redd_trans.
+Qed.  
+
+(* --- Proof that the equiv closure of ⟹ and ≡ are the same (surprisingly hard!) --- *)
 
 Inductive ortho_equiv Γ l A : term -> term -> Prop := 
   | equiv_step t u : Γ ⊢< l > t ⟹ u : A -> ortho_equiv Γ l A t u
@@ -736,6 +724,8 @@ Inductive ortho_equiv Γ l A : term -> term -> Prop :=
   | equiv_sym t u : ortho_equiv Γ l A u t -> ortho_equiv Γ l A t u.
 
 Notation "Γ ⊢< l > t ≈ t' : A" := (ortho_equiv Γ l A t t') (at level 50, l, t, t', A at next level).
+
+
 
 Lemma redd_to_conv Γ l t u A :
   Γ ⊢< l > t ⟹* u : A ->
@@ -745,6 +735,7 @@ Proof.
   induction t_redd_u; eauto using ortho_to_conv, conv_trans.
 Qed.
 
+(* the easy direction *)
 Lemma equiv_to_conv Γ l t u A :
   Γ ⊢< l > t ≈ u : A ->
   Γ ⊢< l > t ≡ u : A.
@@ -752,6 +743,8 @@ Proof.
   intro t_equiv_u.
   induction t_equiv_u; eauto using ortho_to_conv, conv_trans, conv_sym.
 Qed.
+
+
 
 
 Lemma equiv_conv Γ l A B t t' :
@@ -783,8 +776,7 @@ Proof.
     apply IHortho_equiv2 in fv_Pv as fv_equiv_fu.
     apply equiv_to_conv in ft_equiv_fv as ft_eq_fv.
     apply validity_conv_right in ft_eq_fv as fv_Pt.
-    assert (Γ ⊢< Ax l > P t ≡ P v : Sort l) as Pt_eq_Pv 
-      by (destruct (type_unicity _ _ _ _ _ _ fv_Pt fv_Pv); auto).
+    assert (Γ ⊢< Ax l > P t ≡ P v : Sort l) as Pt_eq_Pv by eauto using type_unicity. 
     eapply equiv_trans.
     apply ft_equiv_fv.
     eapply equiv_conv.
@@ -796,7 +788,7 @@ Proof.
     apply IHortho_equiv in fu_Pu.
     apply equiv_to_conv in fu_Pu as  K.
     apply validity_conv_right in K. 
-    assert (Γ ⊢< Ax l > P t ≡ P u : Sort l) by (destruct (type_unicity _ _ _ _ _ _ H2 K); auto).
+    assert (Γ ⊢< Ax l > P t ≡ P u : Sort l) by eauto using type_unicity.
     eapply equiv_sym.
     eapply equiv_conv.
     apply fu_Pu.
@@ -834,9 +826,9 @@ Proof.
     3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. 
       split; intro temp; apply type_inv_pi in temp as (H1 & H2); 
-      eauto using type_inv_pi, type_pi, validity_conv_right, validity_conv_left, conv_sym, aux_ortho_3'.
+      eauto using type_inv_pi, type_pi, validity_conv_right, validity_conv_left, conv_sym, conv_ty_in_ctx_ty.
     + intros v v' v_red_v' Wt. apply type_inv_pi in Wt as (v_Wt & B_Wt).
-      apply equiv_step. eauto using ortho_pi, ortho_refl, aux_ortho_3'.
+      apply equiv_step. eauto using ortho_pi, ortho_refl, conv_ty_in_ctx_ty.
 Qed.
 
 
@@ -921,7 +913,7 @@ Proof.
     + intros. split.
       all: (intro temp; apply type_inv_rec in temp; destruct temp as [H1 [H2 [H3 H4]]]). 
       all: (apply type_rec; eauto 7 using equiv_to_conv, subst_ty, type_conv, type_zero, 
-        aux_ortho_8, validity_ty_ctx, validity_conv_left, conv_sym, aux_ortho_2', aux_ortho_6').
+        aux_subst_1, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, aux_subst_2).
     + intros v v' v_red_v' Wt.
       apply type_inv_rec in Wt. destruct Wt as [H1 [H2 [H3 H4]]]. 
       apply equiv_step. eauto using ortho_refl, ortho_rec.
@@ -936,40 +928,14 @@ Proof.
     equiv_rec, equiv_conv, equiv_sym, equiv_trans.
 Qed.
 
-
-Lemma confluence_aux Γ l t t' t'' A :
-  Γ ⊢< l > t ⟹ t' : A -> 
-  Γ ⊢< l > t ⟹* t'' : A ->
-  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹ t''' : A.
-Proof.
-  intros t_red_t' t_redd_t''. generalize t' t_red_t'. clear t' t_red_t'.
-  induction t_redd_t''; intros.
-  - pose (K := diamond _ _ _ _ _ _ H t_red_t'). 
-    destruct K as (t''' & K1 & K2). exists t'''. split; eauto using redd_step.
-  - pose (K := IHt_redd_t''1 _ t_red_t'). destruct K as (t''' & K1 & K2). 
-    pose (K := IHt_redd_t''2 _ K2). destruct K as (s & K3 & K4).
-    exists s. split; eauto using redd_trans.
-Qed.
-
-Lemma confluence Γ l t t' t'' A :
-  Γ ⊢< l > t ⟹* t' : A -> 
-  Γ ⊢< l > t ⟹* t'' : A ->
-  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹* t''' : A.
-Proof.
-  intro t_red_t'. generalize t''. clear t''.
-  induction t_red_t'; intros.
-  - pose (K := confluence_aux _ _ _ _ _ _ H H0). destruct K as (v & K1 & K2). exists v; eauto using redd_step.
-  - pose (K := IHt_red_t'1 _ H). destruct K as (t''' & K1 & K2). 
-    pose (K := IHt_red_t'2 _ K1). destruct K as (s & K3 & K4).
-    exists s. split; eauto using redd_trans.
-Qed.  
+(* --- Proof of CR --- *)
 
 Corollary CR Γ l t u A :
   Γ ⊢< l > t ≡ u : A ->
   exists v, Γ ⊢< l > t ⟹* v : A /\ Γ ⊢< l > u ⟹* v : A.
 Proof.
   intro H. apply conv_to_equiv in H. induction H.
-  - exists u. split; apply redd_step; eauto. eapply ortho_refl. apply ortho_validity in H. destruct H. eauto.
+  - exists u. split; apply redd_step; eauto using ortho_refl, ortho_validity_right.
   - destruct IHortho_equiv1 as (s & t_redd_s & v_redd_s).
     destruct IHortho_equiv2 as (w & v_redd_w & u_redd_w).
     pose (K := confluence _ _ _ _ _ _ v_redd_s v_redd_w).
@@ -977,6 +943,8 @@ Proof.
     exists x. split; eauto using redd_trans.
   - destruct IHortho_equiv as (v & u_redd_v & t_redd_v). exists v. eauto.
 Qed.
+
+(* --- Injectivity and non-confusion properties --- *)
 
 Lemma redd_conv_in_ctx Γ Δ l t u A :
   ⊢ Γ ≡ Δ -> Γ ⊢< l > t ⟹* u : A -> Δ ⊢< l > t ⟹* u : A.
@@ -987,7 +955,7 @@ Proof.
   - eapply redd_trans; eauto.
 Qed.
 
-Lemma reduce_pi Γ l l1 l2 A B T U :
+Lemma pi_redd Γ l l1 l2 A B T U :
   Γ ⊢< l > Pi l1 l2 A B ⟹* T : U ->
   exists A' B',
   T = Pi l1 l2 A' B' /\
@@ -1007,6 +975,35 @@ Proof.
       eauto 6 using conv_ccons, refl_ctx, conv_sym, validity_conv_left, validity_ty_ctx.
 Qed.
 
+Lemma sort_redd Γ l l' t T : 
+  Γ ⊢< l' > Sort l ⟹* t : T -> 
+  t = Sort l.
+Proof.
+  intro sort_redd_t.
+  dependent induction sort_redd_t.
+  - ttinv H. destruct H as [H1 [H2 H3]]. eauto.
+  - eauto.
+Qed.
+
+Lemma nat_redd Γ l' t T : 
+  Γ ⊢< l' > Nat ⟹* t : T -> 
+  t = Nat.
+Proof.
+  intro sort_redd_t.
+  dependent induction sort_redd_t.
+  - ttinv H. eauto.
+  - eauto.
+Qed.
+
+Proposition sort_inj Γ l i j T : 
+  Γ ⊢< l > Sort i ≡ Sort j : T -> i = j.
+Proof.
+  intro sort_eq_sort.
+  apply CR in sort_eq_sort.
+  destruct sort_eq_sort as (t & sort_redd_t_1 & sort_redd_t_2).
+  apply sort_redd in sort_redd_t_1, sort_redd_t_2. 
+  rewrite sort_redd_t_1 in *. inversion sort_redd_t_2. eauto.
+Qed.
 
 Corollary pi_inj Γ l l0 l1 l2 l3 A B A' B' T : 
   Γ ⊢< l > Pi l0 l1 A B ≡ Pi l2 l3 A' B' : T -> 
@@ -1015,9 +1012,9 @@ Proof.
   intro Pi_eq.
   apply CR in Pi_eq.
   destruct Pi_eq as (v & Pi_red_1 & Pi_red_2).
-  apply reduce_pi in Pi_red_1.
+  apply pi_redd in Pi_red_1.
   destruct Pi_red_1 as (A0 & B0 & v_eq & A_redd_A0 & B_redd_B0).
-  apply reduce_pi in Pi_red_2.
+  apply pi_redd in Pi_red_2.
   destruct Pi_red_2 as (A1 & B1 & v_eq_ & A'_redd_A1 & B'_redd_B1).
   rewrite v_eq in *. inversion v_eq_. 
   rewrite H0 in *. rewrite H1 in *. rewrite H2 in *. rewrite H3 in *.
@@ -1025,5 +1022,41 @@ Proof.
   apply redd_to_conv in A_redd_A0, B_redd_B0, A'_redd_A1, B'_redd_B1.
   split; split; split; auto.
   - eauto using conv_trans, conv_sym.
-  - eapply conv_trans. apply B_redd_B0. eauto using aux_ortho_3, conv_sym.
+  - eapply conv_trans. apply B_redd_B0. eauto using conv_ty_in_ctx_conv, conv_sym.
+Qed.
+
+Proposition sort_neq_nat Γ l l' T :
+  Γ ⊢< l' > Sort l ≡ Nat : T -> False.
+Proof.
+  intro sort_eq_nat.
+  apply CR in sort_eq_nat.
+  destruct sort_eq_nat as (t & sort_redd_t & nat_redd_t).
+  apply sort_redd in sort_redd_t.
+  apply nat_redd in nat_redd_t.
+  rewrite sort_redd_t in *.
+  inversion nat_redd_t.
+Qed.
+
+Proposition sort_neq_pi Γ l l' i j A B T :
+  Γ ⊢< l' > Sort l ≡ Pi i j A B : T -> False.
+Proof.
+  intro sort_eq_pi.
+  apply CR in sort_eq_pi.
+  destruct sort_eq_pi as (t & sort_redd_t & pi_redd_t).
+  apply sort_redd in sort_redd_t.
+  apply pi_redd in pi_redd_t as (A' & B' & H & _).
+  rewrite sort_redd_t in *.
+  inversion H.
+Qed.
+
+Proposition nat_neq_pi Γ l' i j A B T :
+  Γ ⊢< l' > Nat ≡ Pi i j A B : T -> False.
+Proof.
+  intro nat_eq_pi.
+  apply CR in nat_eq_pi.
+  destruct nat_eq_pi as (t & nat_redd_t & pi_redd_t).
+  apply nat_redd in nat_redd_t.
+  apply pi_redd in pi_redd_t as (A' & B' & H & _).
+  rewrite nat_redd_t in *.
+  inversion H.
 Qed.

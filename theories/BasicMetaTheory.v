@@ -26,6 +26,8 @@ Proof.
   dependent induction H; eauto.
 Qed.
 
+
+
 Lemma type_inv_rec Γ l' l P p_zero p_succ t T : 
   Γ ⊢< l' > rec l P p_zero p_succ t : T -> 
   Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l /\
@@ -89,5 +91,30 @@ Admitted.
 Theorem validity_conv_right : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > u : A.
 Admitted.
 
-Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> (l = l') /\ (Γ ⊢< Ax l > A ≡ B : Sort l).
+Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l.
 Admitted. 
+
+Theorem sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
+Admitted. 
+
+
+Lemma conv_ty_in_ctx_conv Γ l A A' l' t u B : 
+  Γ ,, (l , A) ⊢< l' > t ≡ u : B ->
+  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
+  Γ ,, (l , A') ⊢< l' > t ≡ u : B.
+Proof.
+  intros t_eq_u A_eq_A'.
+  eapply conv_in_ctx_conv; eauto.
+  apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+Qed.
+
+
+Lemma conv_ty_in_ctx_ty Γ l A A' l' t B : 
+  Γ ,, (l , A) ⊢< l' > t : B ->
+  Γ ⊢< Ax l > A ≡ A' : Sort l -> 
+  Γ ,, (l , A') ⊢< l' > t : B.
+Proof.
+  intros t_eq_u A_eq_A'.
+  eapply conv_in_ctx_ty; eauto.
+  apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+Qed.
