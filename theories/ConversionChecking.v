@@ -8,6 +8,9 @@ From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Require Import Stdlib.Program.Equality.
 Import CombineNotations.
 
+
+(* I'm erasing levels to prop whenever they should be omitted.
+   It would be less dirty to introduce a specific level 'null', like we introduced 'box' for omitted subterms *)
 Fixpoint erasure l t : term := 
   match l, t with 
   | prop, _ => box 
