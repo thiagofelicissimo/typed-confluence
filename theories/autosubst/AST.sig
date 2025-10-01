@@ -14,3 +14,4 @@ Nat : term
 zero : term 
 succ : term -> term 
 rec : level -> (bind term in term) -> term -> (bind term , term in term) -> term -> term
+box : term

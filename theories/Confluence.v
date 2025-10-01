@@ -331,6 +331,13 @@ Proof.
   - right. right. do 5 eexists. split. reflexivity. split. reflexivity. eauto.
 Qed.
 
+Lemma ortho_box_inv Γ l' t A :
+  Γ ⊢< l' > box ⟹ t : A → False.
+Proof.
+  intros.
+  dependent induction H; eauto. dependent induction H. apply IHtyping; eauto. eapply type_conv; eauto using conv_sym.
+Qed.
+
 Ltac ttinv h :=
   lazymatch type of h with
   _ ⊢< _ > ?t ⟹ _ : _ =>
@@ -344,6 +351,7 @@ Ltac ttinv h :=
     | zero => eapply ortho_zero_inv in h
     | succ _ => eapply ortho_succ_inv in h
     | rec _ _ _ _ _ => eapply ortho_rec_inv in h
+    | box => eapply ortho_box_inv in h
     end
   end.
 
@@ -410,6 +418,7 @@ Fixpoint size (t : term) : nat :=
   | zero => 0
   | succ t => 1 + size t
   | rec _ P p0 ps t => 1 + size P + size p0 + size ps + size t
+  | box => 0
 end.
 
 (* allows us to close the diamond with different types in the two ends *)
@@ -666,6 +675,9 @@ Proof.
         eauto 8 using ortho_rec, ortho_conv, subst_ty, aux_subst_1, type_zero, 
                   ortho_to_conv, conv_ty_in_ctx_ortho, ortho_validity_left, aux_subst_2.
       1,2: eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
+    
+  (* box *)
+  - ttinv t_red_t'. easy. 
 Admitted.
 
 Corollary diamond : 

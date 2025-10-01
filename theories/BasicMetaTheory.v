@@ -26,7 +26,34 @@ Proof.
   dependent induction H; eauto.
 Qed.
 
+Lemma type_inv_lam Γ i j A B t T l :
+      Γ ⊢< l > lam i j A B t : T ->
+      Γ ⊢< Ax i > A : Sort i /\
+      Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
+      Γ ,, (i , A) ⊢< j > t : B.
+Proof.
+  intro H.
+  dependent induction H; eauto.
+Qed.
 
+Lemma type_inv_app Γ i j A B t u l T :
+      Γ ⊢< l > app i j A B  t u : T ->
+      Γ ⊢< Ax i > A : Sort i /\
+      Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
+      Γ ⊢< Ru i j > t : Pi i j A B /\
+      Γ ⊢< i > u : A.
+Proof.
+  intro H.
+  dependent induction H; eauto.
+Qed.
+
+Lemma type_inv_succ Γ t T l :
+      Γ ⊢< l > succ t : T ->
+      Γ ⊢< ty 0 > t : Nat. 
+Proof.
+  intro H.
+  dependent induction H; eauto.
+Qed.
 
 Lemma type_inv_rec Γ l' l P p_zero p_succ t T : 
   Γ ⊢< l' > rec l P p_zero p_succ t : T -> 
