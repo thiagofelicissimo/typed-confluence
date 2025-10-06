@@ -385,15 +385,7 @@ Proof.
   apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
 Qed.
 
-(* the following two lemmas help automation to type some substitutions that appear often in the proof *)
-Lemma aux_subst_1 Γ k :
-  Γ ⊢< ty 0 > k : Nat ->
-  Γ ⊢s k .. : (Γ ,, (ty 0, Nat)).
-Proof.
-  intro kWt.
-  apply well_scons; ssimpl; eauto using validity_ty_ctx, subst_id.
-Qed.
-
+(* the following lemma helps automation to type some substitutions that appear often in the proof *)
 Lemma aux_subst_2 Γ l P : 
   Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
   (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).

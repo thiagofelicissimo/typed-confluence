@@ -18,6 +18,15 @@ Open Scope subst_scope.
   In any case, there is no doubt that they can be proven.
 *)
 
+
+Lemma type_inv_var Γ l x T : 
+  Γ ⊢< l > var x : T -> 
+  exists A, nth_error Γ x = Some (l , A).
+Proof.
+  intro H.
+  dependent induction H; eauto.
+Qed.
+
 Lemma type_inv_pi Γ l' i j A B T: 
   Γ ⊢< l' > Pi i j A B : T -> 
   Γ ⊢< Ax i > A : Sort i /\ Γ ,, (i, A) ⊢< Ax j > B : Sort j.
@@ -89,6 +98,11 @@ Admitted.
 Theorem subst : forall Γ l t u A Δ σ τ, Δ ⊢s σ ≡ τ : Γ -> Γ ⊢< l > t ≡ u : A -> Δ ⊢< l > t <[ σ ] ≡ u <[ τ ] : A <[ σ ].
 Admitted.
 
+
+Theorem subst2 : forall Γ l t A Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t : A -> Δ ⊢< l > t <[ σ ] : A <[ σ ].
+Admitted.
+
+
 Corollary subst_ty : forall Γ l t u l' Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t ≡ u : Sort l' -> Δ ⊢< l > t <[ σ ] ≡ u <[ σ ] : Sort l'.
 Admitted.
 
@@ -125,6 +139,8 @@ Theorem sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > 
 Admitted. 
 
 
+(* composite lemmas, for helping automation *)
+
 Lemma conv_ty_in_ctx_conv Γ l A A' l' t u B : 
   Γ ,, (l , A) ⊢< l' > t ≡ u : B ->
   Γ ⊢< Ax l > A ≡ A' : Sort l -> 
@@ -144,4 +160,13 @@ Proof.
   intros t_eq_u A_eq_A'.
   eapply conv_in_ctx_ty; eauto.
   apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+Qed.
+
+
+Lemma aux_subst_1 Γ l t A :
+  Γ ⊢< l > t : A ->
+  Γ ⊢s t .. : (Γ ,, (l, A)).
+Proof.
+  intro kWt.
+  apply well_scons; ssimpl; eauto using validity_ty_ctx, subst_id.
 Qed.
