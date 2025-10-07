@@ -75,6 +75,15 @@ Proof.
   dependent induction H; eauto.
 Qed.
 
+Lemma type_inv_box Γ T l :
+      Γ ⊢< l > box : T ->
+      False. 
+Proof.
+  intro H.
+  dependent induction H; eauto.
+Qed.
+
+
 Theorem refl_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
 Admitted.
 

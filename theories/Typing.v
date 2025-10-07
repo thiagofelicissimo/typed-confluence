@@ -16,10 +16,10 @@ Open Scope subst_scope.
 
 
 Definition Ax (l : level) : level :=
-  match l with 
-  | prop => ty 0
-  | ty i => ty (i + 1)
-  end.
+  ty (match l with 
+  | prop => 0
+  | ty i => (i + 1)
+  end).
 
 Definition Ru (l1 l2 : level) : level := 
   match l2 with 
