@@ -624,7 +624,15 @@ Proof.
     auto using refl_ty.
   - destruct t0; dependent destruction H3.
     destruct u; dependent destruction H2.
-    admit.
+    pose proof H0 as H'. pose proof H0 as H''.
+    apply type_inv_succ in H0.
+    apply type_inv_succ in H1.
+    assert (Γ ⊢< ty 0 > succ t0 : Nat) by eauto using type_succ.
+    eapply sort_unicity in H'. 2: eapply H2.
+    eapply type_unicity in H''. 2:apply H2.
+    rewrite <- H' in *.
+    eapply conv_conv. 2: eauto using conv_sym.
+    apply conv_succ. eapply H; eauto.
   - eapply H; eauto.
   - destruct t; dependent destruction H2. 
     apply type_inv_box in H. inversion H.

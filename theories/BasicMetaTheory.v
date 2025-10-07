@@ -19,6 +19,13 @@ Open Scope subst_scope.
 *)
 
 
+Theorem refl_ty Γ l t A : Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
+Proof.
+  intros Wt.
+  induction Wt; eauto using conversion.
+Qed.
+
+
 Lemma type_inv_var Γ l x T : 
   Γ ⊢< l > var x : T -> 
   exists A, nth_error Γ x = Some (l , A).
@@ -84,8 +91,6 @@ Proof.
 Qed.
 
 
-Theorem refl_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
-Admitted.
 
 
 Theorem refl_subst : forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊢s σ ≡ σ : Δ.
@@ -179,3 +184,5 @@ Proof.
   intro kWt.
   apply well_scons; ssimpl; eauto using validity_ty_ctx, subst_id.
 Qed.
+
+
