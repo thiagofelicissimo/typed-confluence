@@ -358,6 +358,28 @@ Proof.
 Qed.
 
 
+Lemma erasure_subst_2_commutes Γ i A i' A' j v B u u' : 
+  Γ,, (i, A) ,, (i' , A') ⊢< j > v : B ->
+  erasure j (v <[ u' .: (u ..)]) = (erasure j v) <[ (erasure i' u') .: ((erasure i u) ..)].
+Proof.
+  intro v_Wt.
+  erewrite erasure_subst_commutes.
+  - setoid_rewrite erasure_cons. setoid_rewrite erasure_cons. setoid_rewrite erasure_id. reflexivity.
+  - eauto.
+  - setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute. 
+    apply refines_cons2. apply refines_cons2. apply refines_all.
+Qed.
+
+Lemma erasure_subst_1_commutes Γ i A j v B u : 
+  Γ,, (i, A) ⊢< j > v : B ->
+  erasure j (v <[ u..]) = (erasure j v) <[ (erasure i u)..].
+Proof.
+  intro v_Wt.
+  erewrite erasure_subst_commutes; eauto. 
+      +++ setoid_rewrite erasure_aux. eauto.
+      +++ setoid_rewrite cons_ctx_commute. apply refines_cons2. apply refines_all.
+Qed.
+
 Theorem subject_reduction Γ l t A u :
   Γ ⊢< l > t : A -> 
   erasure l t ---> u ->
@@ -393,9 +415,7 @@ Proof.
       eapply type_unicity in K; eauto.
       eapply pi_inj in K as (l_eq_i & l0_eq_n & _). 
       rewrite l0_eq_n in *. rewrite l_eq_i in *.
-      erewrite erasure_subst_commutes; eauto. 
-      +++ setoid_rewrite erasure_aux. eauto.
-      +++ setoid_rewrite cons_ctx_commute. apply refines_cons2. apply refines_all.
+      eapply erasure_subst_1_commutes; eauto.
 
   (* case succ cong *)
   (* TODO: further investigate why succ cong case must be done seperately *)
@@ -409,16 +429,12 @@ Proof.
     exists p_zero. split; eauto using conv_rec_zero.
 
   (* case rec succ *)
-  - destruct t. all : inversion x. clear x H0 n0.
-    exists (p_succ <[ rec l P p_zero p_succ t .: t ..]).
+  - dependent destruction l_eq_n. destruct t. all : inversion x. clear x H0 n0.
+    exists (p_succ <[ rec (ty n) P p_zero p_succ t .: t ..]).
     split.
     + apply type_inv_succ in tWt4. eauto using conv_rec_succ.
-    + erewrite erasure_subst_commutes.
-      ++ setoid_rewrite (erasure_cons (ty 0)). setoid_rewrite (erasure_cons (ty 0)). setoid_rewrite erasure_id. reflexivity.
-      ++ eauto.
-      ++ setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute. 
-        apply refines_cons. apply refines_cons. apply refines_all.
-
+    + erewrite erasure_subst_2_commutes; eauto. reflexivity.
+    
   (* case conv *)
   - edestruct IHtWt.
     + right. eauto.

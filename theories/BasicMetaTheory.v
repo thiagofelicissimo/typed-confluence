@@ -11,6 +11,11 @@ Import CombineNotations.
 
 Open Scope subst_scope.
 
+Lemma Ax_inj l l' : Ax l = Ax l' -> l = l'.
+Proof. 
+  intro H. destruct l; destruct l'; inversion H; auto.
+Qed.
+
 (* basic inversion lemmas *)
 
 
@@ -119,6 +124,10 @@ Admitted.
 
 
 Corollary subst_ty : forall Γ l t u l' Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t ≡ u : Sort l' -> Δ ⊢< l > t <[ σ ] ≡ u <[ σ ] : Sort l'.
+Admitted.
+
+
+Corollary subst_ty' : forall Γ l t l' Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t : Sort l' -> Δ ⊢< l > t <[ σ ] : Sort l'.
 Admitted.
 
 
