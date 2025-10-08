@@ -385,16 +385,6 @@ Proof.
   apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
 Qed.
 
-(* the following lemma helps automation to type some substitutions that appear often in the proof *)
-Lemma aux_subst_2 Γ l P : 
-  Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
-  (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
-Proof.
-  intro H.
-  apply well_scons. 
-  ssimpl.
-Admitted.
-
 
 (* --- Proof of the diamond property --- *)
 
