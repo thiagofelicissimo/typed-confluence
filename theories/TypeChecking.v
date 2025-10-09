@@ -472,15 +472,19 @@ Qed.
 Inductive label : Type := | agda | rocq.
 
 Inductive CTerm : label -> cterm -> Prop :=
-| cann_ h M MA : CTerm h M -> CTerm h MA -> CTerm h (cann M MA)
-| cvar_ h n : CTerm h (cvar n)
-| cSort_ h i : CTerm h (cSort i)
 
-| cPi_ h MA MB : CTerm h MA -> CTerm h MB -> CTerm h (cPi MA MB)
-| capp_ h M N : CTerm h M -> CTerm h N -> CTerm h (capp M N)
+(* in agda we have non-annotated abstractions and type ascriptions *)
 | clam_ M : CTerm agda M -> CTerm agda (clam M)
+| cann_ M MA : CTerm agda M -> CTerm agda MA -> CTerm agda (cann M MA)
+
+(* in rocq we have annotated abstractions and no ascriptions *)
 | clam'_ MA M : CTerm rocq MA -> CTerm rocq M -> CTerm rocq (clam' MA M)
 
+(* all the rest is the same *)
+| cvar_ h n : CTerm h (cvar n)
+| cSort_ h i : CTerm h (cSort i)
+| cPi_ h MA MB : CTerm h MA -> CTerm h MB -> CTerm h (cPi MA MB)
+| capp_ h M N : CTerm h M -> CTerm h N -> CTerm h (capp M N)
 | cNat_ h : CTerm h cNat
 | czero_ h : CTerm h czero
 | csucc_ h M : CTerm h M -> CTerm h (csucc M)
