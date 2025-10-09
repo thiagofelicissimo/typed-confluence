@@ -162,6 +162,24 @@ Admitted.
 Theorem sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
 Admitted. 
 
+Lemma validity_ctx_left Γ Δ : ⊢ Γ ≡ Δ -> ⊢ Γ.
+Admitted.
+
+
+Lemma conv_ctx_var Γ x l A Δ :
+    nth_error Γ x = Some (l, A) -> 
+    ⊢ Γ ≡ Δ -> 
+    exists B, nth_error Δ x = Some (l, B) /\ Γ ⊢< Ax l > Init.Nat.add (S x) ⋅ A ≡ Init.Nat.add (S x) ⋅ B : Sort l.
+Proof.
+    intros. generalize l x A H. clear l x A H.
+    induction H0; intros.
+    - destruct x; inversion H.
+    - destruct x. 
+        + simpl in H. dependent destruction H. exists B. split. auto. admit. (* by weakening *)
+        + simpl in H. apply IHConvCtx in H as (B0 & nth_x & conv). 
+          exists B0. split; auto. admit. (* by weakening *)
+Admitted.
+
 
 (* composite lemmas, for helping automation *)
 
@@ -201,8 +219,9 @@ Lemma aux_subst_2 Γ l P :
   (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
 Proof.
   intro H.
-  apply well_scons. 
-  ssimpl.
+  apply well_scons.
+  - ssimpl. admit. (* by weakening *)
+  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. eauto using validity_ty_ctx, ctx_cons.
 Admitted.
 
 
