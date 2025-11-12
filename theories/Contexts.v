@@ -1,8 +1,8 @@
 
 
 From Stdlib Require Import Utf8 List Arith Bool.
-From TypedConfluence.autosubst
-Require Import core unscoped AST SubstNotations RAsimpl AST_rasimpl.
+From TypedConfluence
+Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 

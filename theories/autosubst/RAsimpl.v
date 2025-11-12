@@ -9,7 +9,7 @@
 *)
 
 From Stdlib Require Import Utf8 List.
-From TypedConfluence.autosubst Require Import core unscoped.
+From TypedConfluence Require Import core unscoped.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Import ListNotations.
 

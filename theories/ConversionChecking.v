@@ -1,8 +1,8 @@
 (** * Typing *)
 
 From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
-From TypedConfluence.autosubst
-Require Import core unscoped AST SubstNotations RAsimpl AST_rasimpl.
+From TypedConfluence
+Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory Confluence. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Require Import Stdlib.Program.Equality.
@@ -11,9 +11,9 @@ Import CombineNotations.
 
 (* I'm erasing levels to prop whenever they should be omitted.
    It would be less dirty to introduce a specific level 'null', like we introduced 'box' for omitted subterms *)
-Fixpoint erasure l t : term := 
-  match l, t with 
-  | prop, _ => box 
+Fixpoint erasure l t : term :=
+  match l, t with
+  | prop, _ => box
   | ty _, var _ => t
   | ty _, Sort _ => t
   | ty _, Pi i j A B => Pi i j (erasure (Ax i) A) (erasure (Ax j) B)
@@ -36,46 +36,46 @@ Reserved Notation "t ---> u" (at level 50, u at next level).
 
 Inductive red : term -> term -> Prop :=
 | red_pi_1 i j A A' B :
-    A ---> A' -> 
+    A ---> A' ->
     Pi i j A B ---> Pi i j A' B
 
 | red_pi_2 i j A B B' :
-    B ---> B' -> 
+    B ---> B' ->
     Pi i j A B ---> Pi i j A B'
 
 | red_app_1 t t' u :
-    t ---> t' -> 
-    app prop prop box box t u ---> app prop prop box box t' u 
+    t ---> t' ->
+    app prop prop box box t u ---> app prop prop box box t' u
 
 | red_app_2 t u u' :
-    u ---> u' -> 
+    u ---> u' ->
     app prop prop box box t u ---> app prop prop box box t u'
 
-| red_lam t t' : 
-    t ---> t' -> 
+| red_lam t t' :
+    t ---> t' ->
     lam prop prop box box t ---> lam prop prop box box t'
-  
+
 | red_succ t t' :
     t ---> t' ->
-    succ t ---> succ t' 
+    succ t ---> succ t'
 
 | red_rec_1 l P P' p_zero p_succ n :
-    P ---> P' -> 
+    P ---> P' ->
     rec l P p_zero p_succ n ---> rec l P' p_zero p_succ n
 
 | red_rec_2 l P p_zero p_zero' p_succ n :
-    p_zero ---> p_zero' -> 
+    p_zero ---> p_zero' ->
     rec l P p_zero p_succ n ---> rec l P p_zero' p_succ n
 
 | red_rec_3 l P p_zero p_succ p_succ' n :
-    p_succ ---> p_succ' -> 
+    p_succ ---> p_succ' ->
     rec l P p_zero p_succ n ---> rec l P p_zero p_succ' n
 
 | red_rec_4 l P p_zero p_succ n n' :
-    n ---> n' -> 
+    n ---> n' ->
     rec l P p_zero p_succ n ---> rec l P p_zero p_succ n'
 
-| red_beta t u : 
+| red_beta t u :
     app prop prop box box (lam prop prop box box t) u ---> t <[ u.. ]
 
 | red_rec_zero l P p_zero p_succ :
@@ -108,12 +108,12 @@ Proof.
 Qed.
 
 
-Definition rel_map_cons (f : nat -> level) l x := 
-  match x with 
-  | 0 => l 
+Definition rel_map_cons (f : nat -> level) l x :=
+  match x with
+  | 0 => l
   | S x => f x
 end.
-    
+
 Reserved Notation "f ;; l" (at level 50, l at next level).
 Notation "f ;; l" := (rel_map_cons f l).
 
@@ -122,7 +122,7 @@ Reserved Notation "A ~ B" (at level 50, B at next level).
 Notation "A ~ B" := (pointwise_relation _ eq A B).
 
 
-Lemma aux1 f σ t l : 
+Lemma aux1 f σ t l :
   erasure_subst (f ;; l) (t .: σ >> ren_term ↑) ~ (erasure l t .: erasure_subst f σ >> ren_term ↑).
 Proof.
   intro x.
@@ -136,7 +136,7 @@ Proof.
 Qed.
 
 
-Lemma aux2 f σ l1 l2 t1 t2 : 
+Lemma aux2 f σ l1 l2 t1 t2 :
   erasure_subst ((f ;; l2) ;; l1) (t1 .: (t2 .: σ >> ren_term (↑ >> ↑))) ~ (erasure l1 t1 .: (erasure l2 t2 .: erasure_subst f σ >> ren_term (↑ >> ↑))).
 Proof.
   intro x.
@@ -156,12 +156,12 @@ Definition refines (f g : nat -> level) :=
   forall x i, f x = ty i -> exists j, g x = ty j.
 
 
-Lemma refines_cons f g l i : 
+Lemma refines_cons f g l i :
   refines f g -> refines (f ;; l) (g ;; (ty i)).
 Proof.
   intro ref.
   unfold refines.
-  intros. 
+  intros.
   destruct x.
   - eexists. simpl. eauto.
   - simpl in H. apply ref in H as (j & eq).
@@ -169,10 +169,10 @@ Proof.
 Qed.
 
 
-Definition fun_of_ctx (Δ : ctx) x := 
-  match nth_error Δ x with 
-  | Some (l, _) => l 
-  | None => prop 
+Definition fun_of_ctx (Δ : ctx) x :=
+  match nth_error Δ x with
+  | Some (l, _) => l
+  | None => prop
 end.
 
 
@@ -215,21 +215,21 @@ Proof.
   destruct x; reflexivity.
 Qed.
 
-Lemma erasure_subst_commutes Γ t A l σ : 
-  Γ ⊢< l > t : A -> 
+Lemma erasure_subst_commutes Γ t A l σ :
+  Γ ⊢< l > t : A ->
   forall f, refines (fun_of_ctx Γ) f ->
   erasure l (t <[ σ ]) = erasure l t <[ erasure_subst f σ ].
 Proof.
   rename l into l_.
   generalize Γ. clear Γ.
   dependent induction t; intros Γ Wt Δ ref.
-  all : destruct l_. 
+  all : destruct l_.
   all : (try rewrite erasure_prop; try rewrite erasure_prop; eauto).
-  - simpl. apply type_inv_var in Wt as (B & nth). 
+  - simpl. apply type_inv_var in Wt as (B & nth).
     unfold erasure_subst. unfold refines in ref.
     epose proof (H := ref n n0).
     unfold fun_of_ctx in H.
-    rewrite nth in H. 
+    rewrite nth in H.
     destruct (H eq_refl) as (k & eq).
     rewrite eq. apply erasure_irrel.
   - simpl. apply type_inv_pi in Wt as (AWt & BWt).
@@ -243,7 +243,7 @@ Proof.
     eauto.
     setoid_rewrite cons_ctx_commute.
     eauto using refines_cons.
-    - rename t1 into A'. rename t2 into B'. rename t3 into v.  
+    - rename t1 into A'. rename t2 into B'. rename t3 into v.
     simpl. apply type_inv_lam in Wt as (AWt & BWt & vWt).
     f_equal. ssimpl.
     transitivity  ((erasure l0 v) <[ erasure (ty 0) (var 0) .: erasure_subst Δ σ >> ren_term ↑]).
@@ -253,7 +253,7 @@ Proof.
   - rename t1 into A'. rename t2 into B'. rename t3 into u. rename t4 into v.
     apply type_inv_app in Wt as (Awt & Bwt & uWt & vWt).
     simpl. f_equal; eauto.
-  - apply type_inv_succ in Wt. 
+  - apply type_inv_succ in Wt.
     simpl. f_equal. eauto.
   - rename t1 into P. rename t2 into p_zero. rename t3 into p_succ. rename t4 into k.
     apply type_inv_rec in Wt as (PWt & p_zeroWt & p_succWt & kWt).
@@ -266,26 +266,26 @@ Proof.
       2: eauto.
       setoid_rewrite <- aux2.
       eapply IHt3; eauto. setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute. eauto using refines_cons.
-Qed. 
+Qed.
 
 
 
 
-Lemma SR_aux Γ l i j A B i' j' A' B' t u T : 
-  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T -> 
-  i = i' /\ 
-  j = j' /\ 
+Lemma SR_aux Γ l i j A B i' j' A' B' t u T :
+  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T ->
+  i = i' /\
+  j = j' /\
   l = j  /\
   Γ ⊢< Ax i > A ≡ A' : Sort i /\
   Γ ,, (i, A) ⊢< Ax j > B ≡ B' : Sort j /\
-  Γ ,, (i, A) ⊢< j > t : B /\ 
+  Γ ,, (i, A) ⊢< j > t : B /\
   Γ ⊢< i > u : A.
 Proof.
   intro Wt.
   pose proof (Wt' := Wt).
   apply type_inv_app in Wt as (A_Wt & B_Wt & lam_Wt & u_Wt).
-  assert (Γ ⊢< j > app i j A B (lam i' j' A' B' t) u : B <[ u..]) as Wt'' by eauto using type_app.   
-  eapply sort_unicity in Wt' as j_eq_l; eauto.  
+  assert (Γ ⊢< j > app i j A B (lam i' j' A' B' t) u : B <[ u..]) as Wt'' by eauto using type_app.
+  eapply sort_unicity in Wt' as j_eq_l; eauto.
   pose proof (lam_Wt1 := lam_Wt).
   apply type_inv_lam in lam_Wt as (A'_Wt & B'_Wt & t_Wt).
   assert (Γ ⊢< Ru i' j' > lam i' j' A' B' t : Pi i' j' A' B') as lam_Wt2 by eauto using type_lam.
@@ -295,11 +295,11 @@ Proof.
   repeat split; eauto.
   rewrite i_eq_i' in *.
   rewrite j_eq_j' in *.
-  eauto using conv_ty_in_ctx_ty, type_conv, conv_sym.  
+  eauto using conv_ty_in_ctx_ty, type_conv, conv_sym.
 Qed.
 
-Lemma SR_aux2 Γ l i j A B i' j' A' B' t u T : 
-  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T -> 
+Lemma SR_aux2 Γ l i j A B i' j' A' B' t u T :
+  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T ->
   Γ ⊢< l > app i j A B (lam i' j' A' B' t) u ≡ t <[u .. ] : B <[ u..].
 Proof.
   intro Wt.
@@ -337,12 +337,12 @@ Proof.
 Qed.
 
 
-Lemma refines_cons2 f g l : 
+Lemma refines_cons2 f g l :
   refines f g -> refines (f ;; l) (g ;; l).
 Proof.
   intro ref.
   unfold refines.
-  intros. 
+  intros.
   destruct x.
   - eexists. simpl. eauto.
   - simpl in H. apply ref in H as (j & eq).
@@ -358,7 +358,7 @@ Proof.
 Qed.
 
 
-Lemma erasure_subst_2_commutes Γ i A i' A' j v B u u' : 
+Lemma erasure_subst_2_commutes Γ i A i' A' j v B u u' :
   Γ,, (i, A) ,, (i' , A') ⊢< j > v : B ->
   erasure j (v <[ u' .: (u ..)]) = (erasure j v) <[ (erasure i' u') .: ((erasure i u) ..)].
 Proof.
@@ -366,22 +366,22 @@ Proof.
   erewrite erasure_subst_commutes.
   - setoid_rewrite erasure_cons. setoid_rewrite erasure_cons. setoid_rewrite erasure_id. reflexivity.
   - eauto.
-  - setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute. 
+  - setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute.
     apply refines_cons2. apply refines_cons2. apply refines_all.
 Qed.
 
-Lemma erasure_subst_1_commutes Γ i A j v B u : 
+Lemma erasure_subst_1_commutes Γ i A j v B u :
   Γ,, (i, A) ⊢< j > v : B ->
   erasure j (v <[ u..]) = (erasure j v) <[ (erasure i u)..].
 Proof.
   intro v_Wt.
-  erewrite erasure_subst_commutes; eauto. 
+  erewrite erasure_subst_commutes; eauto.
       +++ setoid_rewrite erasure_aux. eauto.
       +++ setoid_rewrite cons_ctx_commute. apply refines_cons2. apply refines_all.
 Qed.
 
 Theorem subject_reduction Γ l t A u :
-  Γ ⊢< l > t : A -> 
+  Γ ⊢< l > t : A ->
   erasure l t ---> u ->
   exists u', Γ ⊢< l > t ≡ u' : A /\ erasure l u' = u.
 Proof.
@@ -390,7 +390,7 @@ Proof.
   generalize  u erased_t_red_u. clear u erased_t_red_u.
   induction tWt; intros.
 
-  all : destruct case_l as [l_eq_prop | (n & l_eq_n)]; 
+  all : destruct case_l as [l_eq_prop | (n & l_eq_n)];
     [ rewrite l_eq_prop in erased_t_red_u; rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u | idtac ].
   1,2,6,7: (rewrite l_eq_n in *; inversion erased_t_red_u).
   all : rewrite l_eq_n in erased_t_red_u at 1.
@@ -400,7 +400,7 @@ Proof.
   try destruct (IHtWt2 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt3 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt4 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
-  eexists; split; [ eauto using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, refl_ty 
+  eexists; split; [ eauto using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, refl_ty
                 | rewrite <- eq; rewrite l_eq_n; eauto ]).
 
   (* case beta *)
@@ -409,11 +409,11 @@ Proof.
     rename t2 into B'. rename t3 into v.
     exists (v <[ u..]). split.
     ++ assert (Γ ⊢< j > app i j A B (lam i' j' A' B' v) u : B <[ u..]) by eauto using type_app. eauto using SR_aux2.
-    ++ pose proof tWt3 as K. 
+    ++ pose proof tWt3 as K.
       apply type_inv_lam in tWt3 as (K1 & K2 & K3).
       assert (Γ ⊢< Ru i' j' > lam i' j' A' B' v : Pi i' j' A' B') by eauto using type_lam.
       eapply type_unicity in K; eauto.
-      eapply pi_inj in K as (l_eq_i & l0_eq_n & _). 
+      eapply pi_inj in K as (l_eq_i & l0_eq_n & _).
       rewrite l0_eq_n in *. rewrite l_eq_i in *.
       eapply erasure_subst_1_commutes; eauto.
 
@@ -434,7 +434,7 @@ Proof.
     split.
     + apply type_inv_succ in tWt4. eauto using conv_rec_succ.
     + erewrite erasure_subst_2_commutes; eauto. reflexivity.
-    
+
   (* case conv *)
   - edestruct IHtWt.
     + right. eauto.
@@ -446,7 +446,7 @@ Qed.
 Reserved Notation "t -->> u" (at level 50, u at next level).
 
 
-Inductive redd : term -> term -> Prop := 
+Inductive redd : term -> term -> Prop :=
   | redd_refl t : t -->> t
   | redd_step t u : t ---> u -> t -->> u
   | redd_trans t u v : t -->> v -> v -->> u -> t -->> u
@@ -455,7 +455,7 @@ where "t -->> u" := (redd t u).
 
 
 Lemma subject_reduction_redd_aux Γ l t t' A u' :
-  Γ ⊢< l > t : A -> 
+  Γ ⊢< l > t : A ->
   erasure l t = t' ->
   t' -->> u' ->
   exists u, Γ ⊢< l > t ≡ u : A /\ erasure l u = u'.
@@ -473,7 +473,7 @@ Proof.
 Qed.
 
 Corollary subject_reduction_redd Γ l t A u :
-  Γ ⊢< l > t : A -> 
+  Γ ⊢< l > t : A ->
   erasure l t -->> u ->
   exists u', Γ ⊢< l > t ≡ u' : A /\ erasure l u' = u.
 Proof.
@@ -482,11 +482,11 @@ Qed.
 
 Definition nf t := forall u, t ---> u -> False.
 
-Definition is_elim t := 
-  match t with 
+Definition is_elim t :=
+  match t with
   | var _ => True
   | app _ _ _ _ _ _ => True
-  | rec _ _ _ _ _ => True 
+  | rec _ _ _ _ _ => True
   | _ => False
 end.
 
@@ -512,13 +512,13 @@ Combined Scheme Nf_Ne_mutind from Nf_mut, Ne_mut.
 
 
 Definition not_a_lam t :=
-  match t with 
+  match t with
   | lam _ _ _ _ _ => False
-  | _ => True 
+  | _ => True
 end.
 
 Lemma nf_pi_is_ne Γ l t i j A B :
-  Γ ⊢< ty l > t : Pi i j A B -> 
+  Γ ⊢< ty l > t : Pi i j A B ->
   Nf (erasure (ty l) t) -> not_a_lam t -> Ne (erasure (ty l) t).
 Proof.
   intros t_Wt.
@@ -531,7 +531,7 @@ Proof.
     eapply type_unicity in H. 2: apply t_Wt_copy. apply conv_sym in H. apply sort_neq_pi in H. inversion H.
   - inversion t_neq_lam.
   - simpl in nf_et. inversion nf_et. eauto.
-  - assert (Γ ⊢< ty 1 > Nat : Sort (ty 0)) by eauto using type_nat, validity_ty_ctx. 
+  - assert (Γ ⊢< ty 1 > Nat : Sort (ty 0)) by eauto using type_nat, validity_ty_ctx.
     eapply type_unicity in H. 2 : apply t_Wt. apply conv_sym in H. apply sort_neq_pi in H. inversion H.
   - assert (Γ ⊢< ty 0 > zero : Nat) by eauto using type_zero, validity_ty_ctx.
     eapply type_unicity in H. 2:apply t_Wt. apply conv_sym in H. apply nat_neq_pi in H. inversion H.
@@ -543,14 +543,14 @@ Proof.
 Qed.
 
 Definition not_zero_or_succ t :=
-  match t with 
+  match t with
   | zero => False
   | succ _ => False
-  | _ => True 
+  | _ => True
 end.
 
 Lemma nf_nat_is_ne Γ l t :
-  Γ ⊢< ty l > t : Nat -> 
+  Γ ⊢< ty l > t : Nat ->
   Nf (erasure (ty l) t) -> not_zero_or_succ t -> Ne (erasure (ty l) t).
 Proof.
   intros t_Wt.
@@ -566,7 +566,7 @@ Proof.
     assert (Γ ⊢< Ru l0 l1 > lam l0 l1 t1 t2 t3 : Pi l0 l1 t1 t2) by eauto using type_lam.
     eapply type_unicity in H. 2: apply t_Wt_copy. apply nat_neq_pi in H. inversion H.
   - simpl in nf_et. inversion nf_et. eauto.
-  - assert (Γ ⊢< ty 1 > Nat : Sort (ty 0)) by eauto using type_nat, validity_ty_ctx. 
+  - assert (Γ ⊢< ty 1 > Nat : Sort (ty 0)) by eauto using type_nat, validity_ty_ctx.
     eapply type_unicity in H. 2 : apply t_Wt. apply conv_sym in H. apply sort_neq_nat in H. inversion H.
   - inversion not_zero_or_succ.
   - inversion not_zero_or_succ.
@@ -574,11 +574,11 @@ Proof.
   - apply type_inv_box in t_Wt. inversion t_Wt.
 Qed.
 
-Lemma nf_to_Nf Γ l t A : 
+Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
 Proof.
   intros t_Wt nf. induction t_Wt.
-  all: (match goal with | |- Nf (erasure ?l _) => pose (K := case_lvl l) end; 
+  all: (match goal with | |- Nf (erasure ?l _) => pose (K := case_lvl l) end;
       destruct K as [l_eq_prop | (n & l_eq_n)];
       [rewrite l_eq_prop; rewrite erasure_prop; eauto using nf_box | idtac]).
   all: (try rewrite l_eq_n in *; try clear l).
@@ -588,7 +588,7 @@ Proof.
     + apply IHt_Wt2. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
   - apply nf_lam. apply IHt_Wt3. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
   - apply nf_ne. apply ne_app.
-    + eapply nf_pi_is_ne. 
+    + eapply nf_pi_is_ne.
       ++  eauto.
       ++  apply IHt_Wt3. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
       ++ destruct t; unfold not_a_lam; eauto. unfold ConversionChecking.nf in *.  eapply nf. simpl. eauto using red.
@@ -605,18 +605,18 @@ Proof.
 Qed.
 
 
-Lemma eq_erased : 
-  (forall et, Nf et -> 
+Lemma eq_erased :
+  (forall et, Nf et ->
     forall Γ i t u T,
-    Γ ⊢< ty i > t : T -> 
+    Γ ⊢< ty i > t : T ->
     Γ ⊢< ty i > u : T ->
     erasure (ty i) t = erasure (ty i) u ->
     et = erasure (ty i) t ->
     Γ ⊢< ty i > t ≡ u : T)
     /\
-  (forall et, Ne et -> 
+  (forall et, Ne et ->
     forall Γ i i' t u T T',
-    Γ ⊢< ty i > t : T -> 
+    Γ ⊢< ty i > t : T ->
     Γ ⊢< ty i' > u : T' ->
     erasure (ty i) t = erasure (ty i') u ->
     et = erasure (ty i) t ->
@@ -641,7 +641,7 @@ Proof.
     apply type_inv_lam' in H1 as (_ & A2_Wt & B2_Wt & t2_Wt & i0_eq' & conv').
     rewrite i0_eq. eapply conv_conv; eauto using conv_sym.
     rewrite <- i0_eq in conv. rewrite <- i0_eq' in conv'.
-    assert (Γ ⊢< Ax (ty i) > Pi l l0 A1 B1 ≡ Pi l1 l2 A2 B2  : Sort (ty i)) as pi_eq_pi 
+    assert (Γ ⊢< Ax (ty i) > Pi l l0 A1 B1 ≡ Pi l1 l2 A2 B2  : Sort (ty i)) as pi_eq_pi
       by eauto using conv_sym, conv_trans.
     apply pi_inj in pi_eq_pi as (l_eq_l1 & l0_eq_l2 & A1_eq_A2 & B1_eq_B2).
     rewrite l_eq_l1 in *. clear l l_eq_l1.
@@ -670,12 +670,12 @@ Proof.
     eapply conv_conv. 2: eauto using conv_sym.
     apply conv_succ. eapply H; eauto.
   - eapply H; eauto.
-  - destruct t; dependent destruction H2. 
+  - destruct t; dependent destruction H2.
     apply type_inv_box in H. inversion H.
-  - destruct t; dependent destruction H2. 
+  - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
     eauto using refl_ty.
-  - destruct t0; dependent destruction H4. 
+  - destruct t0; dependent destruction H4.
     destruct u0; dependent destruction H3.
     rename t0_1 into A1. rename t0_2 into B1. rename t0_3 into t1. rename t0_4 into v1.
     rename u0_1 into A2. rename u0_2 into B2. rename u0_3 into t2. rename u0_4 into v2.
@@ -690,7 +690,7 @@ Proof.
     dependent destruction l_eq_l1. dependent destruction i_eq_i'.
     apply conv_app; eauto.
     destruct l; eauto using conv_irrel, type_conv, conv_sym.
-  - destruct t0; dependent destruction H6. 
+  - destruct t0; dependent destruction H6.
     destruct u; dependent destruction H5.
     rename t0_1 into P1. rename t0_2 into p_zero1. rename t0_3 into p_succ1. rename t0_4 into k1.
     rename u1 into P2. rename u2 into p_zero2. rename u3 into p_succ2. rename u4 into k2.
@@ -698,14 +698,14 @@ Proof.
     apply type_inv_rec' in H4 as (_ & P2_Wt & p_zero2_Wt & p_succ2_Wt & k2_Wt & _).
     dependent destruction i0_eq.
     eapply conv_conv; eauto using conv_sym.
-    eapply conv_rec; eauto. 
+    eapply conv_rec; eauto.
     + eapply H0; eauto 7 using type_conv, subst_ty, aux_subst_1, validity_ty_ctx, type_zero, conv_sym.
     + eapply H1; eauto 7 using type_conv, conv_ty_in_ctx_ty, subst_ty, aux_subst_2.
 Qed.
 
 
-Lemma eq_erased_nf Γ l t u A : 
-  Γ ⊢< l > t : A -> 
+Lemma eq_erased_nf Γ l t u A :
+  Γ ⊢< l > t : A ->
   Γ ⊢< l > u : A ->
   nf (erasure l t) ->
   nf (erasure l u) ->
@@ -718,11 +718,11 @@ Proof.
 Qed.
 
 Corollary convcheck_sound Γ l t u A t' u' :
-  Γ ⊢< l > t : A -> 
+  Γ ⊢< l > t : A ->
   Γ ⊢< l > u : A ->
   erasure l t -->> t' ->
   erasure l u -->> u' ->
-  nf t' -> nf u' -> 
+  nf t' -> nf u' ->
   t' = u' ->
   Γ ⊢< l > t ≡ u : A.
 Proof.
@@ -738,7 +738,7 @@ Proof.
 Qed.
 
 
-Lemma ortho_red_to_red Γ l t t' A : 
+Lemma ortho_red_to_red Γ l t t' A :
   Γ ⊢< l > t ⟹ t' : A ->
   nf (erasure l t) -> erasure l t = erasure l t'.
 Proof.
@@ -747,17 +747,17 @@ Proof.
   induction t_red_t'.
   all : (destruct case_l as [H1 | H2]; try rewrite H1; eauto using erasure_prop, eq_sym, eq_trans).
   all : (destruct H2 as (l' & H2); rewrite H2 in *; simpl).
-  - unfold nf in *. f_equal.  
+  - unfold nf in *. f_equal.
     + apply IHt_red_t'1; eauto using case_lvl, nf_t, red_pi_1.
     + apply IHt_red_t'2; eauto using case_lvl, nf_t, red_pi_2.
-  - unfold nf in *. f_equal.  
+  - unfold nf in *. f_equal.
     apply IHt_red_t'; eauto using case_lvl, nf_t, red_lam.
-  - unfold nf in *. f_equal.  
+  - unfold nf in *. f_equal.
     + apply IHt_red_t'1; eauto using case_lvl, nf_t, red_app_1.
     + apply IHt_red_t'2; eauto using case_lvl, nf_t, red_app_2.
-  - unfold nf in *. inversion H2. rewrite <- H0 in *. f_equal.  
+  - unfold nf in *. inversion H2. rewrite <- H0 in *. f_equal.
     + apply IHt_red_t';  eauto using case_lvl, nf_t, red_succ.
-  - unfold nf in *. f_equal.  
+  - unfold nf in *. f_equal.
     + apply IHt_red_t'1; eauto using case_lvl, nf_t, red_rec_1.
     + apply IHt_red_t'2; eauto using case_lvl, nf_t, red_rec_2.
     + apply IHt_red_t'3; eauto using case_lvl, nf_t, red_rec_3.
@@ -767,7 +767,7 @@ Proof.
   - exfalso. eapply nf_t. simpl. eauto using red_rec_succ.
 Qed.
 
-Lemma ortho_redd_to_red Γ l t t' A : 
+Lemma ortho_redd_to_red Γ l t t' A :
   Γ ⊢< l > t ⟹* t' : A ->
   nf (erasure l t) -> erasure l t = erasure l t'.
 Proof.
@@ -780,11 +780,11 @@ Proof.
     eauto.
 Qed.
 
-Corollary convcheck_complete Γ l t t' u u' A : 
-  Γ ⊢< l > t ≡ u : A -> 
+Corollary convcheck_complete Γ l t t' u u' A :
+  Γ ⊢< l > t ≡ u : A ->
   erasure l t -->> t' ->
   erasure l u -->> u' ->
-  nf t' -> nf u' -> 
+  nf t' -> nf u' ->
   t' = u'.
 Proof.
   intros t_eq_u t_redd_t' u_redd_u' nf_t' nf_u'.
@@ -801,7 +801,7 @@ Proof.
   etransitivity; eauto.
 Qed.
 
-Corollary convcheck_correct Γ l t t' u u' A : 
+Corollary convcheck_correct Γ l t t' u u' A :
   Γ ⊢< l > t : A -> erasure l t -->> t' -> nf t' ->
   Γ ⊢< l > u : A -> erasure l u -->> u' -> nf u' ->
   t' = u' <-> Γ ⊢< l > t ≡ u : A.

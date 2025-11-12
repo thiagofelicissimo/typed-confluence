@@ -8,9 +8,7 @@ Makefile.coq:
 	rocq makefile -f _CoqProject -o Makefile.coq
 
 autosubst:
-	autosubst -f -s urocq -v ge813 -p ./theories/autosubst/Ast_preamble.v -no-static -o ./theories/autosubst/Ast.v ./theories/autosubst/Ast.sig
-# 	cd theories/autosubst ; \
-# 	$(MAKE) -f Makefile
+	autosubst -f -s urocq -v ge813 -p ./theories/autosubst/Ast_preamble.v -o ./theories/autosubst/Ast.v ./theories/autosubst/Ast.sig
 
 force _CoqProject Makefile: ;
 

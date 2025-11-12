@@ -1,8 +1,8 @@
-(** GAST support for rasimpl *)
+(** Ast support for rasimpl *)
 
 From Stdlib Require Import Utf8 List.
-From TypedConfluence.autosubst
-Require Import core unscoped AST RAsimpl SubstNotations.
+From TypedConfluence
+Require Import core unscoped Ast RAsimpl SubstNotations.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Import ListNotations.
 
