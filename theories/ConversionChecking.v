@@ -215,21 +215,28 @@ Proof.
   destruct x; reflexivity.
 Qed.
 
+Lemma varty_fun_of_ctx Γ l A x :
+  Γ ∋< l > x : A →
+  fun_of_ctx Γ x = l.
+Proof.
+  intros h.
+  induction h. all: eauto.
+Qed.
+
 Lemma erasure_subst_commutes Γ t A l σ :
   Γ ⊢< l > t : A ->
-  forall f, refines (fun_of_ctx Γ) f ->
+  ∀ f, refines (fun_of_ctx Γ) f ->
   erasure l (t <[ σ ]) = erasure l t <[ erasure_subst f σ ].
 Proof.
   rename l into l_.
-  generalize Γ. clear Γ.
+  revert Γ.
   dependent induction t; intros Γ Wt Δ ref.
   all : destruct l_.
   all : (try rewrite erasure_prop; try rewrite erasure_prop; eauto).
-  - simpl. apply type_inv_var in Wt as (B & nth).
+  - simpl. apply type_inv_var in Wt as (B & hn).
     unfold erasure_subst. unfold refines in ref.
-    epose proof (H := ref n n0).
-    unfold fun_of_ctx in H.
-    rewrite nth in H.
+    pose proof (H := ref n n0).
+    erewrite varty_fun_of_ctx in H. 2: eassumption.
     destruct (H eq_refl) as (k & eq).
     rewrite eq. apply erasure_irrel.
   - simpl. apply type_inv_pi in Wt as (AWt & BWt).

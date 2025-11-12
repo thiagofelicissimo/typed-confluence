@@ -27,18 +27,24 @@ Definition Ru (l1 l2 : level) : level :=
   | ty j => ty (match l1 with | prop => j | ty i => max i j end)
   end.
 
-
+Reserved Notation "Γ ∋< l > x : T" (at level 50, l, x, T at next level).
 Reserved Notation "Γ ⊢< l > t : T" (at level 50, l, t, T at next level).
 Reserved Notation "Γ ⊢< l > t ≡ u : T" (at level 50, l, t, u, T at next level).
 Reserved Notation "⊢ Γ" (at level 50).
+
+Inductive varty : ctx → nat → level → term → Prop :=
+| vartyO Γ l A : Γ ,, (l , A) ∋< l > 0 : S ⋅ A
+| vartyS Γ i j A B x : Γ ∋< i > x : A → Γ ,, (j, B) ∋< i > S x : S ⋅ A
+
+where "Γ ∋< l > x : T" := (varty Γ x l T).
 
 Inductive typing : ctx -> level -> term → term → Prop :=
 
 | type_var :
     ∀ Γ x l A,
       ⊢ Γ ->
-      nth_error Γ x = Some (l , A) →
-      (Γ ⊢< l > (var x) : ((plus (S x)) ⋅ A))
+      Γ ∋< l > x : A →
+      Γ ⊢< l > var x : A
 
 | type_sort :
     ∀ Γ l,
@@ -111,9 +117,9 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 
 | conv_var :
     ∀ Γ x l A,
-      nth_error Γ x = Some (l , A) →
+      Γ ∋< l > x : A →
       ⊢ Γ ->
-      (Γ ⊢< l > (var x) ≡ (var x) : ((plus (S x)) ⋅ A))
+      Γ ⊢< l > var x ≡ var x : A
 
 | conv_sort :
     ∀ Γ l,
@@ -231,12 +237,12 @@ Reserved Notation "Γ ⊢s σ : Δ" (at level 50, σ, Δ at next level).
 Reserved Notation "Γ ⊢s σ ≡ τ : Δ" (at level 50, σ, τ, Δ at next level).
 
 Inductive WellSubst (Γ : ctx) : ctx -> (nat -> term) -> Prop :=
-  | well_sempty (σ : nat -> term) :
-    Γ ⊢s σ : ∙
-  | well_scons (σ : nat -> term) (Δ : ctx) l (A : term) :
-    Γ ⊢s (↑ >> σ) : Δ ->
-    Γ ⊢< l > σ var_zero : A <[↑ >> σ] ->
-    Γ ⊢s σ : (Δ ,, (l , A))
+| well_sempty (σ : nat -> term) :
+  Γ ⊢s σ : ∙
+| well_scons (σ : nat -> term) (Δ : ctx) l (A : term) :
+  Γ ⊢s (↑ >> σ) : Δ ->
+  Γ ⊢< l > σ var_zero : A <[↑ >> σ] ->
+  Γ ⊢s σ : (Δ ,, (l , A))
 where "Γ ⊢s σ : Δ" := (WellSubst Γ Δ σ).
 
 Inductive ConvSubst (Γ : ctx) : ctx -> (nat -> term) -> (nat -> term) -> Prop :=

@@ -16,8 +16,8 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
 | ortho_var :
     ∀ Γ x l A,
       ⊢ Γ ->
-      nth_error Γ x = Some (l , A) →
-      (Γ ⊢< l > (var x) ⟹ (var x) : ((plus (S x)) ⋅ A))
+      Γ ∋< l > x : A →
+      Γ ⊢< l > var x ⟹ var x : A
 
 | ortho_sort :
     ∀ Γ l,
@@ -210,7 +210,7 @@ Lemma ortho_var_inv Γ i x t A :
   ∃ B,
     t = var x  ∧
     ⊢ Γ ∧
-    nth_error Γ x = Some (ty i, B).
+    Γ ∋< ty i > x : B.
 Proof.
   intros.
   dependent induction H; eauto.

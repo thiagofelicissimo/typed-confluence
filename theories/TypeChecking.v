@@ -55,8 +55,8 @@ Definition rec_box l P p_zero p_succ k :=
 
 Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
 | infer_var Γ x l A :
-    nth_error Γ x = Some (l , A) →
-    Γ ⊢< l > cvar x ⇒ ((plus (S x)) ⋅ A) ↣ box_if_prop l (var x)
+    Γ ∋< l > x : A →
+    Γ ⊢< l > cvar x ⇒ A ↣ box_if_prop l (var x)
 
 | infer_Sort Γ l :
     Γ ⊢< Ax (Ax l) > cSort l ⇒ Sort (Ax l) ↣ Sort l
@@ -131,16 +131,24 @@ Combined Scheme infer_check_mutind from infer_mut, check_mut.
 Definition erase_ctx (Γ : ctx) :=
     List.map (fun x => (fst x, erasure (Ax (fst x)) (snd x))) Γ.
 
-
 Lemma var_in_erased_ctx Γ x l A :
-    nth_error (erase_ctx Γ) x = Some (l, A) ->
-    exists A', A = erasure (Ax l) A' /\ nth_error Γ x = Some (l, A').
+    erase_ctx Γ ∋< l > x : A →
+    ∃ A', A = erasure (Ax l) A' ∧ Γ ∋< l > x : A'.
 Proof.
     intro H.
-    unfold erase_ctx in H.
-    rewrite nth_error_map in H.
-    destruct (nth_error Γ x); inversion H.
-    exists (snd p). split; eauto. destruct p; eauto.
+    rename Γ into Δ. remember (erase_ctx Δ) as Γ eqn: e.
+    induction H as [| Γ i j A B x h ih] in Δ, e |- *.
+    - destruct Δ. 1: discriminate.
+      cbn in e. inversion e. subst.
+      rewrite <- erasure_rename_commute.
+      eexists. split. 1: reflexivity.
+      destruct p. constructor.
+    - destruct Δ. 1: discriminate.
+      cbn in e. inversion e. subst.
+      specialize (ih _ eq_refl). destruct ih as (A' & -> & hx).
+      rewrite <- erasure_rename_commute.
+      eexists. split. 1: reflexivity.
+      destruct p. constructor. assumption.
 Qed.
 
 Lemma reduce_to_sort Γ l t A j :
@@ -264,8 +272,10 @@ Proof.
     apply infer_check_mutind; intros; try rewrite <- erased_Γ'_eq in *; clear Γ erased_Γ'_eq.
 
     (* case var *)
-    - apply var_in_erased_ctx in e as (A' & H1 & H2). eexists. eexists. repeat split.
-      eapply type_var; eauto. destruct l; auto. rewrite H1. apply erasure_rename_commute.
+    - apply var_in_erased_ctx in v as (A' & -> & H2).
+      eexists _,_. repeat split.
+      + eapply type_var; eauto.
+      + destruct l; auto.
 
     (* case sort *)
     - eexists. exists (Sort l). split; eauto using type_sort.
@@ -556,6 +566,14 @@ Proof.
     repeat split; eauto using CTerm. eapply infer_pi; eauto. eauto using validity_ty_ty, refl_ty.
 Qed.
 
+Lemma varty_erase Γ l x A :
+    Γ ∋< l > x : A →
+    erase_ctx Γ ∋< l > x : erasure (Ax l) A.
+Proof.
+    intros h. induction h.
+    - cbn. rewrite erasure_rename_commute. constructor.
+    - cbn. rewrite erasure_rename_commute. constructor. eauto.
+Qed.
 
 Theorem completeness Γ l t T Δ h :
     wt_is_wn ->
@@ -580,10 +598,9 @@ Proof.
 
     (* case var *)
     - eapply conv_ctx_var in H0 as (B & nth_x & conv); eauto.
-      exists (cvar x). exists (Init.Nat.add (S x) ⋅ B).
+      exists (cvar x). eexists.
       repeat split; eauto using CTerm.
-      + rewrite erasure_rename_commute. eapply infer_var.
-        unfold erase_ctx.  rewrite nth_error_map.  rewrite nth_x. reflexivity.
+      + eapply infer_var. apply varty_erase. assumption.
 
     (* case sort *)
     - exists (cSort l). exists (Sort (Ax l)).

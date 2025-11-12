@@ -20,8 +20,8 @@ Qed.
 
 
 Lemma type_inv_var Γ l x T :
-  Γ ⊢< l > var x : T ->
-  exists A, nth_error Γ x = Some (l , A).
+  Γ ⊢< l > var x : T →
+  ∃ A, Γ ∋< l > x : A.
 Proof.
   intro H.
   dependent induction H; eauto.
@@ -167,17 +167,22 @@ Admitted.
 
 
 Lemma conv_ctx_var Γ x l A Δ :
-    nth_error Γ x = Some (l, A) ->
-    ⊢ Γ ≡ Δ ->
-    exists B, nth_error Δ x = Some (l, B) /\ Γ ⊢< Ax l > Init.Nat.add (S x) ⋅ A ≡ Init.Nat.add (S x) ⋅ B : Sort l.
+  Γ ∋< l > x : A →
+  ⊢ Γ ≡ Δ ->
+  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
 Proof.
-    intros. generalize l x A H. clear l x A H.
-    induction H0; intros.
-    - destruct x; inversion H.
-    - destruct x.
-        + simpl in H. dependent destruction H. exists B. split. auto. admit. (* by weakening *)
-        + simpl in H. apply IHConvCtx in H as (B0 & nth_x & conv).
-          exists B0. split; auto. admit. (* by weakening *)
+  intros hx hctx.
+  induction hctx as [| Γ B Δ C i h ih] in l, x, A, hx |- *.
+  - inversion hx.
+  - inversion hx.
+    + subst. eexists. split.
+      * constructor.
+      * admit.
+    + subst. specialize ih with (1 := ltac:(eassumption)).
+      destruct ih as (A & hA & he).
+      eexists. split.
+      * constructor. eassumption.
+      * admit.
 Admitted.
 
 
@@ -229,8 +234,8 @@ Admitted.
    TODO: replace in Confluence.v the occurrences of older inversion lemmas by the newer ones *)
 
 Lemma type_inv_var' Γ l x T :
-  Γ ⊢< l > var x : T ->
-  Γ ⊢< l > var x : T /\ exists A, nth_error Γ x = Some (l , A) /\ Γ ⊢< Ax l > T ≡ (plus (S x)) ⋅ A : Sort l.
+  Γ ⊢< l > var x : T →
+  Γ ⊢< l > var x : T ∧ ∃ A, Γ ∋< l > x : A ∧ Γ ⊢< Ax l > T ≡ A : Sort l.
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
