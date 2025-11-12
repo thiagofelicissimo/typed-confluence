@@ -559,11 +559,11 @@ Proof.
     edestruct HA as (MA & UA & MA_infer & sort_eq_UA & CA); eauto.
     eapply gen_red_to_sort in sort_eq_UA; eauto.
 
-    edestruct HB as (MB & UB & MB_infer & sort_eq_UB & CB); eauto using conv_ccons, refl_ty.
+    edestruct HB as (MB & UB & MB_infer & sort_eq_UB & CB); eauto using conv_ccons, conv_refl.
     eapply gen_red_to_sort in sort_eq_UB; eauto.
 
     exists (cPi MA MB). exists (Sort (Ru i j)).
-    repeat split; eauto using CTerm. eapply infer_pi; eauto. eauto using validity_ty_ty, refl_ty.
+    repeat split; eauto using CTerm. eapply infer_pi; eauto. eauto using validity_ty_ty, conv_refl.
 Qed.
 
 Lemma varty_erase Γ l x A :
@@ -604,7 +604,7 @@ Proof.
 
     (* case sort *)
     - exists (cSort l). exists (Sort (Ax l)).
-      split; eauto using CTerm, refl_ty, validity_ty_ty, infer_Sort.
+      split; eauto using CTerm, conv_refl, validity_ty_ty, infer_Sort.
 
     (* case pi *)
     - eapply completeness_pi; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
@@ -623,29 +623,29 @@ Proof.
 
     (* case nat *)
     - exists cNat. exists (Sort (ty 0)).
-      split; eauto using refl_ty, validity_ty_ty, infer_Nat, CTerm.
+      split; eauto using conv_refl, validity_ty_ty, infer_Nat, CTerm.
 
     (* case zero *)
     - exists czero. exists Nat.
-      split; eauto using refl_ty, validity_ty_ty, infer_zero, CTerm.
+      split; eauto using conv_refl, validity_ty_ty, infer_zero, CTerm.
 
     (* case succ *)
-    - edestruct IHWt as ((Mt & Mt_check & Ct) & _); eauto using validity_ty_ty, refl_ty.
+    - edestruct IHWt as ((Mt & Mt_check & Ct) & _); eauto using validity_ty_ty, conv_refl.
       exists (csucc Mt). exists Nat.
-      split; eauto using refl_ty, validity_ty_ty, infer_succ, CTerm.
+      split; eauto using conv_refl, validity_ty_ty, infer_succ, CTerm.
 
     (* case rec *)
     - edestruct IHWt1 as (_ & MP & U & MP_infer & sort_eq_U & CP); eauto using conv_ccons, conv_nat, validity_ty_ctx.
       eapply gen_red_to_sort in sort_eq_U; eauto.
 
-      edestruct IHWt2 as ((Mp_zero & Mp_zero_check & Cp_zero) & _); eauto using refl_ty, validity_ty_ty.
+      edestruct IHWt2 as ((Mp_zero & Mp_zero_check & Cp_zero) & _); eauto using conv_refl, validity_ty_ty.
 
-      edestruct IHWt3 as ((Mp_succ & Mp_succ_check & Cp_succ) & _); eauto 7 using conv_ccons, conv_nat, refl_ty, validity_ty_ty.
+      edestruct IHWt3 as ((Mp_succ & Mp_succ_check & Cp_succ) & _); eauto 7 using conv_ccons, conv_nat, conv_refl, validity_ty_ty.
 
-      edestruct IHWt4 as ((Mt & Mt_check & Ct) & _); eauto using refl_ty, validity_ty_ty.
+      edestruct IHWt4 as ((Mt & Mt_check & Ct) & _); eauto using conv_refl, validity_ty_ty.
 
       exists (crec MP Mp_zero Mp_succ Mt). exists (P <[ t ..]).
-      split; eauto using refl_ty, validity_ty_ty, CTerm.
+      split; eauto using conv_refl, validity_ty_ty, CTerm.
       erewrite erasure_subst_1_commutes; eauto.
       eapply infer_rec; eauto; fold erasure.
       + erewrite erasure_subst_1_commutes in Mp_zero_check; eauto. eauto.
@@ -661,7 +661,7 @@ Proof.
                 as H'.
             { intros.
                 eapply gen_red_to_pi in H0 as (A' & B' & A_eq_A' & B_eq_B' & U_red_pi); eauto.
-                edestruct IHWt3 as ((Mt & Mt_check & Ct) & _); eauto using conv_ccons, refl_ty.
+                edestruct IHWt3 as ((Mt & Mt_check & Ct) & _); eauto using conv_ccons, conv_refl.
                 exists (clam Mt). erewrite lam_box_erasure; eauto. split; eauto using CTerm.
                 eapply check_lam. apply U_red_pi. eauto. }
             split; eauto.
@@ -673,23 +673,23 @@ Proof.
             { eapply completeness_pi; eauto using validity_ty_ty. apply IHWt1; eauto. apply IHWt2; eauto. }
             eapply gen_red_to_sort in sort_eq_U; eauto.
 
-            edestruct H' as (Mlam & Mlam_checks & Clam); eauto using validity_ty_ty, refl_ty.
+            edestruct H' as (Mlam & Mlam_checks & Clam); eauto using validity_ty_ty, conv_refl.
 
             exists (cann Mlam Mpi). exists (Pi i j A B). repeat split; eauto using CTerm.
             ++ eapply infer_ann; eauto.
-            ++ eauto using validity_ty_ty, refl_ty.
+            ++ eauto using validity_ty_ty, conv_refl.
 
             (* subcase rocq, we use completeness_aux and only show inference, using an annotated lambda *)
         +   apply completeness_aux; eauto.
             edestruct IHWt1 as (_ & MA & UA & MA_infer & sort_eq_UA & CA); eauto.
             eapply gen_red_to_sort in sort_eq_UA; eauto.
 
-            edestruct IHWt3 as (_ & Mt & B' & Mt_infer & B_eq_B' & CM); eauto using conv_ccons, refl_ty.
+            edestruct IHWt3 as (_ & Mt & B' & Mt_infer & B_eq_B' & CM); eauto using conv_ccons, conv_refl.
 
             exists (clam' MA Mt). exists (Pi i j A B').
             repeat split; eauto using CTerm.
             ++ erewrite lam_box_erasure; eauto. eapply infer_lam; eauto.
-            ++ eauto using conv_pi, refl_ty.
+            ++ eauto using conv_pi, conv_refl.
 
     (* case conv *)
     - eapply IHWt in H0 as (IH_check & IH_infer); eauto. split; intros.
@@ -707,7 +707,7 @@ Proof.
     intros. pose proof H0 as Wt.
     eapply completeness in Wt as (case_check & case_infer);
     eauto using refl_ctx, validity_ty_ctx.
-    eapply case_check. eauto using validity_ty_ty, refl_ty.
+    eapply case_check. eauto using validity_ty_ty, conv_refl.
 Qed.
 
 Corollary completeness_infer Γ l t T h :

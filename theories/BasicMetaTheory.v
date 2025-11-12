@@ -90,19 +90,36 @@ Qed.
   In any case, there is no doubt that they can be proven.
 *)
 
-
-Theorem refl_ty Γ l t A : Γ ⊢< l > t : A -> Γ ⊢< l > t ≡ t : A.
+Lemma conv_refl Γ t l A :
+  Γ ⊢< l > t : A →
+  Γ ⊢< l > t ≡ t : A.
 Proof.
-  intros Wt.
-  induction Wt; eauto using conversion.
+  induction 1.
+  all: solve [ econstructor ; eauto ].
 Qed.
 
+Theorem refl_subst Γ σ Δ :
+  Γ ⊢s σ : Δ →
+  Γ ⊢s σ ≡ σ : Δ.
+Proof.
+  induction 1.
+  - constructor.
+  - constructor.
+    + eauto.
+    + apply conv_refl. assumption.
+Qed.
 
-
-Theorem refl_subst : forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊢s σ ≡ σ : Δ.
-Admitted.
-
-Theorem subst_id : forall Γ, ⊢ Γ -> Γ ⊢s var : Γ.
+Theorem subst_id Γ :
+  ⊢ Γ →
+  Γ ⊢s var : Γ.
+Proof.
+  induction 1.
+  - constructor.
+  - constructor.
+    + admit.
+    + constructor.
+      * constructor. all: assumption.
+      * rasimpl. constructor.
 Admitted.
 
 
@@ -241,7 +258,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H.
-  - eexists. split; eauto using refl_ty.
+  - eexists. split; eauto using conv_refl.
   - edestruct IHtyping as (C & eq & A_eq_C); eauto using validity_conv_left. eexists. split; eauto using conv_trans, conv_sym.
 Qed.
 
@@ -255,7 +272,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -272,7 +289,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -290,7 +307,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H; eauto.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -309,7 +326,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H; eauto.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & uWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -324,7 +341,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -340,7 +357,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -357,7 +374,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H; eauto.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (tWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.
@@ -376,7 +393,7 @@ Proof.
   apply validity_ty_ty in H as T_Wt.
   split. auto.
   dependent induction H; eauto.
-  - repeat split; eauto using refl_ty.
+  - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (PWt & p_zeroWt & p_succWt & tWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
 Qed.

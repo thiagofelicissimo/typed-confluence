@@ -317,7 +317,7 @@ Proof.
   rewrite j_eq_j' in *. clear j_eq_j' j.
   rewrite l_eq_j in *. clear l_eq_j l.
   eapply conv_trans.
-  eapply conv_app; eauto using refl_ty.
+  eapply conv_app; eauto using conv_refl.
   eapply conv_conv.
   2: eapply subst_ty; eauto using aux_subst_1, conv_sym.
   eapply conv_beta; eauto using type_conv, validity_conv_right, conv_ty_in_ctx_ty.
@@ -407,7 +407,7 @@ Proof.
   try destruct (IHtWt2 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt3 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt4 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
-  eexists; split; [ eauto using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, refl_ty
+  eexists; split; [ eauto using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, conv_refl
                 | rewrite <- eq; rewrite l_eq_n; eauto ]).
 
   (* case beta *)
@@ -428,7 +428,7 @@ Proof.
   (* TODO: further investigate why succ cong case must be done seperately *)
   - destruct (IHtWt ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq).
     eexists; split.
-    + eauto using conv_succ, refl_ty.
+    + eauto using conv_succ, conv_refl.
     + rewrite <- eq. rewrite l_eq_n. simpl. f_equal. apply erasure_irrel.
 
   (* case rec zero *)
@@ -470,7 +470,7 @@ Proof.
   intros t_Wt erased_t_eq_t' t'_redd_u'.
   generalize t erased_t_eq_t' t_Wt. clear t erased_t_eq_t' t_Wt.
   induction t'_redd_u'; intros.
-  - exists t0. split; eauto using refl_ty.
+  - exists t0. split; eauto using conv_refl.
   - rewrite <- erased_t_eq_t' in *. eauto using subject_reduction.
   - rewrite <- erased_t_eq_t' in *. clear erased_t_eq_t' t.
     eapply IHt'_redd_u'1 in t_Wt as (v0 & t0_eq_v0 & erasure_v0_eq_v); eauto.
@@ -658,13 +658,13 @@ Proof.
     apply H; eauto using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv.
   - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
-    auto using refl_ty.
+    auto using conv_refl.
   - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
-    auto using refl_ty.
+    auto using conv_refl.
   - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
-    auto using refl_ty.
+    auto using conv_refl.
   - destruct t0; dependent destruction H3.
     destruct u; dependent destruction H2.
     pose proof H0 as H'. pose proof H0 as H''.
@@ -681,7 +681,7 @@ Proof.
     apply type_inv_box in H. inversion H.
   - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
-    eauto using refl_ty.
+    eauto using conv_refl.
   - destruct t0; dependent destruction H4.
     destruct u0; dependent destruction H3.
     rename t0_1 into A1. rename t0_2 into B1. rename t0_3 into t1. rename t0_4 into v1.

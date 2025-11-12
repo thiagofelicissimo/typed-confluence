@@ -137,7 +137,7 @@ Theorem ortho_refl :
     Γ ⊢< l > t : A ->
     Γ ⊢< l > t ⟹ t : A.
 Proof.
-  intros. induction H; eauto using ortho_red, refl_ty.
+  intros. induction H; eauto using ortho_red, conv_refl.
 Qed.
 
 
@@ -151,7 +151,7 @@ Proof.
   - eapply conv_trans.
     + eapply conv_app; eauto.
       eapply conv_conv.
-      ++ eapply conv_lam.  1,2: eapply refl_ty; eauto using conv_ty_in_ctx_ty, conv_sym, validity_conv_right.
+      ++ eapply conv_lam.  1,2: eapply conv_refl; eauto using conv_ty_in_ctx_ty, conv_sym, validity_conv_right.
         eauto using conv_conv, conv_ty_in_ctx_conv.
       ++ eapply conv_pi; eauto using conv_sym, conv_ty_in_ctx_conv.
     + eapply conv_conv.
@@ -495,7 +495,7 @@ Proof.
     destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
     destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
     do 4 eexists. exists (Pi l l0 A''' B''').
-    split; apply ortho_pi; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, refl_ty, validity_ty_ty, validity_conv_left.
+    split; apply ortho_pi; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, conv_refl, validity_ty_ty, validity_conv_left.
 
   (* lam *)
   - rename t1 into A. rename t2 into B. rename t3 into u.
@@ -871,7 +871,7 @@ Proof.
   - refine (equiv_red_ind (fun _ => Pi i j A B) (fun t => lam i j A B t) _ _ H1 _).
     3 : eauto 6 using equiv_to_conv, type_lam, validity_conv_left.
     + intros v v' v_red_v'. split; eauto using type_lam, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eauto 6 using ortho_lam, validity_conv_left, refl_ty.
+    + intros. apply equiv_step. eauto 6 using ortho_lam, validity_conv_left, conv_refl.
   - eapply equiv_step. eauto using equiv_to_conv, ortho_lam, validity_conv_right, ortho_refl.
 Qed.
 
@@ -888,15 +888,15 @@ Proof.
     3: eauto 8 using type_app, equiv_to_conv, validity_conv_left.
     + intros. split; eauto 7 using equiv_to_conv, validity_conv_left, validity_conv_right, type_app.
     + intros. apply equiv_step.
-      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, ortho_refl, refl_ty.
+      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, ortho_refl, conv_refl.
   - refine (equiv_red_ind (fun u => B <[ u ..]) (fun u => app i j A B t' u) _ _ H2 _).
     3:eauto 8 using type_app, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. split; eauto 7 using type_app, validity_conv_left, equiv_to_conv, validity_conv_right.
     + intros. eapply equiv_step.
-      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, refl_ty.
+      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
   - apply equiv_step. eapply ortho_conv.
     + eauto 8 using ortho_app, validity_conv_right, equiv_to_conv, ortho_refl.
-    + eauto 6 using aux, equiv_to_conv, refl_ty, conv_sym, validity_conv_left.
+    + eauto 6 using aux, equiv_to_conv, conv_refl, conv_sym, validity_conv_left.
 Qed.
 
 
@@ -935,7 +935,7 @@ Proof.
     + intros. apply equiv_step.
       eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - eapply (equiv_conv _ _ (P <[ t'..])).
-    2: eapply aux; eauto 6 using equiv_to_conv, conv_sym, validity_conv_left, refl_ty.
+    2: eapply aux; eauto 6 using equiv_to_conv, conv_sym, validity_conv_left, conv_refl.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
     3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. split.
@@ -951,7 +951,7 @@ Lemma conv_to_equiv Γ l t u A :
   Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t ≈ u : A.
 Proof.
   intro H. induction H.
-  1,2,6,7,11,12,13,14 : try solve [apply equiv_step; econstructor; eauto using refl_ty, ortho_refl ].
+  1,2,6,7,11,12,13,14 : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
   all : eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
     equiv_rec, equiv_conv, equiv_sym, equiv_trans.
 Qed.
