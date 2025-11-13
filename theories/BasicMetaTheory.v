@@ -187,9 +187,8 @@ Proof.
 Admitted.
 
 Scheme typing_mut := Induction for typing Sort Prop
-with ctx_typing_mut := Induction for ctx_typing Sort Prop
 with conversion_mut := Induction for conversion Sort Prop.
-Combined Scheme typing_mutind from typing_mut, ctx_typing_mut, conversion_mut.
+Combined Scheme typing_mutind from typing_mut, conversion_mut.
 
 Lemma typing_ren_gen :
   (∀ Γ l t A,
@@ -198,7 +197,6 @@ Lemma typing_ren_gen :
       Δ ⊢r ρ : Γ →
       Δ ⊢< l > ρ ⋅ t : ρ ⋅ A
   ) ∧
-  (∀ Γ, ⊢ Γ → True) ∧
   (∀ Γ l u v A,
     Γ ⊢< l > u ≡ v : A →
     ∀ Δ ρ,
@@ -207,11 +205,9 @@ Lemma typing_ren_gen :
 Proof.
   apply typing_mutind.
   all: try solve [ intros ; try econstructor ; eauto using well_upren ].
-  - intros Γ x l A h _ hx Δ ρ hr.
+  - intros Γ x l A hx Δ ρ hr.
     cbn. constructor.
-    + (* Having this constraint is a pain! *)
-      admit.
-    + eapply varty_ren. all: eassumption.
+    eapply varty_ren. all: eassumption.
   -
 Admitted.
 
@@ -224,9 +220,7 @@ Proof.
   - constructor.
   - constructor.
     + admit.
-    + constructor.
-      * constructor. all: assumption.
-      * rasimpl. constructor.
+    + constructor. rasimpl. constructor.
 Admitted.
 
 

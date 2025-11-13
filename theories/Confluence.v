@@ -15,13 +15,11 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
 
 | ortho_var :
     ∀ Γ x l A,
-      ⊢ Γ ->
       Γ ∋< l > x : A →
       Γ ⊢< l > var x ⟹ var x : A
 
 | ortho_sort :
     ∀ Γ l,
-      ⊢ Γ ->
       Γ ⊢< Ax (Ax l) > Sort l ⟹ Sort l : Sort (Ax l)
 
 | ortho_pi :
@@ -47,12 +45,10 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
 
 | ortho_nat :
     ∀ Γ,
-      ⊢ Γ ->
       Γ ⊢< ty 1 > Nat ⟹ Nat : Sort (ty 0)
 
 | ortho_zero :
     ∀ Γ,
-      ⊢ Γ ->
       Γ ⊢< ty 0 > zero ⟹ zero : Nat
 
 | ortho_succ :
@@ -209,7 +205,6 @@ Lemma ortho_var_inv Γ i x t A :
   Γ ⊢< ty i > var x ⟹ t : A →
   ∃ B,
     t = var x  ∧
-    ⊢ Γ ∧
     Γ ∋< ty i > x : B.
 Proof.
   intros.
@@ -219,7 +214,6 @@ Qed.
 
 Lemma ortho_sort_inv Γ l l' t A :
   Γ ⊢< l' > Sort l ⟹ t : A →
-  ⊢ Γ ∧
   t = Sort l  ∧ l' = Ax (Ax l).
 Proof.
   intros.
@@ -470,17 +464,17 @@ Proof.
   all : assert (⊢ Γ) as ΓWf by (apply ortho_validity_left in t_red_t'; apply validity_ty in t_red_t'; destruct t_red_t'; auto).
 
   (* var *)
-  - ttinv t_red_t'. destruct t_red_t' as (B' & t'_eq_n & _ & lookup_n_B).
+  - ttinv t_red_t'. destruct t_red_t' as (B' & t'_eq_n & lookup_n_B).
     rewrite t'_eq_n in *. clear t'_eq_n t'.
-    ttinv t_red_t''. destruct t_red_t'' as (_ & t''_eq_n & _ & _).
+    ttinv t_red_t''. destruct t_red_t'' as (_ & t''_eq_n & _).
     rewrite t''_eq_n in *. clear t''_eq_n t''.
     do 4 eexists. exists (var n). split; apply ortho_var; eauto.
 
 
   (* sort *)
-  - ttinv t_red_t'. destruct t_red_t' as (_ & t'_eq_sort & i_eq_ax).
+  - ttinv t_red_t'. destruct t_red_t' as (t'_eq_sort & i_eq_ax).
     rewrite t'_eq_sort in *. clear t'_eq_sort t'.
-    ttinv t_red_t''. destruct t_red_t'' as (_ & t''_eq_sort & _).
+    ttinv t_red_t''. destruct t_red_t'' as (t''_eq_sort & _).
     rewrite t''_eq_sort in *. clear t''_eq_sort t''.
     do 4 eexists. exists (Sort l). split; apply ortho_sort; eauto.
 
@@ -1009,7 +1003,7 @@ Lemma sort_redd Γ l l' t T :
 Proof.
   intro sort_redd_t.
   dependent induction sort_redd_t.
-  - ttinv H. destruct H as [H1 [H2 H3]]. eauto.
+  - ttinv H. destruct H. eauto.
   - eauto.
 Qed.
 
