@@ -117,12 +117,13 @@ Proof.
   intros h ->. exact h.
 Qed.
 
-Lemma well_meta Γ Δ Δ' ρ :
+Lemma WellRen_meta Γ Γ' Δ Δ' ρ :
   Γ ⊢r ρ : Δ →
+  Γ = Γ' →
   Δ = Δ' →
-  Γ ⊢r ρ : Δ'.
+  Γ' ⊢r ρ : Δ'.
 Proof.
-  intros h ->. exact h.
+  intros ? -> ->. auto.
 Qed.
 
 #[export] Instance WellRen_morphism :
@@ -180,17 +181,42 @@ Lemma varty_ren Γ Δ ρ x l A :
   Δ ∋< l > ρ x : ρ ⋅ A.
 Proof.
   intros hx hr.
-  induction hx as [| Γ i j A B x hx ih ] in ρ, Δ, hr |- *.
-  - inversion hr. subst. rasimpl. assumption.
-  - rasimpl. eapply ih with (ρ := S >> ρ).
-    admit.
-Admitted.
+  induction hr as [| ρ Γ i B h ih ho] in x, l, A, hx |- *.
+  1: inversion hx.
+  inversion hx. all: subst.
+  - rasimpl. assumption.
+  - rasimpl. apply ih. assumption.
+Qed.
+
+Lemma meta_conv Γ t l A B :
+  Γ ⊢< l > t : A →
+  A = B →
+  Γ ⊢< l > t : B.
+Proof.
+  intros ? ->. auto.
+Qed.
+
+Lemma meta_conv_conv Γ u v l A B :
+  Γ ⊢< l > u ≡ v : A →
+  A = B →
+  Γ ⊢< l > u ≡ v : B.
+Proof.
+  intros ? ->. auto.
+Qed.
+
+Lemma meta_rhs_conv Γ u v w l A :
+  Γ ⊢< l > u ≡ v : A →
+  v = w →
+  Γ ⊢< l > u ≡ w : A.
+Proof.
+  intros ? ->. auto.
+Qed.
 
 Scheme typing_mut := Induction for typing Sort Prop
 with conversion_mut := Induction for conversion Sort Prop.
 Combined Scheme typing_mutind from typing_mut, conversion_mut.
 
-Lemma typing_ren_gen :
+Lemma typing_conversion_ren :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
     ∀ Δ ρ,
@@ -205,11 +231,102 @@ Lemma typing_ren_gen :
 Proof.
   apply typing_mutind.
   all: try solve [ intros ; try econstructor ; eauto using well_upren ].
+  all: try solve [
+    intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv) ; [
+      econstructor ; eauto using well_upren
+    | rasimpl ; reflexivity
+    ]
+  ].
+  (* The proof is not very satisfactory, I expect there is some automation
+    hidden below this but I'm not sure what.
+  *)
   - intros Γ x l A hx Δ ρ hr.
     cbn. constructor.
     eapply varty_ren. all: eassumption.
-  -
-Admitted.
+  - intros ??????? ihP ? ihz ? ihs ? iht ?? hr.
+    cbn in *. eapply meta_conv.
+    + econstructor. all: eauto using well_upren, WellRen_meta.
+      * eapply ihP. eapply WellRen_meta. 1: eapply well_upren. all: eauto.
+        reflexivity.
+      * eapply meta_conv. all: eauto using well_upren, WellRen_meta.
+        rasimpl. reflexivity.
+      * {
+        eapply meta_conv.
+        - eapply ihs. eapply WellRen_meta. 1: repeat eapply well_upren.
+          all: eauto.
+          reflexivity.
+        - rasimpl. reflexivity.
+      }
+    + rasimpl. reflexivity.
+  - intros Γ x l A hx Δ ? hr.
+    cbn. constructor.
+    eapply varty_ren. all: eassumption.
+  - intros ??????????? ihP ? ihz ? ihs ? iht ?? hr.
+    cbn in *. eapply meta_conv_conv.
+    + econstructor. all: eauto using well_upren, WellRen_meta.
+      * eapply ihP. eapply WellRen_meta. 1: eapply well_upren. all: eauto.
+        reflexivity.
+      * eapply meta_conv_conv. all: eauto using well_upren, WellRen_meta.
+        rasimpl. reflexivity.
+      * {
+        eapply meta_conv_conv.
+        - eapply ihs. eapply WellRen_meta. 1: repeat eapply well_upren.
+          all: eauto.
+          reflexivity.
+        - rasimpl. reflexivity.
+      }
+    + rasimpl. reflexivity.
+  - intros ???????? ihA ? ihB ? iht ? ihu ?? hr.
+    cbn. rasimpl. eapply meta_conv_conv.
+    1:{
+      eapply meta_rhs_conv.
+      1:{
+        eapply conv_beta. all: eauto using well_upren.
+      }
+      rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
+  - intros ?????? ihP ? ihz ? ihs ?? hr.
+    cbn. eapply meta_conv_conv.
+    1:{
+      eapply conv_rec_zero.
+      - eapply ihP. eapply WellRen_meta. 1: eapply well_upren. all: eauto.
+        reflexivity.
+      - eapply meta_conv. all: eauto using well_upren, WellRen_meta.
+        rasimpl. reflexivity.
+      - eapply meta_conv.
+        + eapply ihs. eapply WellRen_meta. 1: repeat eapply well_upren.
+          all: eauto.
+          reflexivity.
+        + rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
+  - intros ??????? ihP ? ihz ? ihs ? iht ?? hr.
+    cbn. eapply meta_conv_conv.
+    1:{
+      eapply meta_rhs_conv.
+      1:{
+        eapply conv_rec_succ.  all: eauto using well_upren, WellRen_meta.
+        - eapply ihP. eapply WellRen_meta. 1: eapply well_upren. all: eauto.
+          reflexivity.
+        - eapply meta_conv. all: eauto using well_upren, WellRen_meta.
+          rasimpl. reflexivity.
+        - eapply meta_conv.
+          + eapply ihs. eapply WellRen_meta. 1: repeat eapply well_upren.
+            all: eauto.
+            reflexivity.
+          + rasimpl. reflexivity.
+      }
+      (* Below is very ugly, do not reproduce at home *)
+      rasimpl. f_equal. f_equal. f_equal. all: rasimpl. all: try reflexivity.
+      all: substify. all: apply ext_term.
+      all: intros [| n]. all: try reflexivity.
+      cbn. unfold ">>". cbn. destruct n. all: reflexivity.
+    }
+    rasimpl. apply ext_term.
+    intros []. all: cbn. 2: reflexivity.
+    rasimpl. reflexivity.
+Qed.
 
 
 Theorem subst_id Γ :
