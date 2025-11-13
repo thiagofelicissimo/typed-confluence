@@ -232,6 +232,17 @@ and   "⊢ Γ" := (ctx_typing Γ)
 and   "Γ ⊢< l > t ≡ u : A" := (conversion Γ l t u A).
 
 
+Reserved Notation "Γ ⊢r ρ : Δ" (at level 50, ρ, Δ at next level).
+
+Inductive WellRen (Γ : ctx) (ρ : nat → nat) : ctx → Prop :=
+| well_rempty : Γ ⊢r ρ : ∙
+| well_rcons Δ l A :
+  Γ ⊢r (↑ >> ρ) : Δ →
+  Γ ∋< l > ρ 0 : (S >> ρ) ⋅ A →
+  Γ ⊢r ρ : Δ ,, (l , A)
+where "Γ ⊢r ρ : Δ" := (WellRen Γ ρ Δ).
+
+
 Reserved Notation "Γ ⊢s σ : Δ" (at level 50, σ, Δ at next level).
 
 Reserved Notation "Γ ⊢s σ ≡ τ : Δ" (at level 50, σ, τ, Δ at next level).
@@ -241,7 +252,7 @@ Inductive WellSubst (Γ : ctx) : ctx -> (nat -> term) -> Prop :=
   Γ ⊢s σ : ∙
 | well_scons (σ : nat -> term) (Δ : ctx) l (A : term) :
   Γ ⊢s (↑ >> σ) : Δ ->
-  Γ ⊢< l > σ var_zero : A <[↑ >> σ] ->
+  Γ ⊢< l > σ 0 : A <[↑ >> σ] ->
   Γ ⊢s σ : (Δ ,, (l , A))
 where "Γ ⊢s σ : Δ" := (WellSubst Γ Δ σ).
 

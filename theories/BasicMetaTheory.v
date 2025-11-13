@@ -109,6 +109,113 @@ Proof.
     + apply conv_refl. assumption.
 Qed.
 
+Lemma varty_meta Γ l x A B :
+  Γ ∋< l > x : A →
+  A = B →
+  Γ ∋< l > x : B.
+Proof.
+  intros h ->. exact h.
+Qed.
+
+Lemma well_meta Γ Δ Δ' ρ :
+  Γ ⊢r ρ : Δ →
+  Δ = Δ' →
+  Γ ⊢r ρ : Δ'.
+Proof.
+  intros h ->. exact h.
+Qed.
+
+#[export] Instance WellRen_morphism :
+  Proper (eq ==> (`=1`) ==> eq ==> iff) WellRen.
+Proof.
+  intros Γ ? <- ρ ρ' e Δ ? <-.
+  revert ρ ρ' e. wlog_iff. intros ρ ρ' e h.
+  induction h as [| ρ Δ l A h ih ho] in ρ', e |- *.
+  - constructor.
+  - constructor.
+    + eapply ih. intros x. unfold ">>". apply e.
+    + rewrite <- e. assumption.
+Qed.
+
+Lemma autosubst_simpl_WellRen :
+  ∀ Γ Δ r s,
+    RenSimplification r s →
+    Γ ⊢r r : Δ ↔ Γ ⊢r s : Δ.
+Proof.
+  intros Γ Δ r s H.
+  apply WellRen_morphism. 1,3: auto.
+  apply H.
+Qed.
+
+#[export] Hint Rewrite -> autosubst_simpl_WellRen : rasimpl_outermost.
+
+Lemma WellRen_weak Γ Δ ρ l A :
+  Γ ⊢r ρ : Δ →
+  Γ ,, (l, A) ⊢r (ρ >> S) : Δ.
+Proof.
+  induction 1 as [| ρ Δ i B h ih ho] in l, A |- *.
+  - constructor.
+  - constructor.
+    + auto.
+    + eapply varty_meta.
+      * unfold ">>". constructor. eassumption.
+      * rasimpl. reflexivity.
+Qed.
+
+Lemma well_upren Γ Δ l A ρ :
+  Γ ⊢r ρ : Δ →
+  Γ ,, (l, ρ ⋅ A) ⊢r up_ren ρ : Δ ,, (l, A).
+Proof.
+  intros h.
+  constructor.
+  - rasimpl. apply WellRen_weak. assumption.
+  - rasimpl. cbn. eapply varty_meta.
+    + constructor.
+    + rasimpl. reflexivity.
+Qed.
+
+Lemma varty_ren Γ Δ ρ x l A :
+  Γ ∋< l > x : A →
+  Δ ⊢r ρ : Γ →
+  Δ ∋< l > ρ x : ρ ⋅ A.
+Proof.
+  intros hx hr.
+  induction hx as [| Γ i j A B x hx ih ] in ρ, Δ, hr |- *.
+  - inversion hr. subst. rasimpl. assumption.
+  - rasimpl. eapply ih with (ρ := S >> ρ).
+    admit.
+Admitted.
+
+Scheme typing_mut := Induction for typing Sort Prop
+with ctx_typing_mut := Induction for ctx_typing Sort Prop
+with conversion_mut := Induction for conversion Sort Prop.
+Combined Scheme typing_mutind from typing_mut, ctx_typing_mut, conversion_mut.
+
+Lemma typing_ren_gen :
+  (∀ Γ l t A,
+    Γ ⊢< l > t : A →
+    ∀ Δ ρ,
+      Δ ⊢r ρ : Γ →
+      Δ ⊢< l > ρ ⋅ t : ρ ⋅ A
+  ) ∧
+  (∀ Γ, ⊢ Γ → True) ∧
+  (∀ Γ l u v A,
+    Γ ⊢< l > u ≡ v : A →
+    ∀ Δ ρ,
+      Δ ⊢r ρ : Γ →
+      Δ ⊢< l > ρ ⋅ u ≡ ρ ⋅ v : ρ ⋅ A).
+Proof.
+  apply typing_mutind.
+  all: try solve [ intros ; try econstructor ; eauto using well_upren ].
+  - intros Γ x l A h _ hx Δ ρ hr.
+    cbn. constructor.
+    + (* Having this constraint is a pain! *)
+      admit.
+    + eapply varty_ren. all: eassumption.
+  -
+Admitted.
+
+
 Theorem subst_id Γ :
   ⊢ Γ →
   Γ ⊢s var : Γ.
