@@ -537,17 +537,16 @@ Proof.
     rasimpl. reflexivity.
 Qed.
 
-
 Theorem subst_id Γ :
-  ⊢ Γ →
   Γ ⊢s var : Γ.
 Proof.
-  induction 1.
+  induction Γ as [| (l, A) Γ ih].
   - constructor.
   - constructor.
-    + admit.
+    + eapply WellSubst_weak with (A := A) in ih.
+      eassumption.
     + constructor. rasimpl. constructor.
-Admitted.
+Qed.
 
 
 Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
@@ -604,9 +603,6 @@ Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > 
 Admitted.
 
 Theorem sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
-Admitted.
-
-Lemma validity_ctx_left Γ Δ : ⊢ Γ ≡ Δ -> ⊢ Γ.
 Admitted.
 
 
