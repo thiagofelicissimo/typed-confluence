@@ -626,11 +626,54 @@ Proof.
     split.
     + econstructor. all: intuition eauto.
     + admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+  - intros Γ i j A B **.
+    assert (⊢ Γ ,, (i,A)).
+    { intuition eauto using ctx_cons. }
+    split.
+    + econstructor. all: intuition eauto.
+      econstructor. all: intuition eauto.
+    + eapply typing_conversion_subst. all: eauto using subst_one.
+  - intros Γ l P **.
+    assert (⊢ Γ ,, (ty 0, Nat)).
+    { eapply ctx_cons. 1: assumption.
+      econstructor.
+    }
+    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
+    { eapply ctx_cons. 1: assumption.
+      intuition eauto.
+    }
+    split.
+    + econstructor. all: intuition eauto.
+      econstructor.
+    + auto.
+  - intros Γ l P **.
+    assert (⊢ Γ ,, (ty 0, Nat)).
+    { eapply ctx_cons. 1: assumption.
+      econstructor.
+    }
+    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
+    { eapply ctx_cons. 1: assumption.
+      intuition eauto.
+    }
+    split.
+    + econstructor. all: intuition eauto.
+      econstructor. auto.
+    + eapply meta_conv.
+      { eapply typing_conversion_subst.
+        - eauto.
+        - econstructor.
+          + erewrite autosubst_simpl_WellSubst. 2: exact _.
+            econstructor.
+            * erewrite autosubst_simpl_WellSubst. 2: exact _.
+              apply subst_id.
+            * cbn. assumption.
+          + cbn. econstructor. all: intuition eauto.
+      }
+      rasimpl. reflexivity.
+  - intros.
+    split. all: intuition eauto.
+  - intros.
+    split. all: intuition eauto.
 Admitted.
 
 
