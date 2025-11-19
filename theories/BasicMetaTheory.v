@@ -548,6 +548,91 @@ Proof.
     + constructor. rasimpl. constructor.
 Qed.
 
+Lemma subst_one Γ l A u :
+  Γ ⊢< l > u : A →
+  Γ ⊢s u .. : Γ ,, (l, A).
+Proof.
+  intros h.
+  constructor. all: rasimpl. 2: auto.
+  erewrite autosubst_simpl_WellSubst. 2: exact _.
+  apply subst_id.
+Qed.
+
+Lemma meta_lvl Γ t A i j :
+  Γ ⊢< i > t : A →
+  i = j →
+  Γ ⊢< j > t : A.
+Proof.
+  intros ? ->. assumption.
+Qed.
+
+Lemma validity_gen :
+  (∀ Γ l t A,
+    Γ ⊢< l > t : A →
+    ⊢ Γ →
+    Γ ⊢< Ax l > A : Sort l
+  ) ∧
+  (∀ Γ l u v A,
+    Γ ⊢< l > u ≡ v : A →
+    ⊢ Γ →
+    Γ ⊢< l > u : A ∧ Γ ⊢< l > v : A).
+Proof.
+  apply typing_mutind.
+  all: try solve [ intros ; econstructor ; eauto ].
+  all: try solve [ intros ; try econstructor ; try econstructor ; intuition eauto ].
+  - intros ???? h hc. admit.
+  - intros.
+    eapply meta_conv.
+    { eapply typing_conversion_subst.
+      all: eauto using subst_one.
+    }
+    reflexivity.
+  - intros. eapply meta_lvl. 1: econstructor.
+    reflexivity.
+  - intros.
+    eapply meta_conv.
+    { eapply typing_conversion_subst.
+      all: eauto using subst_one.
+    }
+    reflexivity.
+  - intros. intuition eauto.
+  - intros Γ i j A B **.
+    assert (⊢ Γ ,, (i,A)).
+    { intuition eauto using ctx_cons. }
+    split ; econstructor. all: intuition eauto.
+    (* NEED context conversion, or we just add stuff to conv *)
+    admit.
+  - intros Γ i j A B **.
+    assert (⊢ Γ ,, (i,A)).
+    { intuition eauto using ctx_cons. }
+    split.
+    + econstructor. all: intuition eauto.
+    + admit.
+  - intros Γ i j A B **.
+    assert (⊢ Γ ,, (i,A)).
+    { intuition eauto using ctx_cons. }
+    split.
+    + econstructor. all: intuition eauto.
+    + admit.
+  - intros Γ l P **.
+    assert (⊢ Γ ,, (ty 0, Nat)).
+    { eapply ctx_cons. 1: assumption.
+      econstructor.
+    }
+    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
+    { eapply ctx_cons. 1: assumption.
+      intuition eauto.
+    }
+    split.
+    + econstructor. all: intuition eauto.
+    + admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+Admitted.
+
 
 Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
 Admitted.
