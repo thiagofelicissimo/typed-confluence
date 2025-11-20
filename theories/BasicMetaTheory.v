@@ -566,6 +566,82 @@ Proof.
   intros ? ->. assumption.
 Qed.
 
+(* Lemma ctx_conv_sym Γ Δ :
+  ⊢ Γ ≡ Δ →
+  ⊢ Δ ≡ Γ.
+Proof.
+  intros h. induction h.
+  - constructor.
+  - constructor. *)
+
+Lemma ctx_conv_varty Γ Δ x A l :
+  ⊢ Γ ≡ Δ →
+  Γ ∋< l > x : A →
+  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
+Proof.
+  intros hc h.
+  induction hc as [| Γ B Δ C i hc ih hbc ] in x, l, A, h |- *.
+  - inversion h.
+  - inversion h. all: subst.
+    + eexists. split.
+      * constructor.
+      * eapply meta_conv_conv.
+        { eapply typing_conversion_ren. all: eauto using WellRen_S. }
+        reflexivity.
+    + specialize ih with (1 := ltac:(eassumption)).
+      destruct ih as (D & hx & he).
+      eexists. split.
+      * constructor. eassumption.
+      * eapply meta_conv_conv.
+        { eapply typing_conversion_ren. all: eauto using WellRen_S. }
+        reflexivity.
+Qed.
+
+Lemma ctx_conv :
+  (∀ Γ l t A,
+    Γ ⊢< l > t : A →
+    ∀ Δ,
+      ⊢ Γ ≡ Δ →
+      Δ ⊢< l > t : A
+  ) ∧
+  (∀ Γ l u v A,
+    Γ ⊢< l > u ≡ v : A →
+    ∀ Δ,
+      ⊢ Γ ≡ Δ →
+      Δ ⊢< l > u ≡ v : A).
+Proof.
+  apply typing_mutind.
+  all: try solve [ intros ; econstructor ; eauto ].
+  - intros ???? h **.
+    eapply ctx_conv_varty in h. 2: eassumption.
+    destruct h as (B & hx & he).
+    eapply type_conv.
+    + constructor. eassumption.
+    + (* Annoying *)
+      admit.
+Admitted.
+
+Lemma valid_varty Γ x A l :
+  ⊢ Γ →
+  Γ ∋< l > x : A →
+  Γ ⊢< Ax l > A : Sort l.
+Proof.
+  intros hΓ h.
+  induction hΓ as [| Γ i B hΓ ih hB] in x, l, A, h |- *.
+  1: inversion h.
+  inversion h.
+  - subst.
+    eapply meta_conv.
+    + eapply typing_conversion_ren. 2: eapply WellRen_S.
+      eassumption.
+    + reflexivity.
+  - subst.
+    eapply meta_conv.
+    + eapply typing_conversion_ren. 2: eapply WellRen_S.
+      eapply ih. eassumption.
+    + reflexivity.
+Qed.
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -579,8 +655,10 @@ Lemma validity_gen :
 Proof.
   apply typing_mutind.
   all: try solve [ intros ; econstructor ; eauto ].
-  all: try solve [ intros ; try econstructor ; try econstructor ; intuition eauto ].
-  - intros ???? h hc. admit.
+  all: try solve [
+    intros ; try econstructor ; try econstructor ; intuition eauto
+  ].
+  - eauto using valid_varty.
   - intros.
     eapply meta_conv.
     { eapply typing_conversion_subst.
