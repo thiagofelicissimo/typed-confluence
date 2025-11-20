@@ -574,6 +574,7 @@ Proof.
   - constructor.
   - constructor. *)
 
+(* TODO Maybe useless *)
 Lemma ctx_conv_varty Γ Δ x A l :
   ⊢ Γ ≡ Δ →
   Γ ∋< l > x : A →
@@ -597,29 +598,47 @@ Proof.
         reflexivity.
 Qed.
 
-Lemma ctx_conv :
-  (∀ Γ l t A,
-    Γ ⊢< l > t : A →
-    ∀ Δ,
-      ⊢ Γ ≡ Δ →
-      Δ ⊢< l > t : A
-  ) ∧
-  (∀ Γ l u v A,
-    Γ ⊢< l > u ≡ v : A →
-    ∀ Δ,
-      ⊢ Γ ≡ Δ →
-      Δ ⊢< l > u ≡ v : A).
+Lemma WellSubst_conv Γ Δ Ξ σ :
+  Γ ⊢s σ : Δ →
+  ⊢ Δ ≡ Ξ →
+  Γ ⊢s σ : Ξ.
 Proof.
-  apply typing_mutind.
-  all: try solve [ intros ; econstructor ; eauto ].
-  - intros ???? h **.
-    eapply ctx_conv_varty in h. 2: eassumption.
-    destruct h as (B & hx & he).
-    eapply type_conv.
-    + constructor. eassumption.
-    + (* Annoying *)
-      admit.
-Admitted.
+  intros hs hc.
+  induction hs as [| σ Δ l A hs ih h ] in Ξ, hc |- *.
+  - inversion hc. constructor.
+  - inversion hc. subst.
+    constructor.
+    + eapply ih. assumption.
+    + eapply type_conv.
+      * eassumption.
+      * eapply meta_conv_conv.
+        { eapply typing_conversion_subst. all: eauto. }
+        reflexivity.
+Qed.
+
+Lemma typing_ctx_conv Γ Δ t l A :
+  Γ ⊢< l > t : A →
+  ⊢ Δ ≡ Γ →
+  Δ ⊢< l > t : A.
+Proof.
+  intros h hc.
+  eapply typing_conversion_subst with (σ := var) in h.
+  - rasimpl in h. eassumption.
+  - eapply WellSubst_conv. 2: eassumption.
+    apply subst_id.
+Qed.
+
+Lemma conversion_ctx_conv Γ Δ u v l A :
+  Γ ⊢< l > u ≡ v : A →
+  ⊢ Δ ≡ Γ →
+  Δ ⊢< l > u ≡ v : A.
+Proof.
+  intros h hc.
+  eapply typing_conversion_subst with (σ := var) in h.
+  - rasimpl in h. eassumption.
+  - eapply WellSubst_conv. 2: eassumption.
+    apply subst_id.
+Qed.
 
 Lemma valid_varty Γ x A l :
   ⊢ Γ →
