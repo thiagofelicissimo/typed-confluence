@@ -252,6 +252,18 @@ Scheme typing_mut := Induction for typing Sort Prop
 with conversion_mut := Induction for conversion Sort Prop.
 Combined Scheme typing_mutind from typing_mut, conversion_mut.
 
+Lemma typing_conversion_ctx :
+  (∀ Γ l t A,
+    Γ ⊢< l > t : A →
+    ⊢ Γ
+  ) ∧
+  (∀ Γ l u v A,
+    Γ ⊢< l > u ≡ v : A →
+    ⊢ Γ).
+Proof.
+  apply typing_mutind. all: eauto.
+Qed.
+
 Lemma typing_conversion_ren :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -310,9 +322,11 @@ Proof.
   - intros. cbn in *. eapply meta_conv_conv.
     + econstructor. all: eauto using WellRen_up, ctx_cons.
       eapply H0. 2: eauto using WellRen_up, ctx_cons.
+      eapply typing_conversion_ctx in c0 as h. inversion h. subst.
       apply ctx_cons. 1: assumption.
-      (* Now we need validity or further assumptions *)
-      admit.
+      eapply meta_conv.
+      (* We in hact need IH on A *)
+      all: admit.
     + reflexivity.
   - intros ??????????? ihP ? ihz ? ihs ? iht ?? hr.
     cbn in *. eapply meta_conv_conv.
