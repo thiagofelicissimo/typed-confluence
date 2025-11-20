@@ -259,7 +259,7 @@ where "Γ ⊢s σ ≡ τ : Δ" := (ConvSubst Γ Δ σ τ).
 
 Reserved Notation "⊢ Γ ≡ Δ" (at level 50, Δ at next level).
 
-Inductive ConvCtx : ctx -> ctx -> Type :=
+Inductive ConvCtx : ctx -> ctx -> Prop :=
 | conv_cempty : ⊢ ∙ ≡ ∙
 | conv_ccons Γ A Δ B l :
   ⊢ Γ ≡ Δ ->

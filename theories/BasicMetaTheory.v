@@ -661,6 +661,16 @@ Proof.
     + reflexivity.
 Qed.
 
+Lemma ctx_conv_refl Γ :
+  ⊢ Γ →
+  ⊢ Γ ≡ Γ.
+Proof.
+  induction 1 as [| Γ l A h ih hA].
+  - constructor.
+  - constructor. 1: assumption.
+    apply conv_refl. assumption.
+Qed.
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -697,8 +707,9 @@ Proof.
     assert (⊢ Γ ,, (i,A)).
     { intuition eauto using ctx_cons. }
     split ; econstructor. all: intuition eauto.
-    (* NEED context conversion, or we just add stuff to conv *)
-    admit.
+    eapply typing_ctx_conv. 1: eauto.
+    constructor. 1: eauto using ctx_conv_refl.
+    apply conv_sym. assumption.
   - intros Γ i j A B **.
     assert (⊢ Γ ,, (i,A)).
     { intuition eauto using ctx_cons. }
