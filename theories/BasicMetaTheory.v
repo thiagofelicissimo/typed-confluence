@@ -11,6 +11,8 @@ Import CombineNotations.
 
 Open Scope subst_scope.
 
+Set Default Goal Selector "!".
+
 Lemma Ax_inj l l' : Ax l = Ax l' -> l = l'.
 Proof.
   intro H. destruct l; destruct l'; inversion H; auto.
@@ -254,47 +256,64 @@ Lemma typing_conversion_ren :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
     ∀ Δ ρ,
+      ⊢ Δ →
       Δ ⊢r ρ : Γ →
       Δ ⊢< l > ρ ⋅ t : ρ ⋅ A
   ) ∧
   (∀ Γ l u v A,
     Γ ⊢< l > u ≡ v : A →
     ∀ Δ ρ,
+      ⊢ Δ →
       Δ ⊢r ρ : Γ →
       Δ ⊢< l > ρ ⋅ u ≡ ρ ⋅ v : ρ ⋅ A).
 Proof.
   apply typing_mutind.
-  all: try solve [ intros ; try econstructor ; eauto using WellRen_up ].
+  all: try solve [ intros ; try econstructor ; eauto using WellRen_up, ctx_cons ].
   all: try solve [
     intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv) ; [
-      econstructor ; eauto using WellRen_up
+      econstructor ; eauto using WellRen_up, ctx_cons
     | rasimpl ; reflexivity
     ]
   ].
   (* The proof is not very satisfactory, I expect there is some automation
     hidden below this but I'm not sure what.
   *)
-  - intros Γ x l A hx Δ ρ hr.
-    cbn. constructor.
+  - intros.
+    cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? hr.
+  - intros ?? P ???? ihP ? ihz ? ihs ? iht Δ ρ ? hr.
+    assert (⊢ Δ ,, (ty 0, Nat)).
+    { constructor. 1: auto.
+      constructor. assumption.
+    }
+    assert (Δ ,, (ty 0, Nat) ⊢< Ax l > up_ren ρ ⋅ P : Sort l).
+    { eapply ihP. 1: auto.
+      eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
+      reflexivity.
+    }
     cbn in *. eapply meta_conv.
     + econstructor. all: eauto using WellRen_up, WellRen_meta.
-      * eapply ihP. eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
-        reflexivity.
       * eapply meta_conv. all: eauto using WellRen_up, WellRen_meta.
         rasimpl. reflexivity.
       * {
         eapply meta_conv.
-        - eapply ihs. eapply WellRen_meta. 1: repeat eapply WellRen_up.
+        - eapply ihs. 1:{ constructor. all: eauto. }
+          eapply WellRen_meta. 1: repeat eapply WellRen_up.
           all: eauto.
           reflexivity.
         - rasimpl. reflexivity.
       }
     + rasimpl. reflexivity.
-  - intros Γ x l A hx Δ ? hr.
-    cbn. constructor.
+  - intros.
+    cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
+  - intros. cbn in *. eapply meta_conv_conv.
+    + econstructor. all: eauto using WellRen_up, ctx_cons.
+      eapply H0. 2: eauto using WellRen_up, ctx_cons.
+      apply ctx_cons. 1: assumption.
+      (* Now we need validity or further assumptions *)
+      admit.
+    + reflexivity.
   - intros ??????????? ihP ? ihz ? ihs ? iht ?? hr.
     cbn in *. eapply meta_conv_conv.
     + econstructor. all: eauto using WellRen_up, WellRen_meta.

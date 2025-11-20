@@ -42,11 +42,13 @@ Inductive typing : ctx -> level -> term → term → Prop :=
 
 | type_var :
     ∀ Γ x l A,
+      ⊢ Γ →
       Γ ∋< l > x : A →
       Γ ⊢< l > var x : A
 
 | type_sort :
     ∀ Γ l,
+      ⊢ Γ →
       Γ ⊢< Ax (Ax l) > Sort l : Sort (Ax l)
 
 | type_pi :
@@ -73,10 +75,12 @@ Inductive typing : ctx -> level -> term → term → Prop :=
 
 | type_nat :
     ∀ Γ,
+      ⊢ Γ →
       Γ ⊢< ty 1 > Nat : Sort (ty 0)
 
 | type_zero :
     ∀ Γ,
+      ⊢ Γ →
       Γ ⊢< ty 0 > zero : Nat
 
 | type_succ :
@@ -103,11 +107,13 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 
 | conv_var :
     ∀ Γ x l A,
+      ⊢ Γ →
       Γ ∋< l > x : A →
       Γ ⊢< l > var x ≡ var x : A
 
 | conv_sort :
     ∀ Γ l,
+      ⊢ Γ →
       Γ ⊢< Ax (Ax l) > Sort l ≡ Sort l : Sort (Ax l)
 
 | conv_pi :
@@ -133,10 +139,12 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 
 | conv_nat :
     ∀ Γ,
+      ⊢ Γ →
       Γ ⊢< ty 1 > Nat ≡ Nat : Sort (ty 0)
 
 | conv_zero :
     ∀ Γ,
+      ⊢ Γ →
       Γ ⊢< ty 0 > zero ≡ zero : Nat
 
 | conv_succ :
@@ -209,20 +217,19 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< l > u ≡ v : A ->
       Γ ⊢< l > t ≡ v : A
 
-where "Γ ⊢< l > t : A" := (typing Γ l t A)
-and   "Γ ⊢< l > t ≡ u : A" := (conversion Γ l t u A).
-
-Inductive ctx_typing : ctx -> Prop :=
+with ctx_typing : ctx -> Prop :=
 | ctx_nil :
-      ⊢ ∙
+    ⊢ ∙
 
 | ctx_cons :
     ∀ Γ l A,
-      ⊢ Γ ->
-      Γ ⊢< Ax l > A : Sort l ->
-      ⊢ (Γ ,, (l , A))
+      ⊢ Γ →
+      Γ ⊢< Ax l > A : Sort l →
+      ⊢ Γ ,, (l , A)
 
-where   "⊢ Γ" := (ctx_typing Γ).
+where "Γ ⊢< l > t : A" := (typing Γ l t A)
+and   "Γ ⊢< l > t ≡ u : A" := (conversion Γ l t u A)
+and   "⊢ Γ" := (ctx_typing Γ).
 
 
 Reserved Notation "Γ ⊢r ρ : Δ" (at level 50, ρ, Δ at next level).
