@@ -386,6 +386,18 @@ Qed.
 
 #[export] Hint Rewrite -> autosubst_simpl_WellSubst : rasimpl_outermost.
 
+Lemma well_scons_alt Γ Δ σ u l A :
+  Γ ⊢s σ : Δ →
+  Γ ⊢< l > u : A <[ σ ] →
+  Γ ⊢s (u .: σ) : Δ ,, (l, A).
+Proof.
+  intros hs hu.
+  constructor.
+  - erewrite autosubst_simpl_WellSubst. 2: exact _.
+    assumption.
+  - cbn. rasimpl. assumption.
+Qed.
+
 Lemma WellSubst_weak Γ Δ σ l A :
   Γ ⊢s σ : Δ →
   Γ ,, (l, A) ⊢s (σ >> ren_term S) : Δ.
@@ -553,9 +565,9 @@ Lemma subst_one Γ l A u :
   Γ ⊢s u .. : Γ ,, (l, A).
 Proof.
   intros h.
-  constructor. all: rasimpl. 2: auto.
-  erewrite autosubst_simpl_WellSubst. 2: exact _.
-  apply subst_id.
+  apply well_scons_alt.
+  - apply subst_id.
+  - rasimpl. assumption.
 Qed.
 
 Lemma meta_lvl Γ t A i j :
@@ -669,18 +681,6 @@ Proof.
   - constructor.
   - constructor. 1: assumption.
     apply conv_refl. assumption.
-Qed.
-
-Lemma well_scons_alt Γ Δ σ u l A :
-  Γ ⊢s σ : Δ →
-  Γ ⊢< l > u : A <[ σ ] →
-  Γ ⊢s (u .: σ) : Δ ,, (l, A).
-Proof.
-  intros hs hu.
-  constructor.
-  - erewrite autosubst_simpl_WellSubst. 2: exact _.
-    assumption.
-  - cbn. rasimpl. assumption.
 Qed.
 
 Lemma validity_gen :
@@ -839,13 +839,9 @@ Proof.
     + eapply meta_conv.
       { eapply typing_conversion_subst.
         - eauto.
-        - econstructor.
-          + erewrite autosubst_simpl_WellSubst. 2: exact _.
-            econstructor.
-            * erewrite autosubst_simpl_WellSubst. 2: exact _.
-              apply subst_id.
-            * cbn. assumption.
-          + cbn. econstructor. all: intuition eauto.
+        - eapply well_scons_alt.
+          + apply subst_one. assumption.
+          + econstructor. all: intuition eauto.
       }
       rasimpl. reflexivity.
   - intros.
