@@ -671,6 +671,18 @@ Proof.
     apply conv_refl. assumption.
 Qed.
 
+Lemma well_scons_alt Γ Δ σ u l A :
+  Γ ⊢s σ : Δ →
+  Γ ⊢< l > u : A <[ σ ] →
+  Γ ⊢s (u .: σ) : Δ ,, (l, A).
+Proof.
+  intros hs hu.
+  constructor.
+  - erewrite autosubst_simpl_WellSubst. 2: exact _.
+    assumption.
+  - cbn. rasimpl. assumption.
+Qed.
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -715,13 +727,36 @@ Proof.
     { intuition eauto using ctx_cons. }
     split.
     + econstructor. all: intuition eauto.
-    + admit.
+    + econstructor.
+      * {
+        econstructor. 1: intuition eauto.
+        all: intuition eauto using typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym.
+        eapply typing_ctx_conv.
+        - eapply type_conv. all: intuition eauto.
+        - all: intuition eauto using ctx_conv_refl, conv_ccons, conv_sym.
+      }
+      * apply conv_sym. constructor.
+        all: intuition eauto.
   - intros Γ i j A B **.
     assert (⊢ Γ ,, (i,A)).
     { intuition eauto using ctx_cons. }
     split.
     + econstructor. all: intuition eauto.
-    + admit.
+    + eapply type_conv.
+      * {
+        econstructor. 1: intuition eauto.
+        all: intuition eauto using type_conv, typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym.
+        eapply type_conv. 1: intuition eauto.
+        constructor. all: intuition eauto.
+      }
+      * {
+        apply conv_sym. eapply conv_trans.
+        - eapply meta_conv_conv.
+          + eapply typing_conversion_subst.
+            all: intuition eauto using subst_one.
+          + reflexivity.
+        - admit. (* Need conv_substs *)
+      }
   - intros Γ l P **.
     assert (⊢ Γ ,, (ty 0, Nat)).
     { eapply ctx_cons. 1: assumption.
@@ -733,7 +768,42 @@ Proof.
     }
     split.
     + econstructor. all: intuition eauto.
-    + admit.
+    + eapply type_conv.
+      * {
+        econstructor. all: intuition eauto.
+        - eapply type_conv. 1: intuition eauto.
+          eapply meta_conv_conv.
+          + eapply typing_conversion_subst. 1: intuition eauto.
+            eapply well_scons_alt.
+            * apply subst_id.
+            * cbn. constructor.
+          + reflexivity.
+        - eapply typing_ctx_conv.
+          + eapply type_conv. 1: intuition eauto.
+            eapply meta_conv_conv.
+            * {
+              eapply typing_conversion_subst. 1: intuition eauto.
+              eapply well_scons_alt.
+              - change (↑ >> (↑ >> var)) with (var >> ren_term S >> ren_term S).
+                do 2 eapply WellSubst_weak.
+                apply subst_id.
+              - cbn. constructor.
+                eapply meta_conv.
+                + repeat constructor.
+                + reflexivity.
+            }
+            * reflexivity.
+          + constructor. 1: eauto using ctx_conv_refl.
+            apply conv_sym. auto.
+      }
+      * {
+        apply conv_sym. eapply conv_trans.
+        - eapply meta_conv_conv.
+          + eapply typing_conversion_subst.
+            all: intuition eauto using subst_one.
+          + reflexivity.
+        - admit. (* Need conv_substs *)
+      }
   - intros Γ i j A B **.
     assert (⊢ Γ ,, (i,A)).
     { intuition eauto using ctx_cons. }
