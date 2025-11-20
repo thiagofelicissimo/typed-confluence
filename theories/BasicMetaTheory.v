@@ -683,6 +683,131 @@ Proof.
     apply conv_refl. assumption.
 Qed.
 
+#[export] Instance ConvSubst_morphism :
+  Proper (eq ==> eq ==> (`=1`) ==> (`=1`) ==> iff) ConvSubst.
+Proof.
+  intros Γ ? <- Δ ? <- σ σ' e θ θ' e'.
+  revert σ σ' e θ θ' e'. wlog_iff. intros σ σ' e θ θ' e' h.
+  induction h as [| σ θ Δ l A h ih ho] in σ', e, θ', e' |- *.
+  - constructor.
+  - constructor.
+    + eapply ih. unfold ">>". all: intro ; eauto.
+    + rewrite <- e, <- e'. assumption.
+Qed.
+
+Lemma autosubst_simpl_ConvSubst :
+  ∀ Γ Δ s1 s2 s3 s4,
+    SubstSimplification s1 s2 →
+    SubstSimplification s3 s4 →
+    Γ ⊢s s1 ≡ s3 : Δ ↔ Γ ⊢s s2 ≡ s4 : Δ.
+Proof.
+  intros ?????? h1 h2.
+  apply ConvSubst_morphism. 1,2: eauto.
+  - apply h1.
+  - apply h2.
+Qed.
+
+#[export] Hint Rewrite -> autosubst_simpl_ConvSubst : rasimpl_outermost.
+
+Lemma conv_scons_alt Γ Δ σ θ u v l A :
+  Γ ⊢s σ ≡ θ : Δ →
+  Γ ⊢< l > u ≡ v : A <[ σ ] →
+  Γ ⊢s (u .: σ) ≡ (v .: θ) : Δ ,, (l, A).
+Proof.
+  intros hs hu.
+  constructor.
+  - erewrite autosubst_simpl_ConvSubst. 2,3: exact _.
+    assumption.
+  - cbn. rasimpl. assumption.
+Qed.
+
+Lemma ConvSubst_weak Γ Δ σ θ l A :
+  Γ ⊢s σ ≡ θ : Δ →
+  Γ ,, (l, A) ⊢s (σ >> ren_term S) ≡ (θ >> ren_term S) : Δ.
+Proof.
+  induction 1 as [| σ θ Δ i B h ih ho] in l, A |- *.
+  - constructor.
+  - constructor.
+    + auto.
+    + eapply meta_conv_conv.
+      * unfold ">>". eapply typing_conversion_ren. 1: eassumption.
+        eapply WellRen_S.
+      * rasimpl. reflexivity.
+Qed.
+
+Lemma conv_substs_up Γ Δ σ σ' l A :
+  Γ ⊢s σ ≡ σ' : Δ →
+  Γ ,, (l, A <[ σ ]) ⊢s up_term σ ≡ up_term σ' : Δ ,, (l, A).
+Proof.
+  intros h.
+  apply conv_scons_alt.
+  - apply ConvSubst_weak. assumption.
+  - constructor. eapply varty_meta.
+    + constructor.
+    + rasimpl. reflexivity.
+Qed.
+
+Theorem substs_id Γ :
+  Γ ⊢s var ≡ var : Γ.
+Proof.
+  induction Γ as [| (l, A) Γ ih].
+  - constructor.
+  - constructor.
+    + eapply ConvSubst_weak with (A := A) in ih.
+      eassumption.
+    + constructor. rasimpl. constructor.
+Qed.
+
+Lemma substs_one Γ l A u v :
+  Γ ⊢< l > u ≡ v : A →
+  Γ ⊢s u .. ≡ v .. : Γ ,, (l, A).
+Proof.
+  intros h.
+  apply conv_scons_alt.
+  - apply substs_id.
+  - rasimpl. assumption.
+Qed.
+
+Lemma conv_substs Γ Δ σ σ' t l A :
+  Δ ⊢s σ ≡ σ' : Γ →
+  Γ ⊢< l > t : A →
+  Δ ⊢< l > t <[ σ ] ≡ t <[ σ' ] : A <[ σ ].
+Proof.
+  intros hs ht.
+  induction ht in Δ, σ, σ', hs |- *.
+  all: try solve [ cbn in * ; econstructor ; eauto using conv_substs_up ].
+  - cbn. admit.
+  - cbn in *. eapply meta_conv_conv.
+    { constructor. all: eauto using conv_substs_up. }
+    rasimpl. reflexivity.
+  - cbn in *. eapply meta_conv_conv.
+    { constructor. all: eauto using conv_substs_up.
+      - eapply meta_conv_conv.
+        + eapply IHht1. eapply ConvSubst_morphism.
+          5: eapply conv_substs_up. 5: eauto.
+          2-4: reflexivity.
+          reflexivity.
+        + reflexivity.
+      - eapply meta_conv_conv.
+        + eauto.
+        + rasimpl. reflexivity.
+      - eapply meta_conv_conv.
+        + eapply IHht3. eapply ConvSubst_morphism.
+          5: do 2 eapply conv_substs_up. 5: eauto.
+          2-4: reflexivity.
+          reflexivity.
+        + rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
+  - eapply conv_conv. 1: eauto.
+    eapply meta_conv_conv.
+    { eapply typing_conversion_subst. all: eauto.
+      (* Maybe we get some substitution validity first *)
+      admit.
+    }
+    reflexivity.
+Admitted.
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -755,7 +880,12 @@ Proof.
           + eapply typing_conversion_subst.
             all: intuition eauto using subst_one.
           + reflexivity.
-        - admit. (* Need conv_substs *)
+        - eapply meta_conv_conv.
+          { eapply conv_substs.
+            - eapply substs_one. eauto.
+            - intuition eauto.
+          }
+          reflexivity.
       }
   - intros Γ l P **.
     assert (⊢ Γ ,, (ty 0, Nat)).
@@ -802,7 +932,12 @@ Proof.
           + eapply typing_conversion_subst.
             all: intuition eauto using subst_one.
           + reflexivity.
-        - admit. (* Need conv_substs *)
+        - eapply meta_conv_conv.
+          { eapply conv_substs.
+            - eapply substs_one. eauto.
+            - intuition eauto.
+          }
+          reflexivity.
       }
   - intros Γ i j A B **.
     assert (⊢ Γ ,, (i,A)).
@@ -848,7 +983,7 @@ Proof.
     split. all: intuition eauto.
   - intros.
     split. all: intuition eauto.
-Admitted.
+Qed.
 
 
 Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
