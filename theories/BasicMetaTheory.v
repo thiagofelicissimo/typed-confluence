@@ -768,6 +768,19 @@ Proof.
   - rasimpl. assumption.
 Qed.
 
+Lemma varty_conv_substs Γ Δ σ θ x l A :
+  Γ ∋< l > x : A →
+  Δ ⊢s σ ≡ θ : Γ →
+  Δ ⊢< l > σ x ≡ θ x : A <[ σ ].
+Proof.
+  intros hx hs.
+  induction hs as [| σ θ Γ i B h ih ho] in x, l, A, hx |- *.
+  1: inversion hx.
+  inversion hx. all: subst.
+  - rasimpl. assumption.
+  - rasimpl. apply ih. assumption.
+Qed.
+
 Lemma conv_substs Γ Δ σ σ' t l A :
   Δ ⊢s σ ≡ σ' : Γ →
   Δ ⊢s σ : Γ →
@@ -777,7 +790,7 @@ Proof.
   intros hs hst ht.
   induction ht in Δ, σ, σ', hs, hst |- *.
   all: try solve [ cbn in * ; econstructor ; eauto using conv_substs_up, WellSubst_up ].
-  - cbn. admit.
+  - cbn. eauto using varty_conv_substs.
   - cbn in *. eapply meta_conv_conv.
     { constructor. all: eauto using conv_substs_up, WellSubst_up. }
     rasimpl. reflexivity.
@@ -814,7 +827,7 @@ Proof.
     eapply meta_conv_conv.
     { eapply typing_conversion_subst. all: eauto. }
     reflexivity.
-Admitted.
+Qed.
 
 Lemma validity_gen :
   (∀ Γ l t A,
