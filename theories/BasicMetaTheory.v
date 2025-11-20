@@ -770,41 +770,49 @@ Qed.
 
 Lemma conv_substs Γ Δ σ σ' t l A :
   Δ ⊢s σ ≡ σ' : Γ →
+  Δ ⊢s σ : Γ →
   Γ ⊢< l > t : A →
   Δ ⊢< l > t <[ σ ] ≡ t <[ σ' ] : A <[ σ ].
 Proof.
-  intros hs ht.
-  induction ht in Δ, σ, σ', hs |- *.
-  all: try solve [ cbn in * ; econstructor ; eauto using conv_substs_up ].
+  intros hs hst ht.
+  induction ht in Δ, σ, σ', hs, hst |- *.
+  all: try solve [ cbn in * ; econstructor ; eauto using conv_substs_up, WellSubst_up ].
   - cbn. admit.
   - cbn in *. eapply meta_conv_conv.
-    { constructor. all: eauto using conv_substs_up. }
+    { constructor. all: eauto using conv_substs_up, WellSubst_up. }
     rasimpl. reflexivity.
   - cbn in *. eapply meta_conv_conv.
     { constructor. all: eauto using conv_substs_up.
       - eapply meta_conv_conv.
-        + eapply IHht1. eapply ConvSubst_morphism.
-          5: eapply conv_substs_up. 5: eauto.
-          2-4: reflexivity.
-          reflexivity.
+        + eapply IHht1.
+          * eapply ConvSubst_morphism.
+            5: eapply conv_substs_up. 5: eauto.
+            2-4: reflexivity.
+            reflexivity.
+          * eapply WellSubst_morphism.
+            4: eapply WellSubst_up. 4: eauto.
+            2-3: reflexivity.
+            reflexivity.
         + reflexivity.
       - eapply meta_conv_conv.
         + eauto.
         + rasimpl. reflexivity.
       - eapply meta_conv_conv.
-        + eapply IHht3. eapply ConvSubst_morphism.
-          5: do 2 eapply conv_substs_up. 5: eauto.
-          2-4: reflexivity.
-          reflexivity.
+        + eapply IHht3.
+          * eapply ConvSubst_morphism.
+            5: do 2 eapply conv_substs_up. 5: eauto.
+            2-4: reflexivity.
+            reflexivity.
+          * eapply WellSubst_morphism.
+            4: do 2 eapply WellSubst_up. 4: eauto.
+            2-3: reflexivity.
+            reflexivity.
         + rasimpl. reflexivity.
     }
     rasimpl. reflexivity.
   - eapply conv_conv. 1: eauto.
     eapply meta_conv_conv.
-    { eapply typing_conversion_subst. all: eauto.
-      (* Maybe we get some substitution validity first *)
-      admit.
-    }
+    { eapply typing_conversion_subst. all: eauto. }
     reflexivity.
 Admitted.
 
@@ -883,6 +891,7 @@ Proof.
         - eapply meta_conv_conv.
           { eapply conv_substs.
             - eapply substs_one. eauto.
+            - eapply subst_one. intuition eauto.
             - intuition eauto.
           }
           reflexivity.
@@ -935,6 +944,7 @@ Proof.
         - eapply meta_conv_conv.
           { eapply conv_substs.
             - eapply substs_one. eauto.
+            - eapply subst_one. intuition eauto.
             - intuition eauto.
           }
           reflexivity.
