@@ -165,11 +165,12 @@ Proof.
       * rasimpl. reflexivity.
 Qed.
 
-Lemma WellRen_up Γ Δ l A ρ :
+Lemma WellRen_up Γ Δ l A A' ρ :
   Γ ⊢r ρ : Δ →
-  Γ ,, (l, ρ ⋅ A) ⊢r up_ren ρ : Δ ,, (l, A).
+  A' = ρ ⋅ A ->
+  Γ ,, (l, A') ⊢r up_ren ρ : Δ ,, (l, A).
 Proof.
-  intros h.
+  intros h p. subst.
   constructor.
   - rasimpl. apply WellRen_weak. assumption.
   - rasimpl. cbn. eapply varty_meta.
@@ -320,79 +321,27 @@ Proof.
     cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
   - intros. cbn in *. eapply meta_conv_conv.
-    + econstructor. all: eauto using WellRen_up, ctx_cons.
-      eapply H0. 2: eauto using WellRen_up, ctx_cons.
-      eapply typing_conversion_ctx in c0 as h. inversion h. subst.
-      apply ctx_cons. 1: assumption.
-      eapply meta_conv.
-      (* We in hact need IH on A *)
-      all: admit.
-    + reflexivity.
-  - intros ??????????? ihP ? ihz ? ihs ? iht ?? hr.
-    cbn in *. eapply meta_conv_conv.
-    + econstructor. all: eauto using WellRen_up, WellRen_meta.
-      * eapply ihP. eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
-        reflexivity.
-      * eapply meta_conv_conv. all: eauto using WellRen_up, WellRen_meta.
-        rasimpl. reflexivity.
-      * {
-        eapply meta_conv_conv.
-        - eapply ihs. eapply WellRen_meta. 1: repeat eapply WellRen_up.
-          all: eauto.
-          reflexivity.
-        - rasimpl. reflexivity.
-      }
-    + rasimpl. reflexivity.
-  - intros ???????? ihA ? ihB ? iht ? ihu ?? hr.
-    cbn. rasimpl. eapply meta_conv_conv.
-    1:{
-      eapply meta_rhs_conv.
-      1:{
-        eapply conv_beta. all: eauto using WellRen_up.
-      }
-      rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - intros ?????? ihP ? ihz ? ihs ?? hr.
-    cbn. eapply meta_conv_conv.
-    1:{
-      eapply conv_rec_zero.
-      - eapply ihP. eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
-        reflexivity.
-      - eapply meta_conv. all: eauto using WellRen_up, WellRen_meta.
-        rasimpl. reflexivity.
-      - eapply meta_conv.
-        + eapply ihs. eapply WellRen_meta. 1: repeat eapply WellRen_up.
-          all: eauto.
-          reflexivity.
-        + rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? hr.
-    cbn. eapply meta_conv_conv.
-    1:{
-      eapply meta_rhs_conv.
-      1:{
-        eapply conv_rec_succ.  all: eauto using WellRen_up, WellRen_meta.
-        - eapply ihP. eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
-          reflexivity.
-        - eapply meta_conv. all: eauto using WellRen_up, WellRen_meta.
-          rasimpl. reflexivity.
-        - eapply meta_conv.
-          + eapply ihs. eapply WellRen_meta. 1: repeat eapply WellRen_up.
-            all: eauto.
-            reflexivity.
-          + rasimpl. reflexivity.
-      }
-      (* Below is very ugly, do not reproduce at home *)
-      rasimpl. f_equal. f_equal. f_equal. all: rasimpl. all: try reflexivity.
-      all: substify. all: apply ext_term.
-      all: intros [| n]. all: try reflexivity.
-      cbn. unfold ">>". cbn. destruct n. all: reflexivity.
-    }
-    rasimpl. apply ext_term.
-    intros []. all: cbn. 2: reflexivity.
-    rasimpl. reflexivity.
+    + econstructor. all: eauto using WellRen_up, ctx_typing, typing.
+      * eapply meta_conv_conv. 1:eapply H1. all:rasimpl;eauto.
+      * eapply meta_conv_conv. 1:eapply H2.
+        all: rasimpl; eauto 9 using ctx_typing, typing, WellRen_up.
+    + rasimpl; eauto.
+  - intros. cbn. eapply meta_conv_conv. 
+    1: eapply meta_rhs_conv.
+    1: eapply conv_beta; eauto using ctx_typing, typing, WellRen_up.
+    all:rasimpl; eauto.
+  - intros. cbn. eapply meta_conv_conv. 1:eapply meta_rhs_conv.
+    1: { eapply conv_rec_zero; eauto using ctx_typing, typing, WellRen_up.
+         1: eapply meta_conv.  1: eapply H0. 1-3:rasimpl; eauto.
+         eapply meta_conv. 1:eapply H1.  
+         1-3:rasimpl; eauto 9 using ctx_typing, typing, WellRen_up. }
+    all:rasimpl; eauto.
+  - intros. cbn. eapply meta_conv_conv. 1:eapply meta_rhs_conv.
+    1: { eapply conv_rec_succ; eauto using ctx_typing, typing, WellRen_up.
+         1: eapply meta_conv.  1: eapply H0. 1-3:rasimpl; eauto.
+         eapply meta_conv. 1:eapply H1.  
+         1-3:rasimpl; eauto 9 using ctx_typing, typing, WellRen_up. }
+    all:ssimpl; reflexivity.
 Qed.
 
 #[export] Instance WellSubst_morphism :
