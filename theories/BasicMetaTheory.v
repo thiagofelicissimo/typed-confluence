@@ -253,7 +253,7 @@ Scheme typing_mut := Induction for typing Sort Prop
 with conversion_mut := Induction for conversion Sort Prop.
 Combined Scheme typing_mutind from typing_mut, conversion_mut.
 
-Lemma typing_conversion_ctx :
+Lemma validity_ctx :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
     ⊢ Γ
@@ -263,6 +263,20 @@ Lemma typing_conversion_ctx :
     ⊢ Γ).
 Proof.
   apply typing_mutind. all: eauto.
+Qed.
+
+Corollary validity_ty_ctx Γ l t A :
+    Γ ⊢< l > t : A →
+    ⊢ Γ.
+Proof.
+  intros. eapply validity_ctx in H; eauto.
+Qed.
+
+Corollary validity_conv_ctx Γ l t u A :
+    Γ ⊢< l > t ≡ u : A →
+    ⊢ Γ.
+Proof.
+  intros. eapply validity_ctx in H; eauto.
 Qed.
 
 Lemma typing_conversion_ren :
@@ -382,6 +396,7 @@ Qed.
 
 Lemma WellSubst_weak Γ Δ σ l A :
   Γ ⊢s σ : Δ →
+  Γ ⊢< Ax l > A : Sort l ->
   Γ ,, (l, A) ⊢s (σ >> ren_term S) : Δ.
 Proof.
   induction 1 as [| σ Δ i B h ih ho] in l, A |- *.
@@ -390,18 +405,23 @@ Proof.
     + auto.
     + eapply meta_conv.
       * unfold ">>". eapply typing_conversion_ren. 1: eassumption.
+        1:econstructor; eauto using validity_ty_ctx.
         eapply WellRen_S.
       * rasimpl. reflexivity.
 Qed.
 
-Lemma WellSubst_up Γ Δ l A σ :
+Lemma WellSubst_up Γ Δ l A A' σ :
   Γ ⊢s σ : Δ →
-  Γ ,, (l, A <[ σ ]) ⊢s up_term σ : Δ ,, (l, A).
+  A' = A <[ σ ] ->
+  Γ ⊢< Ax l > A <[ σ ] : Sort l ->
+  Γ ,, (l, A') ⊢s up_term σ : Δ ,, (l, A).
 Proof.
-  intros h.
+  intros. subst.
   constructor.
-  - rasimpl. apply WellSubst_weak. assumption.
-  - rasimpl. cbn. econstructor. eapply varty_meta.
+  - rasimpl. apply WellSubst_weak; assumption.
+  - rasimpl. cbn. econstructor. 
+    1: econstructor; eauto using validity_ty_ctx.
+   eapply varty_meta.
     + constructor.
     + rasimpl. reflexivity.
 Qed.
@@ -432,99 +452,123 @@ Lemma typing_conversion_subst :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
     ∀ Δ σ,
+      ⊢ Δ ->
       Δ ⊢s σ : Γ →
       Δ ⊢< l > t <[ σ ] : A <[ σ ]
   ) ∧
   (∀ Γ l u v A,
     Γ ⊢< l > u ≡ v : A →
     ∀ Δ σ,
+      ⊢ Δ ->
       Δ ⊢s σ : Γ →
       Δ ⊢< l > u <[ σ ] ≡ v <[ σ ] : A <[ σ ]).
 Proof.
   (* Basically copy-pasted from renaming *)
   apply typing_mutind.
-  all: try solve [ intros ; try econstructor ; eauto using WellSubst_up ].
+  all: try solve [ intros ; try econstructor ; eauto 8 using WellSubst_up, ctx_typing ].
   all: try solve [
     intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv) ; [
-      econstructor ; eauto using WellSubst_up
+      econstructor ; eauto 8 using WellSubst_up, ctx_typing
     | rasimpl ; reflexivity
     ]
   ].
-  - intros Γ x l A hx ?? hs.
+
+
+  - intros.
     cbn. eapply varty_subst. all: eassumption.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? hs.
-    cbn in *. eapply meta_conv.
+  - intros ??????? ihP ? ihz ? ihs ? iht ?? wf hs.
+    cbn in *. 
+    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
+    { 
+      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
+      all: eauto. all:eauto using typing.
+    }
+    eapply meta_conv.
     + econstructor. all: eauto using WellSubst_up, WellSubst_meta.
-      * eapply ihP. eapply WellSubst_meta. 1: eapply WellSubst_up. all: eauto.
-        reflexivity.
       * eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
         rasimpl. reflexivity.
       * {
         eapply meta_conv.
-        - eapply ihs. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
+        - eapply ihs.
+          1:econstructor;  eauto using ctx_typing, typing. 
+        eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
           all: eauto.
+          1,2: eauto using typing.
           reflexivity.
         - rasimpl. reflexivity.
       }
     + rasimpl. reflexivity.
-  - intros Γ x l A hx Δ ? hs.
+  - intros.
     cbn. apply conv_refl.
     eapply varty_subst. all: eassumption.
-  - intros ??????????? ihP ? ihz ? ihs ? iht ?? hs.
+  - intros.
+    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
+    { 
+      eapply H; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
+      all: eauto. all:eauto using typing.
+    }
     cbn in *. eapply meta_conv_conv.
     + econstructor. all: eauto using WellSubst_up, WellSubst_meta.
-      * eapply ihP. eapply WellSubst_meta. 1: eapply WellSubst_up. all: eauto.
+      * eapply H0; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
+        all: eauto using typing. 1:eauto using typing.
         reflexivity.
       * eapply meta_conv_conv. all: eauto using WellSubst_up, WellSubst_meta.
         rasimpl. reflexivity.
       * {
         eapply meta_conv_conv.
-        - eapply ihs. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto.
+        - eapply H2; eauto using ctx_typing, typing.  
+          eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
+          all: eauto. 1,2:eauto using typing.
           reflexivity.
         - rasimpl. reflexivity.
       }
     + rasimpl. reflexivity.
-  - intros ???????? ihA ? ihB ? iht ? ihu ?? hs.
-    cbn. rasimpl. eapply meta_conv_conv.
+  - intros.
+    cbn. rasimpl. 
+    assert (Δ ⊢< Ax i > A <[ σ] : Sort i) by (eapply H; eauto using ctx_typing, typing).
+    eapply meta_conv_conv.
     1:{
       eapply meta_rhs_conv.
       1:{
-        eapply conv_beta. all: eauto using WellSubst_up.
+        eapply conv_beta. all: eauto using WellSubst_up, ctx_typing.
       }
       rasimpl. reflexivity.
     }
     rasimpl. reflexivity.
-  - intros ?????? ihP ? ihz ? ihs ?? hs.
+  - intros ?????? ihP ? ihz ? ihs ?? hs wf.
+    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
+    { 
+      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
+      all: eauto. all:eauto using typing.
+    }
     cbn. eapply meta_conv_conv.
     1:{
-      eapply conv_rec_zero.
-      - eapply ihP. eapply WellSubst_meta. 1: eapply WellSubst_up. all: eauto.
-        reflexivity.
+      eapply conv_rec_zero. 1:eauto.
       - eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
         rasimpl. reflexivity.
       - eapply meta_conv.
-        + eapply ihs. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto.
-          reflexivity.
+        + eapply ihs;eauto using ctx_typing, typing. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
+          all: eauto. all:eauto using typing.
         + rasimpl. reflexivity.
     }
     rasimpl. reflexivity.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? hs.
+  - intros ??????? ihP ? ihz ? ihs ? iht ?? hs wf.
+    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
+    { 
+      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
+      all: eauto. all:eauto using typing.
+    }
     cbn. eapply meta_conv_conv.
     1:{
       eapply meta_rhs_conv.
       1:{
         eapply conv_rec_succ.  all: eauto using WellSubst_up, WellSubst_meta.
-        - eapply ihP. eapply WellSubst_meta. 1: eapply WellSubst_up. all: eauto.
-          reflexivity.
         - eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
           rasimpl. reflexivity.
-        - eapply meta_conv.
-          + eapply ihs. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-            all: eauto.
-            reflexivity.
-          + rasimpl. reflexivity.
+      - eapply meta_conv.
+        + eapply ihs;eauto using ctx_typing, typing. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
+          all: eauto. all:eauto using typing.
+        + rasimpl. reflexivity.
       }
       rasimpl. reflexivity.
     }
@@ -532,14 +576,15 @@ Proof.
 Qed.
 
 Theorem subst_id Γ :
+  ⊢ Γ ->
   Γ ⊢s var : Γ.
 Proof.
   induction Γ as [| (l, A) Γ ih].
   - constructor.
   - constructor.
-    + eapply WellSubst_weak with (A := A) in ih.
-      eassumption.
-    + constructor. rasimpl. constructor.
+    + eapply WellSubst_weak with (A := A) in ih; eauto.
+      all:inversion H; eauto.
+    + constructor; eauto. rasimpl. constructor.
 Qed.
 
 Lemma subst_one Γ l A u :
@@ -548,7 +593,7 @@ Lemma subst_one Γ l A u :
 Proof.
   intros h.
   apply well_scons_alt.
-  - apply subst_id.
+  - apply subst_id; eauto using validity_ty_ctx.
   - rasimpl. assumption.
 Qed.
 
