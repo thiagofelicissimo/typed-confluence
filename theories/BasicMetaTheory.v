@@ -1190,10 +1190,14 @@ Lemma aux_subst_2 Γ l P :
 Proof.
   intro H.
   apply well_scons.
-  - ssimpl. admit. (* by weakening *)
-  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. admit.
-Admitted.
-
+  - ssimpl.
+    assert (S >> (S >> var) = (var >> ren_term S) >> ren_term S) by reflexivity.
+    setoid_rewrite H0.
+    eapply WellSubst_weak; eauto.
+    eapply validity_ty_ctx in H. dependent destruction H.
+    eapply WellSubst_weak; eauto using subst_id.
+  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. eapply (vartyS _ _ _ Nat _ 0). eapply vartyO.
+Qed.
 
 (* newer versions of inversion lemmas.
    TODO: replace in Confluence.v the occurrences of older inversion lemmas by the newer ones *)
@@ -1409,4 +1413,18 @@ Proof.
     (_ & A0 & varin & conv).
   exists A0. split; eauto.
   eauto using conv_in_ctx_conv, ctx_conv_sym.
+Qed.
+
+
+Lemma conv_rec' Γ l P p_zero p_succ t P' p_zero' p_succ' t' P_ :
+      Γ ,, (ty 0 , Nat) ⊢< Ax l > P ≡ P' : Sort l ->
+      Γ ⊢< l > p_zero ≡ p_zero' : P <[ zero .. ] ->
+      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ ≡ p_succ' : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] ->
+      Γ ⊢< ty 0 > t ≡ t' : Nat ->
+      P_ = P <[ t .. ] ->
+      Γ ⊢< l > rec l P p_zero p_succ t ≡ rec l P' p_zero' p_succ' t' : P_.
+Proof.
+  intros.
+  subst.
+  eapply conv_rec; eauto using validity_conv_left.
 Qed.

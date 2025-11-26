@@ -143,7 +143,7 @@ Theorem ortho_to_conv :
     Γ ⊢< l > t ≡ u : A.
 Proof.
   intros.
-  induction H; eauto using conversion.
+  (* induction H; eauto using conversion.
   - eapply conv_trans.
     + eapply conv_app; eauto.
       eapply conv_conv.
@@ -154,7 +154,7 @@ Proof.
       eapply conv_beta; eauto using validity_conv_right, conv_ty_in_ctx_ty, type_conv.
       admit.
   - eapply conv_trans. eapply conv_rec_zero; eauto using validity_conv_left. eauto.
-  - admit.
+  - admit. *)
 Admitted.
 
 
@@ -461,7 +461,7 @@ Proof.
   destruct t.
   all : eapply (ortho_diamond_helper _ _ _ _ _ _ t_red_t' t_red_t'').
   all : pose proof (IH' := ortho_diamond_helper2 _ IH); clear IH; rename IH' into IH.
-  all : assert (⊢ Γ) as ΓWf by (apply ortho_validity_left in t_red_t'; apply validity_ty in t_red_t'; destruct t_red_t'; auto).
+  all : assert (⊢ Γ) as ΓWf by (apply ortho_validity_left in t_red_t'; apply validity_ty_ctx in t_red_t' as ΓWf; eapply validity_ty_ty in t_red_t' as tyWf; auto).
 
   (* var *)
   - ttinv t_red_t'. destruct t_red_t' as (B' & t'_eq_n & lookup_n_B).
@@ -519,7 +519,7 @@ Proof.
 
     (* app-cong x app-cong *)
     + do 4 eexists. exists (app l l0 A B u''' v''').
-    split; apply ortho_app; eauto using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_pi.
+    split; apply ortho_app; eauto using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_pi, validity_conv_left.
 
     (* app-cong x beta *)
     + rename u_eq_ into u_eq. rename w_ into w. rename A0_ into A0.
@@ -613,7 +613,13 @@ Proof.
 
       do 4 eexists. exists (rec l P''' p_zero''' p_succ''' n''').
       split; eapply ortho_rec;
-      eauto 8 using ortho_conv, subst_ty, aux_subst_1, type_zero, conv_ty_in_ctx_ortho, ortho_to_conv, aux_subst_2, ortho_validity_left.
+      eauto 11 using ortho_conv, subst_ty, aux_subst_1, type_zero, conv_ty_in_ctx_ortho, ortho_to_conv, aux_subst_2, ortho_validity_left, ctx_typing, type_nat, ortho_validity_right.
+
+      eapply ortho_conv. eapply conv_ty_in_ctx_ortho.
+      eauto. eauto using ortho_to_conv. eapply subst_ty; eauto using ortho_to_conv. eauto using ctx_typing, type_nat, ortho_validity_right.
+      eapply aux_subst_2; eauto using ortho_validity_right.
+      
+
 
     (* rec x rec_zero *)
     + ttinv n_red_n'. rewrite n_red_n' in *. clear n' n_red_n'.
