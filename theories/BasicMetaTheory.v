@@ -1151,26 +1151,6 @@ Qed.
 
 
 
-Lemma conv_ctx_var Γ x l A Δ :
-  Γ ∋< l > x : A →
-  ⊢ Γ ≡ Δ ->
-  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
-Proof.
-  intros hx hctx.
-  induction hctx as [| Γ B Δ C i h ih] in l, x, A, hx |- *.
-  - inversion hx.
-  - inversion hx.
-    + subst. eexists. split.
-      * constructor.
-      * admit.
-    + subst. specialize ih with (1 := ltac:(eassumption)).
-      destruct ih as (A & hA & he).
-      eexists. split.
-      * constructor. eassumption.
-      * admit.
-Admitted.
-
-
 (* composite lemmas, for helping automation *)
 
 Lemma conv_ty_in_ctx_conv Γ l A A' l' t u B :
@@ -1412,4 +1392,21 @@ Qed.
 Corollary sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto.
+Qed.
+
+
+
+
+Lemma conv_ctx_var Γ x l A Δ :
+  Γ ∋< l > x : A →
+  ⊢ Γ ≡ Δ ->
+  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
+Proof.
+  intros hx hctx.
+  eapply type_var in hx; eauto using validity_ctx_conv_left.
+  eapply conv_in_ctx_ty in hx; eauto.
+  eapply type_inv_var' in hx as 
+    (_ & A0 & varin & conv).
+  exists A0. split; eauto.
+  eauto using conv_in_ctx_conv, ctx_conv_sym.
 Qed.
