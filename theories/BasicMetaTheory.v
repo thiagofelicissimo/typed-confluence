@@ -905,8 +905,6 @@ Proof.
     split ; econstructor. all: intuition eauto.
     eapply typing_ctx_conv. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
   - intros Γ i j A B **.
-    (* assert (⊢ Γ ,, (i,A)).
-    { intuition eauto using ctx_cons. } *)
     split.
     + econstructor. all: intuition eauto.
     + econstructor.
@@ -946,14 +944,6 @@ Proof.
           reflexivity.
       }
   - intros Γ l P **.
-    (* assert (⊢ Γ ,, (ty 0, Nat)).
-    { eapply ctx_cons. 1: assumption.
-      econstructor. assumption.
-    }
-    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
-    { eapply ctx_cons. 1: assumption.
-      intuition eauto.
-    } *)
     split.
     + econstructor. all: intuition eauto.
     + eapply type_conv.
@@ -1031,13 +1021,6 @@ Proof.
     split. all: intuition eauto.
 Qed.
 
-
-Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
-  eapply ctx_conv_refl.
-Qed.
-
-
-
 Theorem validity_conv_left : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t : A.
 Proof.
   intros. eapply validity_gen in H as (H1 & H2); eauto.
@@ -1046,6 +1029,48 @@ Qed.
 Theorem validity_conv_right : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > u : A.
 Proof.
   intros. eapply validity_gen in H as (H1 & H2); eauto.
+Qed.
+
+
+Lemma validity_subst_conv_left Δ Γ σ τ : 
+  Δ ⊢s σ ≡ τ : Γ ->
+  Δ ⊢s σ : Γ.
+Proof.
+  intros. induction H; eauto using validity_conv_left, WellSubst.
+Qed.
+
+Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
+  eapply ctx_conv_refl.
+Qed.
+
+Lemma subst_sym Δ Γ σ τ : 
+  ⊢ Δ ->
+  ⊢ Γ ->
+  Δ ⊢s σ ≡ τ : Γ ->
+  Δ ⊢s τ ≡ σ : Γ.
+Proof.
+  intros. induction H1; eauto using ConvSubst.
+  econstructor; dependent destruction H0; eauto.
+  eapply conv_sym. eapply conv_conv. 1:eauto.
+  eapply conv_substs in H1; eauto using validity_subst_conv_left.
+Qed.
+
+
+Lemma validity_subst_conv_right Δ Γ σ τ : 
+  ⊢ Δ ->
+  ⊢ Γ ->
+  Δ ⊢s σ ≡ τ : Γ ->
+  Δ ⊢s τ : Γ.
+Proof.
+  intros. eapply subst_sym in H1; eauto. eapply validity_subst_conv_left; eauto.
+Qed.
+
+
+
+Theorem validity_ty_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< Ax l > A : Sort l.
+Proof.
+  intros.
+  eapply validity_gen in H. assumption.
 Qed.
 
 Theorem subst : forall Γ l t u A Δ σ τ A', 
@@ -1058,46 +1083,72 @@ Proof.
   intros.
   subst.
   eapply conv_trans.
-  1:eapply conv_substs; eauto using validity_conv_left.
-Admitted.
+  1:eapply conv_substs; eauto using validity_conv_left, validity_subst_conv_left.
+  eapply conv_conv.
+  1:eapply typing_conversion_subst; eauto using validity_subst_conv_right, validity_conv_ctx.
+  eapply validity_conv_left, validity_ty_ty in H1. 
+  eapply conv_substs in H1; eauto using validity_subst_conv_right, validity_ty_ctx, subst_sym.
+Qed.
+
+Theorem subst2 : forall Γ l t A Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t : A -> Δ ⊢< l > t <[ σ ] : A <[ σ ].
+Proof.
+  intros. eapply validity_conv_left. eapply subst; eauto using refl_subst, conv_refl.
+Qed.
+
+Corollary subst_ty : forall Γ l t u l' Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t ≡ u : Sort l' -> Δ ⊢< l > t <[ σ ] ≡ u <[ σ ] : Sort l'.
+  intros. 
+  eapply subst in H1; eauto using refl_subst.
+Qed.
+
+Corollary subst_ty' : forall Γ l t l' Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t : Sort l' -> Δ ⊢< l > t <[ σ ] : Sort l'.
+  intros.
+  eapply subst2 in H1; eauto.
+Qed.
 
 
-Theorem subst2 : forall Γ l t A Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t : A -> Δ ⊢< l > t <[ σ ] : A <[ σ ].
-Admitted.
+Lemma validity_ctx_conv_left Γ Δ : 
+  ⊢ Γ ≡ Δ -> 
+  ⊢ Γ.
+Proof.
+  intros. induction H.
+  - econstructor.
+  - econstructor; eauto using validity_conv_left.
+Qed.
 
 
-Corollary subst_ty : forall Γ l t u l' Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t ≡ u : Sort l' -> Δ ⊢< l > t <[ σ ] ≡ u <[ σ ] : Sort l'.
-Admitted.
+Lemma ctx_conv_sym Γ Δ : 
+  ⊢ Γ ≡ Δ -> 
+  ⊢ Δ ≡ Γ.
+Proof.
+  intros. induction H.
+  - econstructor.
+  - econstructor; eauto.
+    eapply conv_sym in H0.
+    eapply conversion_ctx_conv; eauto using validity_ctx_conv_left.
+Qed.
 
 
-Corollary subst_ty' : forall Γ l t l' Δ σ, Δ ⊢s σ : Γ -> Γ ⊢< l > t : Sort l' -> Δ ⊢< l > t <[ σ ] : Sort l'.
-Admitted.
+Lemma validity_ctx_conv_right Γ Δ : 
+  ⊢ Γ ≡ Δ -> 
+  ⊢ Δ.
+Proof.
+  intros. eauto using ctx_conv_sym, validity_ctx_conv_left.
+Qed.
+
 
 
 Theorem conv_in_ctx_ty : forall Γ Δ l t A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t : A -> Δ ⊢< l > t : A.
-Admitted.
+Proof.
+  intros.
+  eapply typing_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
+Qed.
 
 Theorem conv_in_ctx_conv : forall Γ Δ l t u A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t ≡ u : A -> Δ ⊢< l > t ≡ u : A.
-Admitted.
+Proof.
+  intros.
+  eapply conversion_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
+Qed.
 
-Theorem validity_ty : forall Γ l t A, Γ ⊢< l > t : A -> (⊢ Γ) /\ (Γ ⊢< Ax l > A : Sort l).
-Admitted.
-
-Theorem validity_ty_ctx : forall Γ l t A, Γ ⊢< l > t : A -> ⊢ Γ.
-Admitted.
-
-Theorem validity_ty_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< Ax l > A : Sort l.
-Admitted.
-
-Theorem validity_conv : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> (Γ ⊢< l > t : A) /\ (Γ ⊢< l > u : A).
-Admitted.
-
-
-Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l.
-Admitted.
-
-Theorem sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
-Admitted.
 
 
 Lemma conv_ctx_var Γ x l A Δ :
@@ -1160,7 +1211,7 @@ Proof.
   intro H.
   apply well_scons.
   - ssimpl. admit. (* by weakening *)
-  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. eauto using validity_ty_ctx, ctx_cons.
+  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. admit.
 Admitted.
 
 
@@ -1173,7 +1224,7 @@ Lemma type_inv_var' Γ l x T :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H.
   - eexists. split; eauto using conv_refl.
   - edestruct IHtyping as (C & eq & A_eq_C); eauto using validity_conv_left. eexists. split; eauto using conv_trans, conv_sym.
@@ -1187,7 +1238,7 @@ Lemma type_inv_sort' Γ l' i T:
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1204,7 +1255,7 @@ Lemma type_inv_pi' Γ l' i j A B T:
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & l_eq & conv); eauto using validity_conv_left.
@@ -1222,7 +1273,7 @@ Lemma type_inv_lam' Γ i j A B t T l :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & l_eq & conv); eauto using validity_conv_left.
@@ -1241,7 +1292,7 @@ Lemma type_inv_app' Γ i j A B t u l T :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & uWt & l_eq & conv); eauto using validity_conv_left.
@@ -1256,7 +1307,7 @@ Lemma type_inv_nat' Γ l' T:
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1272,7 +1323,7 @@ Lemma type_inv_zero' Γ l' T:
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1289,7 +1340,7 @@ Lemma type_inv_succ' Γ t T l :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (tWt & l_eq & conv); eauto using validity_conv_left.
@@ -1308,9 +1359,57 @@ Lemma type_inv_rec' Γ l' l P p_zero p_succ t T :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split. auto.
+  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (PWt & p_zeroWt & p_succWt & tWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
+Qed.
+
+Theorem var_unicity Γ l x A l' A' : 
+  Γ ∋< l > x : A ->
+  Γ ∋< l' > x : A' ->
+  l = l' /\ A = A'.
+Proof.
+  generalize Γ l l' A A'. clear Γ l l' A A'.
+  induction x; intros.
+  - dependent destruction H. dependent destruction H0. split; eauto.
+  - dependent destruction H. dependent destruction H0.
+    eapply IHx in H as (HA & HB); eauto. subst. split; eauto.
+Qed.
+
+
+Theorem type_sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l /\ l = l'.
+Proof.
+  intros.
+  induction H.
+  - eapply type_inv_var' in H0 as (_ & A' & H1' & Hconv).
+    eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
+  - eapply type_inv_sort' in H0 as (_ & HA & HB ). subst. eauto using conv_sym.
+  - eapply type_inv_pi' in H0 as (_ & _ & _ & eq & conv).
+    subst. eauto using conv_sym.
+  - eapply type_inv_lam' in H0 as (_ & _ & _ & _ & eq & conv).
+    subst. eauto using conv_sym.
+  - eapply type_inv_app' in H0 as (_ & _ & _ & _ & _ & eq & conv).
+    subst. eauto using conv_sym.
+  - eapply type_inv_nat' in H0 as (_ & eq & conv). 
+    subst. eauto using conv_sym.
+  - eapply type_inv_zero' in H0 as (_ & eq & conv). 
+    subst. eauto using conv_sym.
+  - eapply type_inv_succ' in H0 as (_ & _ & eq & conv). 
+    subst. eauto using conv_sym.
+  - eapply type_inv_rec' in H0 as (_ & _ & _ & _ & _ & eq & conv). 
+    subst. eauto using conv_sym.
+  - eapply IHtyping in H0 as (HA & HB). eauto using conv_sym, conv_trans.
+Qed.
+
+Corollary type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l.
+Proof.
+  intros. eapply type_sort_unicity in H as (HA & HB); eauto. subst.
+  eauto using conv_sym.
+Qed.
+
+Corollary sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
+Proof.
+  intros. eapply type_sort_unicity in H as (HA & HB); eauto.
 Qed.
