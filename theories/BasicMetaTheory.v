@@ -309,12 +309,8 @@ Proof.
     cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
   - intros ?? P ???? ihP ? ihz ? ihs ? iht Δ ρ ? hr.
-    assert (⊢ Δ ,, (ty 0, Nat)).
-    { constructor. 1: auto.
-      constructor. assumption.
-    }
     assert (Δ ,, (ty 0, Nat) ⊢< Ax l > up_ren ρ ⋅ P : Sort l).
-    { eapply ihP. 1: auto.
+    { eapply ihP. 1: eauto using ctx_typing, type_nat.
       eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
       reflexivity.
     }
@@ -324,7 +320,7 @@ Proof.
         rasimpl. reflexivity.
       * {
         eapply meta_conv.
-        - eapply ihs. 1:{ constructor. all: eauto. }
+        - eapply ihs. 1:{ constructor. all: eauto using ctx_typing, type_nat. }
           eapply WellRen_meta. 1: repeat eapply WellRen_up.
           all: eauto.
           reflexivity.
@@ -879,66 +875,58 @@ Qed.
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
-    ⊢ Γ →
     Γ ⊢< Ax l > A : Sort l
   ) ∧
   (∀ Γ l u v A,
     Γ ⊢< l > u ≡ v : A →
-    ⊢ Γ →
     Γ ⊢< l > u : A ∧ Γ ⊢< l > v : A).
 Proof.
   apply typing_mutind.
-  all: try solve [ intros ; econstructor ; eauto ].
+  all: try solve [ intros ; econstructor ; eauto using validity_ty_ctx, validity_conv_ctx].
   all: try solve [
-    intros ; try econstructor ; try econstructor ; intuition eauto
+    intros ; try econstructor ; try econstructor ; intuition eauto using validity_ty_ctx, validity_conv_ctx
   ].
   - eauto using valid_varty.
   - intros.
     eapply meta_conv.
     { eapply typing_conversion_subst.
-      all: eauto using subst_one.
+      all: eauto using subst_one, validity_ty_ctx.
     }
     reflexivity.
   - intros. eapply meta_lvl; eauto using typing.
   - intros.
     eapply meta_conv.
     { eapply typing_conversion_subst.
-      all: eauto using subst_one.
+      all: eauto using subst_one, validity_ty_ctx.
     }
     reflexivity.
   - intros. intuition eauto.
   - intros Γ i j A B **.
-    assert (⊢ Γ ,, (i,A)).
-    { intuition eauto using ctx_cons. }
     split ; econstructor. all: intuition eauto.
-    eapply typing_ctx_conv. 1,2: eauto using ctx_typing.
-    constructor. 1: eauto using ctx_conv_refl.
-    apply conv_sym. assumption.
+    eapply typing_ctx_conv. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
   - intros Γ i j A B **.
-    assert (⊢ Γ ,, (i,A)).
-    { intuition eauto using ctx_cons. }
+    (* assert (⊢ Γ ,, (i,A)).
+    { intuition eauto using ctx_cons. } *)
     split.
     + econstructor. all: intuition eauto.
     + econstructor.
       * {
         econstructor. 1: intuition eauto.
-        all: intuition eauto 9 using typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing.
+        all: intuition eauto 9 using typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
         eapply typing_ctx_conv.
         - eapply type_conv. all: intuition eauto.
-        - all: intuition eauto using ctx_conv_refl, conv_ccons, conv_sym, ctx_typing.
-        - econstructor; eauto using conv_sym, ctx_conv_refl.
+        - econstructor; eauto using validity_ty_ctx.
+        - econstructor; eauto using conv_sym, ctx_conv_refl, validity_ty_ctx.
       }
       * apply conv_sym. constructor.
         all: intuition eauto.
   - intros Γ i j A B **.
-    assert (⊢ Γ ,, (i,A)).
-    { intuition eauto using ctx_cons. }
     split.
     + econstructor. all: intuition eauto.
     + eapply type_conv.
       * {
         econstructor. 1: intuition eauto.
-        all: intuition eauto 9 using type_conv, typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing.
+        all: intuition eauto 9 using type_conv, typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
         eapply type_conv. 1: intuition eauto.
         constructor. all: intuition eauto.
       }
@@ -946,11 +934,11 @@ Proof.
         apply conv_sym. eapply conv_trans.
         - eapply meta_conv_conv.
           + eapply typing_conversion_subst.
-            all: intuition eauto using subst_one.
+            all: intuition eauto using subst_one, validity_ty_ctx.
           + reflexivity.
         - eapply meta_conv_conv.
           { eapply conv_substs.
-            - eauto.
+            - eauto using validity_ty_ctx.
             - eapply substs_one. eauto.
             - eapply subst_one. intuition eauto.
             - intuition eauto.
@@ -958,14 +946,14 @@ Proof.
           reflexivity.
       }
   - intros Γ l P **.
-    assert (⊢ Γ ,, (ty 0, Nat)).
+    (* assert (⊢ Γ ,, (ty 0, Nat)).
     { eapply ctx_cons. 1: assumption.
       econstructor. assumption.
     }
     assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
     { eapply ctx_cons. 1: assumption.
       intuition eauto.
-    }
+    } *)
     split.
     + econstructor. all: intuition eauto.
     + eapply type_conv.
@@ -973,41 +961,41 @@ Proof.
         econstructor. all: intuition eauto.
         - eapply type_conv. 1: intuition eauto.
           eapply meta_conv_conv.
-          + eapply typing_conversion_subst. 1,2: intuition eauto.
+          + eapply typing_conversion_subst. 1,2: intuition eauto using validity_ty_ctx.
             eapply well_scons_alt.
-            * apply subst_id. assumption.
-            * cbn. constructor. assumption.
+            * apply subst_id. eauto using validity_ty_ctx.
+            * cbn. constructor. eauto using validity_ty_ctx.
           + reflexivity.
         - eapply typing_ctx_conv.
           + eapply type_conv. 1: intuition eauto.
             eapply meta_conv_conv.
             * {
               eapply typing_conversion_subst. 1: intuition eauto.
-              1:econstructor; eauto.
+              1:econstructor; eauto using validity_ty_ctx.
               eapply well_scons_alt.
               - change (↑ >> (↑ >> var)) with (var >> ren_term S >> ren_term S).
                 eapply WellSubst_weak.
                 1:eapply WellSubst_weak.
-                1:apply subst_id; eauto.
-                1,2:eauto using typing.
+                1:apply subst_id; eauto using validity_ty_ctx.
+                1,2:eauto using typing, validity_ty_ctx.
               - cbn. constructor.
                 eapply meta_conv.
-                + repeat constructor. all:eauto.
+                + repeat constructor. all:eauto using validity_ty_ctx.
                 + reflexivity.
             }
             * reflexivity.
-          + constructor. 1: eauto using ctx_conv_refl. eauto.
-          + econstructor; eauto using ctx_conv_refl, conv_sym.     
+          + constructor. 1: eauto using ctx_conv_refl, validity_ty_ctx. eauto.
+          + econstructor; eauto using ctx_conv_refl, conv_sym, validity_ty_ctx.     
       }
       * {
         apply conv_sym. eapply conv_trans.
         - eapply meta_conv_conv.
           + eapply typing_conversion_subst.
-            all: intuition eauto using subst_one.
+            all: intuition eauto using subst_one, validity_ty_ctx.
           + reflexivity.
         - eapply meta_conv_conv.
           { eapply conv_substs.
-            - eauto.
+            - eauto using validity_conv_ctx.
             - eapply substs_one. eauto.
             - eapply subst_one. intuition eauto.
             - intuition eauto.
@@ -1015,41 +1003,23 @@ Proof.
           reflexivity.
       }
   - intros Γ i j A B **.
-    assert (⊢ Γ ,, (i,A)).
-    { intuition eauto using ctx_cons. }
     split.
     + econstructor. all: intuition eauto.
       econstructor. all: intuition eauto.
-    + eapply typing_conversion_subst. all: eauto using subst_one.
+    + eapply typing_conversion_subst. all: eauto using subst_one, validity_ty_ctx.
   - intros Γ l P **.
-    assert (⊢ Γ ,, (ty 0, Nat)).
-    { eapply ctx_cons. 1: assumption.
-      econstructor. assumption.
-    }
-    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
-    { eapply ctx_cons. 1: assumption.
-      intuition eauto.
-    }
     split.
     + econstructor. all: intuition eauto.
-      econstructor. assumption.
+      econstructor. eauto using validity_ty_ctx.
     + auto.
   - intros Γ l P **.
-    assert (⊢ Γ ,, (ty 0, Nat)).
-    { eapply ctx_cons. 1: assumption.
-      econstructor. assumption.
-    }
-    assert (⊢ (Γ ,, (ty 0, Nat)) ,, (l, P)).
-    { eapply ctx_cons. 1: assumption.
-      intuition eauto.
-    }
     split.
     + econstructor. all: intuition eauto.
       econstructor. auto.
     + eapply meta_conv.
       { eapply typing_conversion_subst.
-        - eauto.
-        - assumption.
+        - eauto using validity_ty_ctx.
+        - eauto using validity_ty_ctx.
         - eapply well_scons_alt.
           + apply subst_one. assumption.
           + econstructor. all: intuition eauto.
@@ -1063,15 +1033,32 @@ Qed.
 
 
 Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
-Admitted.
+  eapply ctx_conv_refl.
+Qed.
 
-Theorem wk_ty : forall Γ Δ l t A ρ, ⊢ Δ -> Γ ⊢< l > t : A -> ρ : Γ ⊆ Δ -> Δ ⊢< l > (wk_tm ρ t) : (wk_tm ρ A). (* why t ⟨ ρ ⟩ doesnt work ? *)
-Admitted.
 
-Theorem wk_conv : forall Γ Δ l t u A ρ, ⊢ Δ -> Γ ⊢< l > t ≡ u : A -> ρ : Γ ⊆ Δ -> Δ ⊢< l > (wk_tm ρ t) ≡ (wk_tm ρ u) : (wk_tm ρ A).
-Admitted.
 
-Theorem subst : forall Γ l t u A Δ σ τ, Δ ⊢s σ ≡ τ : Γ -> Γ ⊢< l > t ≡ u : A -> Δ ⊢< l > t <[ σ ] ≡ u <[ τ ] : A <[ σ ].
+Theorem validity_conv_left : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t : A.
+Proof.
+  intros. eapply validity_gen in H as (H1 & H2); eauto.
+Qed.
+
+Theorem validity_conv_right : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > u : A.
+Proof.
+  intros. eapply validity_gen in H as (H1 & H2); eauto.
+Qed.
+
+Theorem subst : forall Γ l t u A Δ σ τ A', 
+  ⊢ Δ ->
+  Δ ⊢s σ ≡ τ : Γ -> 
+  Γ ⊢< l > t ≡ u : A -> 
+  A' = A <[ σ ] ->
+  Δ ⊢< l > t <[ σ ] ≡ u <[ τ ] : A'.
+Proof.
+  intros.
+  subst.
+  eapply conv_trans.
+  1:eapply conv_substs; eauto using validity_conv_left.
 Admitted.
 
 
@@ -1105,12 +1092,6 @@ Admitted.
 Theorem validity_conv : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> (Γ ⊢< l > t : A) /\ (Γ ⊢< l > u : A).
 Admitted.
 
-Theorem validity_conv_left : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t : A.
-Admitted.
-
-
-Theorem validity_conv_right : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > u : A.
-Admitted.
 
 Theorem type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l.
 Admitted.
