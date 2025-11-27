@@ -18,74 +18,6 @@ Proof.
   intro H. destruct l; destruct l'; inversion H; auto.
 Qed.
 
-(* basic inversion lemmas *)
-
-
-Lemma type_inv_var Γ l x T :
-  Γ ⊢< l > var x : T →
-  ∃ A, Γ ∋< l > x : A.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_pi Γ l' i j A B T:
-  Γ ⊢< l' > Pi i j A B : T ->
-  Γ ⊢< Ax i > A : Sort i /\ Γ ,, (i, A) ⊢< Ax j > B : Sort j.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_lam Γ i j A B t T l :
-      Γ ⊢< l > lam i j A B t : T ->
-      Γ ⊢< Ax i > A : Sort i /\
-      Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
-      Γ ,, (i , A) ⊢< j > t : B.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_app Γ i j A B t u l T :
-      Γ ⊢< l > app i j A B  t u : T ->
-      Γ ⊢< Ax i > A : Sort i /\
-      Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
-      Γ ⊢< Ru i j > t : Pi i j A B /\
-      Γ ⊢< i > u : A.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_succ Γ t T l :
-      Γ ⊢< l > succ t : T ->
-      Γ ⊢< ty 0 > t : Nat.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_rec Γ l' l P p_zero p_succ t T :
-  Γ ⊢< l' > rec l P p_zero p_succ t : T ->
-  Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l /\
-  Γ ⊢< l > p_zero : P <[ zero .. ] /\
-  Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] /\
-  Γ ⊢< ty 0 > t : Nat.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-Lemma type_inv_box Γ T l :
-      Γ ⊢< l > box : T ->
-      False.
-Proof.
-  intro H.
-  dependent induction H; eauto.
-Qed.
-
-
 (*
   To prove the following properties, we can try to follow the same order as in
   Harper & Pfenning's "On equivalence and canonical forms in the lf type theory".
@@ -1160,11 +1092,10 @@ Qed.
 
 Lemma type_inv_var' Γ l x T :
   Γ ⊢< l > var x : T →
-  Γ ⊢< l > var x : T ∧ ∃ A, Γ ∋< l > x : A ∧ Γ ⊢< Ax l > T ≡ A : Sort l.
+  ∃ A, Γ ∋< l > x : A ∧ Γ ⊢< Ax l > T ≡ A : Sort l.
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H.
   - eexists. split; eauto using conv_refl.
   - edestruct IHtyping as (C & eq & A_eq_C); eauto using validity_conv_left. eexists. split; eauto using conv_trans, conv_sym.
@@ -1172,13 +1103,11 @@ Qed.
 
 Lemma type_inv_sort' Γ l' i T:
   Γ ⊢< l' > Sort i : T ->
-  Γ ⊢< l' > Sort i : T /\
   l' = Ax (Ax i) /\
   Γ ⊢< Ax (Ax (Ax i)) > T ≡ Sort (Ax i) : Sort (Ax (Ax i)).
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1187,7 +1116,6 @@ Qed.
 
 Lemma type_inv_pi' Γ l' i j A B T:
   Γ ⊢< l' > Pi i j A B : T ->
-  Γ ⊢< l' > Pi i j A B : T /\
   Γ ⊢< Ax i > A : Sort i /\
   Γ ,, (i, A) ⊢< Ax j > B : Sort j /\
   l' = Ax (Ru i j) /\
@@ -1195,7 +1123,6 @@ Lemma type_inv_pi' Γ l' i j A B T:
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & l_eq & conv); eauto using validity_conv_left.
@@ -1204,7 +1131,6 @@ Qed.
 
 Lemma type_inv_lam' Γ i j A B t T l :
       Γ ⊢< l > lam i j A B t : T ->
-      Γ ⊢< l > lam i j A B t : T /\
       Γ ⊢< Ax i > A : Sort i /\
       Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
       Γ ,, (i , A) ⊢< j > t : B /\
@@ -1213,7 +1139,6 @@ Lemma type_inv_lam' Γ i j A B t T l :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & l_eq & conv); eauto using validity_conv_left.
@@ -1222,7 +1147,6 @@ Qed.
 
 Lemma type_inv_app' Γ i j A B t u l T :
       Γ ⊢< l > app i j A B t u : T ->
-      Γ ⊢< l > app i j A B t u : T /\
       Γ ⊢< Ax i > A : Sort i /\
       Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
       Γ ⊢< Ru i j > t : Pi i j A B /\
@@ -1232,7 +1156,6 @@ Lemma type_inv_app' Γ i j A B t u l T :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (AWt & BWt & tWt & uWt & l_eq & conv); eauto using validity_conv_left.
@@ -1241,13 +1164,11 @@ Qed.
 
 Lemma type_inv_nat' Γ l' T:
   Γ ⊢< l' > Nat : T ->
-  Γ ⊢< l' > Nat : T /\
   l' = ty 1 /\
   Γ ⊢< ty 2 > T ≡ Sort (ty 0) : Sort (ty 1).
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1257,13 +1178,11 @@ Qed.
 
 Lemma type_inv_zero' Γ l' T:
   Γ ⊢< l' > zero : T ->
-  Γ ⊢< l' > zero : T /\
   l' = ty 0 /\
   Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0).
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (l_eq & conv); eauto using validity_conv_left.
@@ -1273,14 +1192,12 @@ Qed.
 
 Lemma type_inv_succ' Γ t T l :
       Γ ⊢< l > succ t : T ->
-      Γ ⊢< l > succ t : T /\
       Γ ⊢< ty 0 > t : Nat /\
       l = ty 0 /\
       Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0).
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (tWt & l_eq & conv); eauto using validity_conv_left.
@@ -1289,7 +1206,6 @@ Qed.
 
 Lemma type_inv_rec' Γ l' l P p_zero p_succ t T :
   Γ ⊢< l' > rec l P p_zero p_succ t : T ->
-  Γ ⊢< l' > rec l P p_zero p_succ t : T /\
   Γ ,, (ty 0 , Nat) ⊢< Ax l > P : Sort l /\
   Γ ⊢< l > p_zero : P <[ zero .. ] /\
   Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] /\
@@ -1299,11 +1215,19 @@ Lemma type_inv_rec' Γ l' l P p_zero p_succ t T :
 Proof.
   intro H.
   apply validity_ty_ty in H as T_Wt.
-  split; auto.
   dependent induction H; eauto.
   - repeat split; eauto using conv_refl.
   - edestruct IHtyping as (PWt & p_zeroWt & p_succWt & tWt & l_eq & conv); eauto using validity_conv_left.
     rewrite l_eq in *. repeat split; eauto using conv_trans, conv_sym.
+Qed.
+
+
+Lemma type_inv_box' Γ T l :
+      Γ ⊢< l > box : T ->
+      False.
+Proof.
+  intro H.
+  dependent induction H; eauto.
 Qed.
 
 Theorem var_unicity Γ l x A l' A' : 
@@ -1323,22 +1247,22 @@ Theorem type_sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< 
 Proof.
   intros.
   induction H.
-  - eapply type_inv_var' in H0 as (_ & A' & H1' & Hconv).
+  - eapply type_inv_var' in H0 as (A' & H1' & Hconv).
     eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
-  - eapply type_inv_sort' in H0 as (_ & HA & HB ). subst. eauto using conv_sym.
-  - eapply type_inv_pi' in H0 as (_ & _ & _ & eq & conv).
+  - eapply type_inv_sort' in H0 as (HA & HB ). subst. eauto using conv_sym.
+  - eapply type_inv_pi' in H0 as (_ & _ & eq & conv).
     subst. eauto using conv_sym.
-  - eapply type_inv_lam' in H0 as (_ & _ & _ & _ & eq & conv).
+  - eapply type_inv_lam' in H0 as (_ & _ & _ & eq & conv).
     subst. eauto using conv_sym.
-  - eapply type_inv_app' in H0 as (_ & _ & _ & _ & _ & eq & conv).
+  - eapply type_inv_app' in H0 as (_ & _ & _ & _ & eq & conv).
     subst. eauto using conv_sym.
-  - eapply type_inv_nat' in H0 as (_ & eq & conv). 
+  - eapply type_inv_nat' in H0 as (eq & conv). 
     subst. eauto using conv_sym.
-  - eapply type_inv_zero' in H0 as (_ & eq & conv). 
+  - eapply type_inv_zero' in H0 as (eq & conv). 
     subst. eauto using conv_sym.
-  - eapply type_inv_succ' in H0 as (_ & _ & eq & conv). 
+  - eapply type_inv_succ' in H0 as (_ & eq & conv). 
     subst. eauto using conv_sym.
-  - eapply type_inv_rec' in H0 as (_ & _ & _ & _ & _ & eq & conv). 
+  - eapply type_inv_rec' in H0 as (_ & _ & _ & _ & eq & conv). 
     subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). eauto using conv_sym, conv_trans.
 Qed.
@@ -1366,7 +1290,7 @@ Proof.
   eapply type_var in hx; eauto using validity_ctx_conv_left.
   eapply conv_in_ctx_ty in hx; eauto.
   eapply type_inv_var' in hx as 
-    (_ & A0 & varin & conv).
+    (A0 & varin & conv).
   exists A0. split; eauto.
   eauto using conv_in_ctx_conv, ctx_conv_sym.
 Qed.

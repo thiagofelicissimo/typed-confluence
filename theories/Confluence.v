@@ -248,7 +248,7 @@ Proof.
   - eauto 10 using ortho_to_conv, validity_conv_ctx, conv_sort.
   - destruct (IHortho_red _ _ _ _ eq_refl) as (A' & B' & eq & eq' & redA & redB & conv). subst.
     eauto 8 using conv_sym, conv_trans.
-  - eapply type_inv_pi' in H as (_ & _ & _ & eq & _).
+  - eapply type_inv_pi' in H as (_ & _ & eq & _).
     destruct l1; inversion eq.
 Qed.
 
@@ -296,8 +296,6 @@ Lemma ortho_app_inv Γ i l1 l2 A1 B1 t u w T :
   )).
 Proof.
   intros.
-  (* eapply ortho_validity_left, type_inv_app' in H as temp. *)
-  (* destruct temp as (_ & _ & _ & _ & _ & _ & tyWt). eapply validity_conv_right in tyWt. *)
   dependent induction H; eauto.
   - split; eauto. split; eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
     left. eauto 9.
@@ -903,9 +901,9 @@ Proof.
   - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun A => Pi i j A B') _ _ A_equiv_A' _).
     3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros.
-      split; intro temp; apply type_inv_pi in temp as (H1 & H2);
-      eauto using type_inv_pi, type_pi, validity_conv_right, validity_conv_left, conv_sym, conv_ty_in_ctx_ty.
-    + intros v v' v_red_v' Wt. apply type_inv_pi in Wt as (v_Wt & B_Wt).
+      split; intro temp; apply type_inv_pi' in temp as (H1 & H2 & _);
+      eauto using type_inv_pi', type_pi, validity_conv_right, validity_conv_left, conv_sym, conv_ty_in_ctx_ty.
+    + intros v v' v_red_v' Wt. apply type_inv_pi' in Wt as (v_Wt & B_Wt & _).
       apply equiv_step. eauto using ortho_pi, ortho_refl, conv_ty_in_ctx_ty.
 Qed.
 
@@ -989,11 +987,11 @@ Proof.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
     3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. split.
-      all: (intro temp; apply type_inv_rec in temp; destruct temp as [H1 [H2 [H3 H4]]]).
+      all: (intro temp; apply type_inv_rec' in temp; destruct temp as [H1 [H2 [H3 [H4 H5]]]]).
       all: (apply type_rec; eauto 9 using equiv_to_conv, subst_conv, type_conv, type_zero,
         subst_one, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, aux_subst_2, ctx_from_conv, refl_subst).
     + intros v v' v_red_v' Wt.
-      apply type_inv_rec in Wt. destruct Wt as [H1 [H2 [H3 H4]]].
+      apply type_inv_rec' in Wt. destruct Wt as [H1 [H2 [H3 [H4 H5]]]].
       apply equiv_step. eauto using ortho_refl, ortho_rec.
 Qed.
 
