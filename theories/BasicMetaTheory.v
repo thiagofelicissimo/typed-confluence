@@ -287,6 +287,26 @@ Proof.
     all:ssimpl; reflexivity.
 Qed.
 
+Lemma type_ren Γ l t A Δ ρ A' :
+  Γ ⊢< l > t : A →
+  ⊢ Δ →
+  Δ ⊢r ρ : Γ →
+  A' = ρ ⋅ A ->
+  Δ ⊢< l > ρ ⋅ t : A'.
+Proof.
+  intros. subst. eapply typing_conversion_ren in H; eauto.
+Qed.
+
+Lemma conv_ren Γ l t u A Δ ρ A' :
+  Γ ⊢< l > t ≡ u : A →
+  ⊢ Δ →
+  Δ ⊢r ρ : Γ →
+  A' = ρ ⋅ A ->
+  Δ ⊢< l > ρ ⋅ t ≡ ρ ⋅ u : A'.
+Proof.
+  intros. subst. eapply typing_conversion_ren in H; eauto.
+Qed.
+
 #[export] Instance WellSubst_morphism :
   Proper (eq ==> eq ==> (`=1`) ==> iff) WellSubst.
 Proof.
