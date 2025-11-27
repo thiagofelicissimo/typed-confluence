@@ -923,17 +923,23 @@ Proof.
     split. all: intuition eauto.
 Qed.
 
-Theorem validity_conv_left : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t : A.
+Theorem validity_conv_left Γ l t u A : 
+  Γ ⊢< l > t ≡ u : A -> 
+  Γ ⊢< l > t : A.
 Proof.
   intros. eapply validity_gen in H as (H1 & H2); eauto.
 Qed.
 
-Theorem validity_conv_right : forall Γ l t u A, Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > u : A.
+Theorem validity_conv_right Γ l t u A : 
+  Γ ⊢< l > t ≡ u : A -> 
+  Γ ⊢< l > u : A.
 Proof.
   intros. eapply validity_gen in H as (H1 & H2); eauto.
 Qed.
 
-Theorem validity_ty_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< Ax l > A : Sort l.
+Theorem validity_ty_ty Γ l t A : 
+  Γ ⊢< l > t : A -> 
+  Γ ⊢< Ax l > A : Sort l.
 Proof.
   intros.
   eapply validity_gen in H. assumption.
@@ -944,10 +950,6 @@ Lemma validity_subst_conv_left Δ Γ σ τ :
   Δ ⊢s σ : Γ.
 Proof.
   intros. induction H; eauto using validity_conv_left, WellSubst.
-Qed.
-
-Theorem refl_ctx : forall Γ, ⊢ Γ -> ⊢ Γ ≡ Γ.
-  eapply ctx_conv_refl.
 Qed.
 
 Lemma subst_sym Δ Γ σ τ : 
@@ -975,7 +977,7 @@ Qed.
 
 
 
-Theorem subst_conv : forall Γ l t u A Δ σ τ A', 
+Theorem subst_conv Γ l t u A Δ σ τ A' :
   ⊢ Δ ->
   Δ ⊢s σ ≡ τ : Γ -> 
   Γ ⊢< l > t ≡ u : A -> 
@@ -1034,13 +1036,19 @@ Qed.
 
 
 
-Theorem conv_in_ctx_ty : forall Γ Δ l t A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t : A -> Δ ⊢< l > t : A.
+Theorem conv_in_ctx_ty Γ Δ l t A : 
+  ⊢ Γ ≡ Δ -> 
+  Γ ⊢< l > t : A -> 
+  Δ ⊢< l > t : A.
 Proof.
   intros.
   eapply pre_conv_in_ctx_ty; eauto using validity_ctx_conv_right, ctx_conv_sym.
 Qed.
 
-Theorem conv_in_ctx_conv : forall Γ Δ l t u A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t ≡ u : A -> Δ ⊢< l > t ≡ u : A.
+Theorem conv_in_ctx_conv Γ Δ l t u A : 
+  ⊢ Γ ≡ Δ -> 
+  Γ ⊢< l > t ≡ u : A -> 
+  Δ ⊢< l > t ≡ u : A.
 Proof.
   intros.
   eapply pre_conv_in_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
@@ -1057,7 +1065,7 @@ Lemma conv_ty_in_ctx_conv Γ l A A' l' t u B :
 Proof.
   intros t_eq_u A_eq_A'.
   eapply conv_in_ctx_conv; eauto.
-  apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+  apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, validity_conv_left.
 Qed.
 
 
@@ -1068,11 +1076,11 @@ Lemma conv_ty_in_ctx_ty Γ l A A' l' t B :
 Proof.
   intros t_eq_u A_eq_A'.
   eapply conv_in_ctx_ty; eauto.
-  apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
+  apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, validity_conv_left.
 Qed.
 
 (* the following lemma helps automation to type some substitutions that appear often in the proof *)
-Lemma aux_subst_2 Γ l P :
+Lemma subst_id_var1 Γ l P :
   Γ ,, (ty 0, Nat) ⊢< Ax l > P : Sort l ->
   (Γ,, (ty 0, Nat)),, (l, P) ⊢s (succ (var 1) .: ↑ >> (↑ >> var)) : Γ ,, (ty 0, Nat).
 Proof.
@@ -1179,7 +1187,10 @@ Proof.
 Qed.
 
 
-Theorem type_sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l /\ l = l'.
+Theorem type_sort_unicity Γ l l' t A B : 
+  Γ ⊢< l > t : A -> 
+  Γ ⊢< l' > t : B -> 
+  Γ ⊢< Ax l > A ≡ B : Sort l /\ l = l'.
 Proof.
   intros.
   induction H.
@@ -1203,21 +1214,27 @@ Proof.
   - eapply IHtyping in H0 as (HA & HB). eauto using conv_sym, conv_trans.
 Qed.
 
-Corollary type_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> Γ ⊢< Ax l > A ≡ B : Sort l.
+Corollary type_unicity Γ l l' t A B : 
+  Γ ⊢< l > t : A -> 
+  Γ ⊢< l' > t : B -> 
+  Γ ⊢< Ax l > A ≡ B : Sort l.
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto. subst.
   eauto using conv_sym.
 Qed.
 
-Corollary sort_unicity : forall Γ l l' t A B, Γ ⊢< l > t : A ->  Γ ⊢< l' > t : B -> l = l'.
+Corollary sort_unicity Γ l l' t A B : 
+  Γ ⊢< l > t : A -> 
+  Γ ⊢< l' > t : B -> 
+  l = l'.
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto.
 Qed.
 
 
 
-
-Lemma conv_ctx_var Γ x l A Δ :
+(* not needed anymore *)
+(* Lemma conv_ctx_var Γ x l A Δ :
   Γ ∋< l > x : A →
   ⊢ Γ ≡ Δ ->
   ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
@@ -1229,7 +1246,7 @@ Proof.
     (A0 & varin & conv).
   exists A0. split; eauto.
   eauto using conv_in_ctx_conv, ctx_conv_sym.
-Qed.
+Qed. *)
 
 
 Lemma conv_rec' Γ l P p_zero p_succ t P' p_zero' p_succ' t' P_ :

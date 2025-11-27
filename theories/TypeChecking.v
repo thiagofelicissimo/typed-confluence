@@ -356,7 +356,7 @@ Proof.
       edestruct (H1 (Γ' ,, (ty 0, Nat) ,, (l, P')) (P' <[ succ (var 1) .: ↑ >> (↑ >> var)]))
         as (p_succ' & p_succ'_Wt & erasure_eq); eauto.
       eapply aux_subst_commute; eauto.
-      eapply subst_ty; eauto using aux_subst_2, ctx_typing, type_nat.
+      eapply subst_ty; eauto using subst_id_var1, ctx_typing, type_nat.
       dependent destruction erasure_eq.
 
       (* applying the ih to k *)
@@ -597,11 +597,12 @@ Proof.
     1,2,3,5,6,7,8,9: (eapply completeness_aux; eauto).
 
     (* case var *)
-    - eapply conv_ctx_var in H0 as (B & nth_x & conv); eauto.
+    - eapply conv_in_ctx_ty in Wt'; eauto.
+      eapply type_inv in Wt' as (B & varin & conv).
       exists (cvar x). eexists.
       repeat split; eauto using CTerm.
-      + eapply infer_var. apply varty_erase. assumption.
-
+      + eapply infer_var. apply varty_erase. eassumption.
+      + eapply conv_in_ctx_conv; eauto using ctx_conv_sym. 
     (* case sort *)
     - exists (cSort l). exists (Sort (Ax l)).
       split; eauto using CTerm, conv_refl, validity_ty_ty, infer_Sort.
@@ -706,7 +707,7 @@ Corollary completeness_check Γ l t T h :
 Proof.
     intros. pose proof H0 as Wt.
     eapply completeness in Wt as (case_check & case_infer);
-    eauto using refl_ctx, validity_ty_ctx.
+    eauto using ctx_conv_refl, validity_ty_ctx.
     eapply case_check. eauto using validity_ty_ty, conv_refl.
 Qed.
 
@@ -717,7 +718,7 @@ Corollary completeness_infer Γ l t T h :
 Proof.
     intros. pose proof H0 as Wt.
     eapply completeness in Wt as (case_check & case_infer);
-    eauto using refl_ctx, validity_ty_ctx.
+    eauto using ctx_conv_refl, validity_ty_ctx.
 Qed.
 
 

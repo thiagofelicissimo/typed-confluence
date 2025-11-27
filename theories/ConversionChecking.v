@@ -707,7 +707,7 @@ Proof.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_rec'; eauto.
     + eapply H0; eauto 9 using type_conv, subst_conv, subst_one, validity_ty_ctx, type_zero, conv_sym, refl_subst.
-    + eapply H1; eauto 10 using type_conv, conv_ty_in_ctx_ty, subst_conv, aux_subst_2, ctx_from_conv, refl_subst.
+    + eapply H1; eauto 10 using type_conv, conv_ty_in_ctx_ty, subst_conv, subst_id_var1, ctx_from_conv, refl_subst.
 Qed.
 
 
