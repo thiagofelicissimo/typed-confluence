@@ -180,6 +180,16 @@ Proof.
   intros. eauto using ortho_to_conv, validity_conv_right. 
 Qed.
 
+Lemma ortho_subst_to_conv Γ σ τ Δ :
+  Γ ⊢s σ ⟹ τ : Δ ->
+  Γ ⊢s σ ≡ τ : Δ.
+Proof.
+  intros.
+  induction H; eauto using ConvSubst.
+  econstructor; eauto using ortho_to_conv.
+Qed.
+
+
 Lemma ortho_meta_conv Γ u v l A B :
   Γ ⊢< l > u ⟹ v : A →
   A = B →
@@ -210,7 +220,6 @@ Proof.
   all: try solve [
     intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv + eapply ortho_meta_conv) ; [
       econstructor ; 
-      (* (eapply meta_conv + eapply meta_conv_conv + eapply ortho_meta_conv + idtac);  *)
       eauto 8 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv
     | rasimpl ; reflexivity
     ]
@@ -219,8 +228,6 @@ Proof.
     cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
   - intros. cbn. eapply ortho_meta_conv. eapply ortho_rec. 
-    (* all:(eapply meta_conv + eapply meta_conv_conv + eapply ortho_meta_conv + idtac).
-    all:eauto 8 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv.*)
     all:eauto. 4:rasimpl;eauto.
     1:eapply IHortho_red1; eauto using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat.
     eauto 9 using ortho_meta_conv, WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, eq_refl.
@@ -266,6 +273,64 @@ Proof.
 Qed. 
 
 
+#[export] Instance ortho_subst_morphism :
+  Proper (eq ==> eq ==> (`=1`) ==> (`=1`) ==> iff) ortho_subst.
+Proof.
+  intros Γ ? <- Δ ? <- σ σ' e  τ τ' p.
+  revert σ σ' τ τ' e p. wlog_iff. intros.
+  revert τ' σ' e p.
+  dependent induction H; intros.
+  - constructor.
+  - constructor.
+    + eapply IHortho_subst. intros x. unfold ">>". apply e. intro x. 
+      destruct x. eauto. eapply p.
+    + rewrite <- e. rewrite <- p. eauto.
+Qed.
+
+Lemma autosubst_simpl_ortho_subst :
+  ∀ Γ Δ r s r' s', 
+    SubstSimplification r s →
+    SubstSimplification r' s' →
+    Γ ⊢s r ⟹ r' : Δ ↔ Γ ⊢s s ⟹ s' : Δ.
+Proof.
+  intros.
+  apply ortho_subst_morphism; eauto.
+  apply H.
+  apply H0.
+Qed.
+
+#[export] Hint Rewrite -> autosubst_simpl_ortho_subst : rasimpl_outermost.
+
+
+Lemma ortho_well_scons_alt Γ Δ σ σ' u u' l A :
+  Γ ⊢s σ ⟹ σ' : Δ →
+  Γ ⊢< l > u ⟹ u' : A <[ σ ] →
+  Γ ⊢s (u .: σ) : Δ ,, (l, A).
+Proof.
+  intros hs hu.
+  constructor.
+  - erewrite autosubst_simpl_WellSubst. 2: exact _. 
+    eauto using ortho_subst_to_conv, validity_subst_conv_left.
+  - cbn. rasimpl. eauto using ortho_validity_left.
+Qed.
+
+Lemma ortho_subst_weak Γ Δ σ τ l A :
+  Γ ⊢s σ ⟹ τ : Δ →
+  Γ ⊢< Ax l > A : Sort l ->
+  Γ ,, (l, A) ⊢s (σ >> ren_term S) ⟹ (τ >> ren_term S) : Δ.
+Proof.
+  induction 1 as [| σ τ Δ i B h ih ho] in l, A |- *.
+  - constructor.
+  - constructor.
+    + auto.
+    + eapply ortho_meta_conv.
+      * unfold ">>". eapply ortho_ren. 1: eassumption.
+        1:econstructor; eauto using validity_ty_ctx.
+        eapply WellRen_S.
+      * rasimpl. reflexivity.
+Qed.
+
+
 Lemma ortho_subst_up Γ Δ l A A' σ τ :
   Γ ⊢s σ ⟹ τ : Δ →
   A' = A <[ σ ] ->
@@ -274,7 +339,13 @@ Lemma ortho_subst_up Γ Δ l A A' σ τ :
 Proof.
   intros. subst.
   constructor.
-Admitted.
+  - eapply ortho_subst_weak; assumption.
+  - rasimpl. cbn. econstructor. 
+    1: econstructor; eauto using validity_ty_ctx.
+   eapply varty_meta.
+    + constructor.
+    + rasimpl. reflexivity.
+Qed.
 
 
 Theorem subst_ortho Γ l t u A σ τ Δ :
@@ -285,57 +356,63 @@ Theorem subst_ortho Γ l t u A σ τ Δ :
 Proof.
   intros. generalize Δ σ τ H0 H1. clear Δ σ τ H0 H1.
   induction H.
-  all: try solve [ intros ; try econstructor ; eauto 9 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left
+  all: try solve [ intros ; try econstructor ; eauto 11 using ortho_subst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, ortho_subst_to_conv
   ].
   all: try solve [
     intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv + eapply ortho_meta_conv) ; [
       econstructor ; 
-      (* (eapply meta_conv + eapply meta_conv_conv + eapply ortho_meta_conv + idtac);  *)
-      eauto 9 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left
-      (* , ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv *)
+      eauto 11 using ortho_subst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, ortho_subst_to_conv
     | rasimpl ; reflexivity
     ]
   ].
-  (* - intros.
+  - intros.
     cbn. eapply subst_ortho_var; eauto.
-  - intros. cbn. eapply ortho_meta_conv. eapply ortho_pi ; eauto. eapply IHortho_red2.
-  - intros. cbn. eapply ortho_meta_conv. eapply ortho_rec; eauto 9 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, type_nat.
-    + eapply ortho_meta_conv. eapply IHortho_red2; eauto.
-      rasimpl. reflexivity.
-    + eapply ortho_meta_conv. eapply IHortho_red3; eauto.
-      eauto 10 using ctx_cons, type_nat, subst_ty, ortho_validity_left, WellSubst_up.
-      eapply WellSubst_up. eapply WellSubst_up. all: eauto using type_nat.
+  - intros. cbn. eapply ortho_meta_conv. eapply ortho_rec. 
+    all:eauto. 4:rasimpl;eauto.
+    + eapply IHortho_red1; eauto using ortho_subst_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat.
+    + eapply ortho_meta_conv; rasimpl; eauto. rasimpl; eauto.
+    + eapply ortho_meta_conv. eapply IHortho_red3; eauto. 
+      eapply ctx_cons; eauto using ctx_cons, type_nat. 
       eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left.
-      eapply WellSubst_up; eauto using type_nat.
-      rasimpl. reflexivity.
-    + rasimpl. reflexivity.
-  - intros. cbn. eapply ortho_meta_conv2. eapply ortho_beta; eauto 9 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, type_nat.
-     all:rasimpl;reflexivity.
+      eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+      eapply ortho_subst_up. eapply ortho_subst_up. all: eauto using type_nat.
+      eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left.
+      eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+      rasimpl; reflexivity.
+  - intros. eapply ortho_conv. eapply IHortho_red; eauto.
+    eapply subst_conv; eauto using ortho_subst_to_conv, validity_subst_conv_left, refl_subst.
+  - intros. eapply ortho_irrel.
+    + eapply subst_ty; eauto using ortho_subst_to_conv, validity_subst_conv_left.
+    + eapply type_conv. eapply subst_ty; eauto using ortho_subst_to_conv, validity_subst_conv_right, validity_ty_ctx.
+      eapply subst_conv; eauto using validity_ty_ty, conv_refl, ortho_subst_to_conv, subst_sym, validity_ty_ctx.
+  - intros. cbn. eapply ortho_meta_conv2. eapply ortho_beta; eauto 14 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+    eapply IHortho_red1; eauto using ortho_subst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, ortho_subst_to_conv.
+    all:rasimpl;reflexivity.
   - intros. cbn. eapply ortho_meta_conv2. eapply ortho_rec_zero; eauto.
-    + eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat.
+    + eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
     + eapply ortho_meta_conv. eapply IHortho_red; eauto. rasimpl. reflexivity.
     + eapply subst_ty; eauto. 
       eapply ctx_cons; eauto using ctx_cons, type_nat, subst_ty, WellSubst_up.
-      eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat.
+      eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
       eapply WellSubst_up. eapply WellSubst_up. 
-      all:eauto using type_nat.
-      eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat.
+      all:eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+      eapply subst_ty; eauto using ctx_cons, type_nat. eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
       rasimpl. reflexivity.
     + rasimpl. reflexivity.
     + rasimpl. reflexivity.
   - intros. cbn. eapply ortho_meta_conv2. eapply ortho_rec_succ; eauto 9 using WellSubst_up, ctx_cons, ortho_validity_left, subst_ty, subst_conv, refl_subst, validity_conv_left, type_nat.
+    + eapply ortho_meta_conv. eapply IHortho_red1; eauto using ctx_cons, type_nat, ortho_subst_up. rasimpl. reflexivity.
     + eapply ortho_meta_conv. eapply IHortho_red2; eauto. rasimpl. reflexivity.
     + eapply ortho_meta_conv. eapply IHortho_red3; eauto.
       eapply ctx_cons; eauto using ctx_cons, type_nat, subst_ty, WellSubst_up.
-      eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left. eapply WellSubst_up; eauto using type_nat.
-      eapply WellSubst_up. eapply WellSubst_up. 
+      eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left. eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+      eapply ortho_subst_up. eapply ortho_subst_up. 
       all:eauto using type_nat.
-      eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left. eapply WellSubst_up; eauto using type_nat.
+      eapply subst_ty; eauto using ctx_cons, type_nat, ortho_validity_left. eapply WellSubst_up; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
       rasimpl. reflexivity.
     + rasimpl. reflexivity.
     + rasimpl. reflexivity.
-Qed. *)
-Admitted.
+Qed.
 
 Theorem ortho_conv_in_ctx :
   forall Γ Δ l t u A,
