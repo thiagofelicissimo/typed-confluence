@@ -349,14 +349,14 @@ Proof.
       (* applying the ih to p_zero *)
       edestruct (H0 Γ' (P' <[ zero..])) as (p_zero' & p_zero'_Wt & erasure_eq); eauto.
       eapply (erasure_subst_1_commutes _ (ty 0)); eauto.
-      eapply subst_ty'; eauto using aux_subst_1, type_zero.
+      eapply subst_ty; eauto using subst_one, type_zero.
       dependent destruction erasure_eq.
 
       (* applying the ih to p_succ *)
       edestruct (H1 (Γ' ,, (ty 0, Nat) ,, (l, P')) (P' <[ succ (var 1) .: ↑ >> (↑ >> var)]))
         as (p_succ' & p_succ'_Wt & erasure_eq); eauto.
       eapply aux_subst_commute; eauto.
-      eapply subst_ty'; eauto using aux_subst_2, ctx_typing, type_nat.
+      eapply subst_ty; eauto using aux_subst_2, ctx_typing, type_nat.
       dependent destruction erasure_eq.
 
       (* applying the ih to k *)
@@ -619,7 +619,7 @@ Proof.
       + erewrite app_box_erasure; eauto.
         erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
         eapply infer_app; eauto.
-      + eauto using subst_ty, aux_subst_1, validity_conv_ctx.
+      + eauto using subst_conv, subst_one, validity_conv_ctx, refl_subst.
 
     (* case nat *)
     - exists cNat. exists (Sort (ty 0)).
@@ -720,6 +720,8 @@ Proof.
     eauto using refl_ctx, validity_ty_ctx.
 Qed.
 
+
+Print Assumptions completeness_infer.
 
 Definition Decidable (P : Prop) := sum P (not P).
 

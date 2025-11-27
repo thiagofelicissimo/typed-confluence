@@ -319,7 +319,7 @@ Proof.
   eapply conv_trans.
   eapply conv_app; eauto using conv_refl, validity_conv_left.
   eapply conv_conv.
-  2: eapply subst_ty; eauto using aux_subst_1, conv_sym, validity_ty_ctx.
+  2: eapply subst_conv; eauto using subst_one, conv_sym, validity_ty_ctx, refl_subst.
   eapply conv_beta; eauto using type_conv, validity_conv_right, conv_ty_in_ctx_ty.
 Qed.
 
@@ -706,8 +706,8 @@ Proof.
     dependent destruction i0_eq.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_rec'; eauto.
-    + eapply H0; eauto 8 using type_conv, subst_ty, aux_subst_1, validity_ty_ctx, type_zero, conv_sym.
-    + eapply H1; eauto 9 using type_conv, conv_ty_in_ctx_ty, subst_ty, aux_subst_2, ctx_from_conv.
+    + eapply H0; eauto 9 using type_conv, subst_conv, subst_one, validity_ty_ctx, type_zero, conv_sym, refl_subst.
+    + eapply H1; eauto 10 using type_conv, conv_ty_in_ctx_ty, subst_conv, aux_subst_2, ctx_from_conv, refl_subst.
 Qed.
 
 

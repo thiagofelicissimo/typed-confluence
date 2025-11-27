@@ -601,38 +601,6 @@ Proof.
   intros ? ->. assumption.
 Qed.
 
-(* Lemma ctx_conv_sym Γ Δ :
-  ⊢ Γ ≡ Δ →
-  ⊢ Δ ≡ Γ.
-Proof.
-  intros h. induction h.
-  - constructor.
-  - constructor. *)
-
-(* TODO Maybe useless *)
-(* Lemma ctx_conv_varty Γ Δ x A l :
-  ⊢ Γ ≡ Δ →
-  Γ ∋< l > x : A →
-  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
-Proof.
-  intros hc h.
-  induction hc as [| Γ B Δ C i hc ih hbc ] in x, l, A, h |- *.
-  - inversion h.
-  - inversion h. all: subst.
-    + eexists. split.
-      * constructor.
-      * eapply meta_conv_conv.
-        { eapply typing_conversion_ren. all: eauto using WellRen_S. }
-        reflexivity.
-    + specialize ih with (1 := ltac:(eassumption)).
-      destruct ih as (D & hx & he).
-      eexists. split.
-      * constructor. eassumption.
-      * eapply meta_conv_conv.
-        { eapply typing_conversion_ren. all: eauto using WellRen_S. }
-        reflexivity.
-Qed. *)
-
 Lemma WellSubst_conv Γ Δ Ξ σ :
   Γ ⊢s σ : Δ →
   ⊢ Δ ≡ Ξ →
@@ -652,7 +620,9 @@ Proof.
 Qed.
 
 
-Lemma typing_ctx_conv Γ Δ t l A :
+(* We show weaker versions of conv_in_ctx in which we require the assumption ⊢ Δ. 
+  Once we have validity, we then prove the real conv_in_ctx which drop this assumption. *)
+Lemma pre_conv_in_ctx_ty Γ Δ t l A :
   Γ ⊢< l > t : A →
   ⊢ Δ ->
   ⊢ Δ ≡ Γ →
@@ -666,7 +636,7 @@ Proof.
     apply subst_id. assumption.
 Qed.
 
-Lemma conversion_ctx_conv Γ Δ u v l A :
+Lemma pre_conv_in_ctx_conv Γ Δ u v l A :
   Γ ⊢< l > u ≡ v : A →
   ⊢ Δ ->
   ⊢ Δ ≡ Γ →
@@ -903,15 +873,15 @@ Proof.
   - intros. intuition eauto.
   - intros Γ i j A B **.
     split ; econstructor. all: intuition eauto.
-    eapply typing_ctx_conv. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
+    eapply pre_conv_in_ctx_ty. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
   - intros Γ i j A B **.
     split.
     + econstructor. all: intuition eauto.
     + econstructor.
       * {
         econstructor. 1: intuition eauto.
-        all: intuition eauto 9 using typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
-        eapply typing_ctx_conv.
+        all: intuition eauto 9 using pre_conv_in_ctx_ty, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
+        eapply pre_conv_in_ctx_ty.
         - eapply type_conv. all: intuition eauto.
         - econstructor; eauto using validity_ty_ctx.
         - econstructor; eauto using conv_sym, ctx_conv_refl, validity_ty_ctx.
@@ -924,7 +894,7 @@ Proof.
     + eapply type_conv.
       * {
         econstructor. 1: intuition eauto.
-        all: intuition eauto 9 using type_conv, typing_ctx_conv, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
+        all: intuition eauto 8 using type_conv, pre_conv_in_ctx_ty, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
         eapply type_conv. 1: intuition eauto.
         constructor. all: intuition eauto.
       }
@@ -956,7 +926,7 @@ Proof.
             * apply subst_id. eauto using validity_ty_ctx.
             * cbn. constructor. eauto using validity_ty_ctx.
           + reflexivity.
-        - eapply typing_ctx_conv.
+        - eapply pre_conv_in_ctx_ty.
           + eapply type_conv. 1: intuition eauto.
             eapply meta_conv_conv.
             * {
@@ -1031,6 +1001,11 @@ Proof.
   intros. eapply validity_gen in H as (H1 & H2); eauto.
 Qed.
 
+Theorem validity_ty_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< Ax l > A : Sort l.
+Proof.
+  intros.
+  eapply validity_gen in H. assumption.
+Qed.
 
 Lemma validity_subst_conv_left Δ Γ σ τ : 
   Δ ⊢s σ ≡ τ : Γ ->
@@ -1067,13 +1042,8 @@ Qed.
 
 
 
-Theorem validity_ty_ty : forall Γ l t A, Γ ⊢< l > t : A -> Γ ⊢< Ax l > A : Sort l.
-Proof.
-  intros.
-  eapply validity_gen in H. assumption.
-Qed.
 
-Theorem subst : forall Γ l t u A Δ σ τ A', 
+Theorem subst_conv : forall Γ l t u A Δ σ τ A', 
   ⊢ Δ ->
   Δ ⊢s σ ≡ τ : Γ -> 
   Γ ⊢< l > t ≡ u : A -> 
@@ -1090,19 +1060,14 @@ Proof.
   eapply conv_substs in H1; eauto using validity_subst_conv_right, validity_ty_ctx, subst_sym.
 Qed.
 
-Theorem subst2 : forall Γ l t A Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t : A -> Δ ⊢< l > t <[ σ ] : A <[ σ ].
+Theorem subst_ty Γ l t A Δ σ A' : 
+  ⊢ Δ -> 
+  Δ ⊢s σ : Γ -> 
+  Γ ⊢< l > t : A ->
+  A' = A <[ σ ] ->
+  Δ ⊢< l > t <[ σ ] : A'.
 Proof.
-  intros. eapply validity_conv_left. eapply subst; eauto using refl_subst, conv_refl.
-Qed.
-
-Corollary subst_ty : forall Γ l t u l' Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t ≡ u : Sort l' -> Δ ⊢< l > t <[ σ ] ≡ u <[ σ ] : Sort l'.
-  intros. 
-  eapply subst in H1; eauto using refl_subst.
-Qed.
-
-Corollary subst_ty' : forall Γ l t l' Δ σ, ⊢ Δ -> Δ ⊢s σ : Γ -> Γ ⊢< l > t : Sort l' -> Δ ⊢< l > t <[ σ ] : Sort l'.
-  intros.
-  eapply subst2 in H1; eauto.
+  intros. subst. eapply validity_conv_left. eapply subst_conv; eauto using refl_subst, conv_refl.
 Qed.
 
 
@@ -1124,7 +1089,7 @@ Proof.
   - econstructor.
   - econstructor; eauto.
     eapply conv_sym in H0.
-    eapply conversion_ctx_conv; eauto using validity_ctx_conv_left.
+    eapply pre_conv_in_ctx_conv; eauto using validity_ctx_conv_left.
 Qed.
 
 
@@ -1140,13 +1105,13 @@ Qed.
 Theorem conv_in_ctx_ty : forall Γ Δ l t A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t : A -> Δ ⊢< l > t : A.
 Proof.
   intros.
-  eapply typing_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
+  eapply pre_conv_in_ctx_ty; eauto using validity_ctx_conv_right, ctx_conv_sym.
 Qed.
 
 Theorem conv_in_ctx_conv : forall Γ Δ l t u A, ⊢ Γ ≡ Δ -> Γ ⊢< l > t ≡ u : A -> Δ ⊢< l > t ≡ u : A.
 Proof.
   intros.
-  eapply conversion_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
+  eapply pre_conv_in_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
 Qed.
 
 
@@ -1172,15 +1137,6 @@ Proof.
   intros t_eq_u A_eq_A'.
   eapply conv_in_ctx_ty; eauto.
   apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
-Qed.
-
-
-Lemma aux_subst_1 Γ l t A :
-  Γ ⊢< l > t : A ->
-  Γ ⊢s t .. : (Γ ,, (l, A)).
-Proof.
-  intro kWt.
-  apply well_scons; ssimpl; eauto using validity_ty_ctx, subst_id.
 Qed.
 
 (* the following lemma helps automation to type some substitutions that appear often in the proof *)
