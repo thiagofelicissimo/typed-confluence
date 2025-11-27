@@ -4,7 +4,8 @@ From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-Require Import Stdlib.Program.Equality.
+(* Require Import Stdlib.Program.Equality. *)
+From Equations Require Import Equations.
 
 Import ListNotations.
 Import CombineNotations.
@@ -959,9 +960,10 @@ Lemma subst_sym Δ Γ σ τ :
   Δ ⊢s τ ≡ σ : Γ.
 Proof.
   intros. induction H1; eauto using ConvSubst.
-  econstructor; dependent destruction H0; eauto.
+  econstructor; dependent elimination H0; eauto. 
   eapply conv_sym. eapply conv_conv. 1:eauto.
   eapply conv_substs in H1; eauto using validity_subst_conv_left.
+  eauto.
 Qed.
 
 
@@ -1090,7 +1092,7 @@ Proof.
     assert (S >> (S >> var) = (var >> ren_term S) >> ren_term S) by reflexivity.
     setoid_rewrite H0.
     eapply WellSubst_weak; eauto.
-    eapply validity_ty_ctx in H. dependent destruction H.
+    eapply validity_ty_ctx in H. dependent elimination H.
     eapply WellSubst_weak; eauto using subst_id.
   - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. eapply (vartyS _ _ _ Nat _ 0). eapply vartyO.
 Qed.
@@ -1145,6 +1147,9 @@ Definition type_inv_statement Γ l t T :=
     False
   end.
 
+Derive NoConfusion for term.
+Derive NoConfusion for level.
+
 
 Lemma type_inv Γ l t T : 
   Γ ⊢< l > t : T -> 
@@ -1152,7 +1157,7 @@ Lemma type_inv Γ l t T :
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  destruct t; simpl; dependent induction H; eauto 7 using conv_refl.
+  destruct t; simpl; depind H; eauto 7 using conv_refl.
   - edestruct IHtyping as (C & eq & A_eq_C); 
       eauto using validity_conv_left, conv_trans, conv_sym.
   - edestruct IHtyping as (l_eq & conv); 
@@ -1181,9 +1186,9 @@ Theorem var_unicity Γ l x A l' A' :
 Proof.
   generalize Γ l l' A A'. clear Γ l l' A A'.
   induction x; intros.
-  - dependent destruction H. dependent destruction H0. split; eauto.
-  - dependent destruction H. dependent destruction H0.
-    eapply IHx in H as (HA & HB); eauto. subst. split; eauto.
+  - dependent elimination H. dependent elimination H0. split; eauto.
+  - dependent elimination H. dependent elimination H0.
+    eapply IHx in v as (HA & HB); eauto. subst. split; eauto.
 Qed.
 
 

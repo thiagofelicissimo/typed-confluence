@@ -4,7 +4,9 @@ From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory Confluence ConversionChecking. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-Require Import Stdlib.Program.Equality.
+(* Require Import Stdlib.Program.Equality. *)
+Require Import Equations.Prop.DepElim.
+From Equations Require Import Equations.
 Import CombineNotations.
 
 

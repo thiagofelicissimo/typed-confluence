@@ -5,8 +5,9 @@ From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-Require Import Stdlib.Program.Equality.
-
+(* Require Import Stdlib.Program.Equality. *)
+Require Import Equations.Prop.DepElim.
+From Equations Require Import Equations.
 
 Reserved Notation "Γ ⊢< l > t ⟹ u : T" (at level 50, l, t, u, T at next level).
 Import CombineNotations.
@@ -212,6 +213,7 @@ Admitted.
 
 (* --- Inversion principles for ⟹ --- *)
 
+
 Lemma ortho_var_inv Γ i x t A :
   Γ ⊢< ty i > var x ⟹ t : A →
   ∃ B,
@@ -219,7 +221,7 @@ Lemma ortho_var_inv Γ i x t A :
     Γ ∋< ty i > x : B.
 Proof.
   intros.
-  dependent induction H; eauto.
+  dependent induction H; eauto. 
 Qed.
 
 
@@ -246,7 +248,7 @@ Proof.
   intros.
   dependent induction H; eauto.
   - eauto 10 using ortho_to_conv, validity_conv_ctx, conv_sort.
-  - destruct (IHortho_red _ _ _ _ eq_refl) as (A' & B' & eq & eq' & redA & redB & conv). subst.
+  - destruct IHortho_red as (A' & B' & eq & eq' & redA & redB & conv). subst.
     eauto 8 using conv_sym, conv_trans.
   - eapply type_inv in H as (_ & _ & eq & _).
     destruct l1; inversion eq.
@@ -264,10 +266,11 @@ Lemma ortho_lam_inv Γ i l1 l2 A1 B1 t u T :
 Proof.
   intros.
   dependent induction H; eauto.
-  - rewrite <- x in *. clear x.
+  (* destruct (IHortho_red _ _ _ _ _ _ _ _ _ eq_refl). *)
+  - rewrite H2 in *. clear H2.
     eauto 13 using conv_pi, validity_conv_left, conv_refl.
 
-  - destruct (IHortho_red _ _ _ _ _ _ eq_refl eq_refl) as (A' & B' & t'' & eq & conv & eq' & convA & convB & red). subst.
+  - destruct IHortho_red as (A' & B' & t'' & eq & conv & eq' & convA & convB & red). subst.
     rewrite <- eq in *. clear eq.
     eauto 10 using conv_sym, conv_trans.
 Qed.
@@ -299,7 +302,7 @@ Proof.
   dependent induction H; eauto.
   - split; eauto. split; eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
     left. eauto 9.
-  - destruct (IHortho_red _ _ _ _ _ _ _ eq_refl eq_refl) as (eq & conv & disj).
+  - destruct IHortho_red as (eq & conv & disj).
     subst. split; eauto. split; eauto using conv_sym, conv_trans.
   - split; eauto. split; eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
     right. eauto 11.
@@ -357,7 +360,7 @@ Proof.
   intros.
   dependent induction H.
   - left. do 4 eexists. split. reflexivity. eauto.
-  - eapply IHortho_red. eauto. eauto.
+  - eapply IHortho_red.
   - right. left. eauto.
   - right. right. do 5 eexists. split. reflexivity. split. reflexivity. eauto.
 Qed.
@@ -366,7 +369,7 @@ Lemma ortho_box_inv Γ l' t A :
   Γ ⊢< l' > box ⟹ t : A → False.
 Proof.
   intros.
-  dependent induction H; eauto. dependent induction H. apply IHtyping; eauto. eapply type_conv; eauto using conv_sym.
+  dependent induction H; eauto. dependent induction H. eapply IHtyping; eauto.
 Qed.
 
 Ltac ttinv h :=
@@ -508,7 +511,7 @@ Proof.
   intros Γ i t. generalize t Γ i. clear Γ i t.
 
   refine (@well_founded_ind _ (fun t u => size t < size u) _ _ _).
-  eauto using wf_inverse_image, lt_wf.
+  eapply wf_inverse_image, lt_wf.
   intros t IH Γ i t' t'' T t_red_t' t_red_t''.
 
   destruct t.
@@ -1041,9 +1044,9 @@ Proof.
   intros pi_red_T.
   dependent induction pi_red_T.
   - ttinv H. destruct H as (A' & B' & T_eq & _ & A_red & B_red & _). do 2 eexists. repeat split; eauto using redd_step.
-  - destruct (IHpi_red_T1 l1 l2 A B eq_refl) as (A'' & B'' & v_eq & A_red & B_red).
+  - destruct IHpi_red_T1 as (A'' & B'' & v_eq & A_red & B_red).
     rewrite v_eq in *. clear v_eq v.
-    destruct (IHpi_red_T2 l1 l2 A'' B'' eq_refl) as (A''' & B''' & u_eq & A''_red & B''_red).
+    destruct (IHpi_red_T2 l1 l2 A'' B'' _ eq_refl) as (A''' & B''' & u_eq & A''_red & B''_red).
     rewrite u_eq in *. clear u_eq u.
     exists A'''. exists B'''. repeat split.
     all : (eapply redd_trans; eauto).
@@ -1058,7 +1061,7 @@ Proof.
   intro sort_redd_t.
   dependent induction sort_redd_t.
   - ttinv H. destruct H. eauto.
-  - eauto.
+  - subst. eauto. 
 Qed.
 
 Lemma nat_redd Γ l' t T :
@@ -1068,7 +1071,7 @@ Proof.
   intro sort_redd_t.
   dependent induction sort_redd_t.
   - ttinv H. eauto.
-  - eauto.
+  - subst. eauto.
 Qed.
 
 Proposition sort_inj Γ l i j T :

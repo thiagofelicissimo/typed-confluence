@@ -5,7 +5,9 @@ From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory Confluence. (*  Env Inst. *)
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-Require Import Stdlib.Program.Equality.
+(* Require Import Stdlib.Program.Equality. *)
+Require Import Equations.Prop.DepElim.
+From Equations Require Import Equations.
 Import CombineNotations.
 
 
@@ -409,13 +411,14 @@ Proof.
   try destruct (IHtWt4 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   eexists; split; [ eauto using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, conv_refl
                 | rewrite <- eq; rewrite l_eq_n; eauto ]).
+  all:subst.
 
   (* case beta *)
-  - destruct t. all : (rewrite l_eq_n in x; inversion x). clear x H0 t0.
+  - destruct t. all : inversion H. clear t0 H H1.
     rename l into i'. rename l0 into j'. rename t1 into A'.
     rename t2 into B'. rename t3 into v.
     exists (v <[ u..]). split.
-    ++ assert (Γ ⊢< j > app i j A B (lam i' j' A' B' v) u : B <[ u..]) by eauto using type_app. eauto using SR_aux2.
+    ++ assert (Γ ⊢< ty n > app i (ty n) A B (lam i' j' A' B' v) u : B <[ u..]) by eauto using type_app. eauto using SR_aux2.
     ++ pose proof tWt3 as K.
       apply type_inv in tWt3 as (K1 & K2 & K3 & _).
       assert (Γ ⊢< Ru i' j' > lam i' j' A' B' v : Pi i' j' A' B') by eauto using type_lam.
@@ -432,11 +435,11 @@ Proof.
     + rewrite <- eq. rewrite l_eq_n. simpl. f_equal. apply erasure_irrel.
 
   (* case rec zero *)
-  - destruct t.  all : inversion x. clear x.
+  - destruct t.  all : inversion H. clear H.
     exists p_zero. split; eauto using conv_rec_zero.
 
   (* case rec succ *)
-  - dependent destruction l_eq_n. destruct t. all : inversion x. clear x H0 n0.
+  - destruct t. all : inversion H. clear H H1 n0.
     exists (p_succ <[ rec (ty n) P p_zero p_succ t .: t ..]).
     split.
     + apply type_inv in tWt4 as (tW & _). eauto using conv_rec_succ.
@@ -445,7 +448,7 @@ Proof.
   (* case conv *)
   - edestruct IHtWt.
     + right. eauto.
-    + rewrite l_eq_n. eauto.
+    + eauto.
     + exists x. destruct H0 as (t_eq_x & erased_x_eq_u). split; eauto using conv_conv.
 Qed.
 
@@ -637,7 +640,7 @@ Proof.
     apply type_inv in H1 as (A1_Wt & B1_Wt & i0_eq & conv).
     apply type_inv in H2 as (A2_Wt & B2_Wt & _).
     rewrite i0_eq. eapply conv_conv; eauto using conv_sym.
-    assert (Γ ⊢< Ax l1 > A1 ≡ A2 : Sort l1) by (eapply H; eauto).
+    assert (Γ ⊢< Ax _ > A1 ≡ A2 : Sort _) by (eapply H; eauto).
     apply conv_pi; eauto.
     eapply H0; eauto using conv_ty_in_ctx_ty.
   - destruct t0; dependent destruction H3.
@@ -671,8 +674,8 @@ Proof.
     apply type_inv in H0 as (H0 & _).
     apply type_inv in H1 as (H1 & _).
     assert (Γ ⊢< ty 0 > succ t0 : Nat) by eauto using type_succ.
-    eapply sort_unicity in H'. 2: eapply H2.
-    eapply type_unicity in H''. 2:apply H2.
+    eapply sort_unicity in H'. 2: eapply H3.
+    eapply type_unicity in H''. 2:apply H3.
     rewrite <- H' in *.
     eapply conv_conv. 2: eauto using conv_sym.
     apply conv_succ. eapply H; eauto.
