@@ -243,7 +243,14 @@ Lemma ortho_pi_inv Γ l1 l2 l' t' A B T :
     Γ ,, (l1 , A) ⊢< Ax l2 > B ⟹ B' : Sort l2 ∧
     Γ ⊢< Ax (Ax (Ru l1 l2)) > Sort (Ru l1 l2) ≡ T : Sort (Ax (Ru l1 l2)).
 Proof.
-Admitted.
+  intros.
+  dependent induction H; eauto.
+  - eauto 10 using ortho_to_conv, validity_conv_ctx, conv_sort.
+  - destruct (IHortho_red _ _ _ _ eq_refl) as (A' & B' & eq & eq' & redA & redB & conv). subst.
+    eauto 8 using conv_sym, conv_trans.
+  - eapply type_inv_pi' in H as (_ & _ & _ & eq & _).
+    destruct l1; inversion eq.
+Qed.
 
 Lemma ortho_lam_inv Γ i l1 l2 A1 B1 t u T :
   Γ ⊢< ty i > lam l1 l2 A1 B1 t ⟹ u : T →
@@ -254,7 +261,16 @@ Lemma ortho_lam_inv Γ i l1 l2 A1 B1 t u T :
     Γ ⊢< Ax l1 > A1 ≡ A1' : Sort l1 ∧
     Γ ,, (l1 , A1) ⊢< Ax l2 > B1 ≡ B1' : Sort l2 ∧
     Γ ,, (l1 , A1) ⊢< l2 > t ⟹ t' : B1.
-Admitted.
+Proof.
+  intros.
+  dependent induction H; eauto.
+  - rewrite <- x in *. clear x.
+    eauto 13 using conv_pi, validity_conv_left, conv_refl.
+
+  - destruct (IHortho_red _ _ _ _ _ _ eq_refl eq_refl) as (A' & B' & t'' & eq & conv & eq' & convA & convB & red). subst.
+    rewrite <- eq in *. clear eq.
+    eauto 10 using conv_sym, conv_trans.
+Qed.
 
 Lemma ortho_app_inv Γ i l1 l2 A1 B1 t u w T :
   Γ ⊢< ty i > app l1 l2 A1 B1 t u ⟹ w : T →
@@ -278,7 +294,19 @@ Lemma ortho_app_inv Γ i l1 l2 A1 B1 t u w T :
       Γ ⊢< l1 > u ⟹ u' : A1  ∧
       w = v' <[ u' .. ]
   )).
-Admitted.
+Proof.
+  intros.
+  (* eapply ortho_validity_left, type_inv_app' in H as temp. *)
+  (* destruct temp as (_ & _ & _ & _ & _ & _ & tyWt). eapply validity_conv_right in tyWt. *)
+  dependent induction H; eauto.
+  - split; eauto. split; eauto 8 using validity_conv_left, ortho_validity_left, subst, substs_one, validity_conv_ctx, conv_refl.
+    left. eauto 9.
+  - destruct (IHortho_red _ _ _ _ _ _ _ eq_refl eq_refl) as (eq & conv & disj).
+    subst. split; eauto. split; eauto using conv_sym, conv_trans.
+  - split; eauto. split; eauto 8 using validity_conv_left, ortho_validity_left, subst, substs_one, validity_conv_ctx, conv_refl.
+    right. eauto 11.
+Qed.
+
 
 
 
