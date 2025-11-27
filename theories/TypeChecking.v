@@ -160,7 +160,7 @@ Proof.
     eapply subject_reduction_redd in erasure_red as (_sort & TA_eq_sort & erasure_sort_eq_sort) ; eauto using validity_ty_ty.
     destruct _sort; dependent destruction erasure_sort_eq_sort.
     apply validity_conv_right in TA_eq_sort as Sort_wt.
-    apply type_inv_sort' in Sort_wt as (l_eq_0 & _).
+    apply type_inv in Sort_wt as (l_eq_0 & _).
     apply Ax_inj in l_eq_0. dependent destruction l_eq_0.
     split; eauto using type_conv.
 Qed.
@@ -174,7 +174,7 @@ Proof.
     eapply subject_reduction_redd in erasure_red as (_pi & TA_eq_pi & erasure_pi_eq_pi) ; eauto using validity_ty_ty.
     destruct _pi; dependent destruction erasure_pi_eq_pi.
     apply validity_conv_right in TA_eq_pi as pi_wt.
-    apply type_inv_pi' in pi_wt as (_ & _ & l_eq_ru & _).
+    apply type_inv in pi_wt as (_ & _ & l_eq_ru & _).
     apply Ax_inj in l_eq_ru. dependent destruction l_eq_ru.
     exists _pi1. exists _pi2.
     split; eauto using type_conv.
@@ -189,7 +189,7 @@ Proof.
     eapply subject_reduction_redd in erasure_red as (_pi & TA_eq_pi & erasure_pi_eq_pi) ; eauto using validity_ty_ty.
     destruct _pi; dependent destruction erasure_pi_eq_pi.
     apply validity_conv_right in TA_eq_pi as pi_wt.
-    apply type_inv_pi' in pi_wt as (_ & _ & l_eq_ru & _).
+    apply type_inv in pi_wt as (_ & _ & l_eq_ru & _).
     apply Ax_inj in l_eq_ru. dependent destruction l_eq_ru.
     exists _pi1. exists _pi2.
     split; eauto using type_conv.
@@ -225,7 +225,7 @@ Lemma app_box_erasure Γ l T i j A B t u :
 Proof.
     intro H.
     destruct j.
-    - simpl. destruct t; auto. apply type_inv_box' in H. inversion H.
+    - simpl. destruct t; auto. apply type_inv in H. inversion H.
     - repeat rewrite erasure_prop. auto.
 Qed.
 
@@ -235,7 +235,7 @@ Lemma lam_box_erasure Γ l T i j A B t :
 Proof.
     intro H.
     destruct j.
-    - simpl. destruct t; auto. apply type_inv_box' in H. inversion H.
+    - simpl. destruct t; auto. apply type_inv in H. inversion H.
     - repeat rewrite erasure_prop. auto.
 Qed.
 
@@ -302,7 +302,7 @@ Proof.
       eapply reduce_to_pi in t'_Wt as (A0 & B0 & A_eq & B_eq & t'_Wt & l_eq); eauto.
       dependent destruction A_eq. dependent destruction B_eq. dependent destruction l_eq.
       apply validity_ty_ty in t'_Wt as PiA0B0_Wt.
-      apply type_inv_pi' in PiA0B0_Wt as (A0_Wt & B0_Wt & _ & _).
+      apply type_inv in PiA0B0_Wt as (A0_Wt & B0_Wt & _ & _).
 
       (* applying the ih to u *)
       edestruct H0 as (u' & u'_Wt & erasure_u'_eq); eauto.
@@ -396,7 +396,7 @@ Proof.
       eapply reduce_to_pi' in T'Wt as (A' & B' & A_eq & B_eq & T'_eq & l_eq); eauto.
       dependent destruction A_eq. dependent destruction B_eq. dependent destruction l_eq.
       apply validity_conv_right in T'_eq as Pi_Wt.
-      apply type_inv_pi' in Pi_Wt as (A'_Wt & B'_Wt & _).
+      apply type_inv in Pi_Wt as (A'_Wt & B'_Wt & _).
 
       (* applying the ih to t *)
       edestruct H as (t' & t'_Wt & erased_t'_eq); eauto.

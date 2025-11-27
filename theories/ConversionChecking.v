@@ -233,13 +233,13 @@ Proof.
   dependent induction t; intros Γ Wt Δ ref.
   all : destruct l_.
   all : (try rewrite erasure_prop; try rewrite erasure_prop; eauto).
-  - simpl. apply type_inv_var' in Wt as (B & hn & _).
+  - simpl. apply type_inv in Wt as (B & hn & _).
     unfold erasure_subst. unfold refines in ref.
     pose proof (H := ref n n0).
     erewrite varty_fun_of_ctx in H. 2: eassumption.
     destruct (H eq_refl) as (k & eq).
     rewrite eq. apply erasure_irrel.
-  - simpl. apply type_inv_pi' in Wt as (AWt & BWt & _).
+  - simpl. apply type_inv in Wt as (AWt & BWt & _).
     f_equal.
     eauto using IHt1.
     ssimpl.
@@ -251,19 +251,19 @@ Proof.
     setoid_rewrite cons_ctx_commute.
     eauto using refines_cons.
     - rename t1 into A'. rename t2 into B'. rename t3 into v.
-    simpl. apply type_inv_lam' in Wt as (AWt & BWt & vWt & _).
+    simpl. apply type_inv in Wt as (AWt & BWt & vWt & _).
     f_equal. ssimpl.
     transitivity  ((erasure l0 v) <[ erasure (ty 0) (var 0) .: erasure_subst Δ σ >> ren_term ↑]).
     2 : eauto.
     setoid_rewrite <- aux1.
     eapply IHt3; eauto. setoid_rewrite cons_ctx_commute. eauto using refines_cons.
   - rename t1 into A'. rename t2 into B'. rename t3 into u. rename t4 into v.
-    apply type_inv_app' in Wt as (Awt & Bwt & uWt & vWt & _).
+    apply type_inv in Wt as (Awt & Bwt & uWt & vWt & _).
     simpl. f_equal; eauto.
-  - apply type_inv_succ' in Wt as (Wt & _).
+  - apply type_inv in Wt as (Wt & _).
     simpl. f_equal. eauto.
   - rename t1 into P. rename t2 into p_zero. rename t3 into p_succ. rename t4 into k.
-    apply type_inv_rec' in Wt as (PWt & p_zeroWt & p_succWt & kWt & _).
+    apply type_inv in Wt as (PWt & p_zeroWt & p_succWt & kWt & _).
     simpl. f_equal; ssimpl; eauto.
     + transitivity ((erasure (Ax l) P) <[ erasure (ty 0) (var 0) .: erasure_subst Δ σ >> ren_term ↑]).
       2:eauto.
@@ -290,11 +290,11 @@ Lemma SR_aux Γ l i j A B i' j' A' B' t u T :
 Proof.
   intro Wt.
   pose proof (Wt' := Wt).
-  apply type_inv_app' in Wt as (A_Wt & B_Wt & lam_Wt & u_Wt & _).
+  apply type_inv in Wt as (A_Wt & B_Wt & lam_Wt & u_Wt & _).
   assert (Γ ⊢< j > app i j A B (lam i' j' A' B' t) u : B <[ u..]) as Wt'' by eauto using type_app.
   eapply sort_unicity in Wt' as j_eq_l; eauto.
   pose proof (lam_Wt1 := lam_Wt).
-  apply type_inv_lam' in lam_Wt as (A'_Wt & B'_Wt & t_Wt & _).
+  apply type_inv in lam_Wt as (A'_Wt & B'_Wt & t_Wt & _).
   assert (Γ ⊢< Ru i' j' > lam i' j' A' B' t : Pi i' j' A' B') as lam_Wt2 by eauto using type_lam.
   eapply type_unicity in lam_Wt1 as pi_eq_pi; eauto.
   apply conv_sym in pi_eq_pi.
@@ -311,7 +311,7 @@ Lemma SR_aux2 Γ l i j A B i' j' A' B' t u T :
 Proof.
   intro Wt.
   pose proof Wt as temp.
-  apply type_inv_app' in temp as (_ & _ & lamWt & _ & _).
+  apply type_inv in temp as (_ & _ & lamWt & _ & _).
   apply SR_aux in Wt as (i_eq_i' & j_eq_j' & l_eq_j & A_eq_A' & B_eq_B' & tWt & uWt).
   rewrite i_eq_i' in *. clear i_eq_i' i.
   rewrite j_eq_j' in *. clear j_eq_j' j.
@@ -417,7 +417,7 @@ Proof.
     exists (v <[ u..]). split.
     ++ assert (Γ ⊢< j > app i j A B (lam i' j' A' B' v) u : B <[ u..]) by eauto using type_app. eauto using SR_aux2.
     ++ pose proof tWt3 as K.
-      apply type_inv_lam' in tWt3 as (K1 & K2 & K3 & _).
+      apply type_inv in tWt3 as (K1 & K2 & K3 & _).
       assert (Γ ⊢< Ru i' j' > lam i' j' A' B' v : Pi i' j' A' B') by eauto using type_lam.
       eapply type_unicity in K; eauto.
       eapply pi_inj in K as (l_eq_i & l0_eq_n & _).
@@ -439,7 +439,7 @@ Proof.
   - dependent destruction l_eq_n. destruct t. all : inversion x. clear x H0 n0.
     exists (p_succ <[ rec (ty n) P p_zero p_succ t .: t ..]).
     split.
-    + apply type_inv_succ' in tWt4 as (tW & _). eauto using conv_rec_succ.
+    + apply type_inv in tWt4 as (tW & _). eauto using conv_rec_succ.
     + erewrite erasure_subst_2_commutes; eauto. reflexivity.
 
   (* case conv *)
@@ -533,7 +533,7 @@ Proof.
   - assert (Γ ⊢< Ax (Ax l0) > Sort l0 : Sort (Ax l0)) by eauto using type_sort, validity_ty_ctx.
     eapply type_unicity in H. 2: apply t_Wt. apply conv_sym in H. apply sort_neq_pi in H. inversion H.
   - pose proof t_Wt as t_Wt_copy.
-    apply type_inv_pi' in t_Wt as (H1 & H2 & _).
+    apply type_inv in t_Wt as (H1 & H2 & _).
     assert (Γ ⊢< Ax (Ru l0 l1) > Pi l0 l1 t1 t2 : Sort (Ru l0 l1)) by eauto using type_pi.
     eapply type_unicity in H. 2: apply t_Wt_copy. apply conv_sym in H. apply sort_neq_pi in H. inversion H.
   - inversion t_neq_lam.
@@ -542,11 +542,11 @@ Proof.
     eapply type_unicity in H. 2 : apply t_Wt. apply conv_sym in H. apply sort_neq_pi in H. inversion H.
   - assert (Γ ⊢< ty 0 > zero : Nat) by eauto using type_zero, validity_ty_ctx.
     eapply type_unicity in H. 2:apply t_Wt. apply conv_sym in H. apply nat_neq_pi in H. inversion H.
-  - pose proof t_Wt as t_Wt_copy. apply type_inv_succ' in t_Wt as (tWt & _).
+  - pose proof t_Wt as t_Wt_copy. apply type_inv in t_Wt as (tWt & _).
     assert (Γ ⊢< ty 0 > succ t : Nat) by eauto using type_succ, validity_ty_ctx.
     eapply type_unicity in H. 2 : apply t_Wt_copy. apply conv_sym in H. apply nat_neq_pi in H. inversion H.
   - simpl in nf_et. inversion nf_et. eauto.
-  - apply type_inv_box' in t_Wt. inversion t_Wt.
+  - apply type_inv in t_Wt. inversion t_Wt.
 Qed.
 
 Definition not_zero_or_succ t :=
@@ -565,11 +565,11 @@ Proof.
   - assert (Γ ⊢< Ax (Ax l0) > Sort l0 : Sort (Ax l0)) by eauto using type_sort, validity_ty_ctx.
     eapply type_unicity in H. 2: apply t_Wt. apply conv_sym in H. apply sort_neq_nat in H. inversion H.
   - pose proof t_Wt as t_Wt_copy.
-    apply type_inv_pi' in t_Wt as (H1 & H2 & _).
+    apply type_inv in t_Wt as (H1 & H2 & _).
     assert (Γ ⊢< Ax (Ru l0 l1) > Pi l0 l1 t1 t2 : Sort (Ru l0 l1)) by eauto using type_pi.
     eapply type_unicity in H. 2: apply t_Wt_copy. apply conv_sym in H. apply sort_neq_nat in H. inversion H.
   - pose proof t_Wt as t_Wt_copy.
-    apply type_inv_lam' in t_Wt as (H1 & H2 & H3 & _).
+    apply type_inv in t_Wt as (H1 & H2 & H3 & _).
     assert (Γ ⊢< Ru l0 l1 > lam l0 l1 t1 t2 t3 : Pi l0 l1 t1 t2) by eauto using type_lam.
     eapply type_unicity in H. 2: apply t_Wt_copy. apply nat_neq_pi in H. inversion H.
   - simpl in nf_et. inversion nf_et. eauto.
@@ -578,7 +578,7 @@ Proof.
   - inversion not_zero_or_succ.
   - inversion not_zero_or_succ.
   - simpl in nf_et. inversion nf_et. eauto.
-  - apply type_inv_box' in t_Wt. inversion t_Wt.
+  - apply type_inv in t_Wt. inversion t_Wt.
 Qed.
 
 Lemma nf_to_Nf Γ l t A :
@@ -634,8 +634,8 @@ Proof.
     destruct u; dependent destruction H3.
     rename t1 into A1. rename t2 into B1.
     rename u1 into A2. rename u2 into B2.
-    apply type_inv_pi' in H1 as (A1_Wt & B1_Wt & i0_eq & conv).
-    apply type_inv_pi' in H2 as (A2_Wt & B2_Wt & _).
+    apply type_inv in H1 as (A1_Wt & B1_Wt & i0_eq & conv).
+    apply type_inv in H2 as (A2_Wt & B2_Wt & _).
     rewrite i0_eq. eapply conv_conv; eauto using conv_sym.
     assert (Γ ⊢< Ax l1 > A1 ≡ A2 : Sort l1) by (eapply H; eauto).
     apply conv_pi; eauto.
@@ -644,8 +644,8 @@ Proof.
     destruct u; dependent destruction H2.
     rename t0_1 into A1. rename t0_2 into B1. rename t0_3 into t1.
     rename u1 into A2. rename u2 into B2. rename u3 into t2.
-    apply type_inv_lam' in H0 as (A1_Wt & B1_Wt & t1_Wt & i0_eq & conv).
-    apply type_inv_lam' in H1 as (A2_Wt & B2_Wt & t2_Wt & i0_eq' & conv').
+    apply type_inv in H0 as (A1_Wt & B1_Wt & t1_Wt & i0_eq & conv).
+    apply type_inv in H1 as (A2_Wt & B2_Wt & t2_Wt & i0_eq' & conv').
     rewrite i0_eq. eapply conv_conv; eauto using conv_sym.
     rewrite <- i0_eq in conv. rewrite <- i0_eq' in conv'.
     assert (Γ ⊢< Ax (ty i) > Pi l l0 A1 B1 ≡ Pi l1 l2 A2 B2  : Sort (ty i)) as pi_eq_pi
@@ -668,8 +668,8 @@ Proof.
   - destruct t0; dependent destruction H3.
     destruct u; dependent destruction H2.
     pose proof H0 as H'. pose proof H0 as H''.
-    apply type_inv_succ' in H0 as (H0 & _).
-    apply type_inv_succ' in H1 as (H1 & _).
+    apply type_inv in H0 as (H0 & _).
+    apply type_inv in H1 as (H1 & _).
     assert (Γ ⊢< ty 0 > succ t0 : Nat) by eauto using type_succ.
     eapply sort_unicity in H'. 2: eapply H2.
     eapply type_unicity in H''. 2:apply H2.
@@ -678,7 +678,7 @@ Proof.
     apply conv_succ. eapply H; eauto.
   - eapply H; eauto.
   - destruct t; dependent destruction H2.
-    apply type_inv_box' in H. inversion H.
+    apply type_inv in H. inversion H.
   - destruct t; dependent destruction H2.
     destruct u; dependent destruction H1.
     eauto using conv_refl.
@@ -686,8 +686,8 @@ Proof.
     destruct u0; dependent destruction H3.
     rename t0_1 into A1. rename t0_2 into B1. rename t0_3 into t1. rename t0_4 into v1.
     rename u0_1 into A2. rename u0_2 into B2. rename u0_3 into t2. rename u0_4 into v2.
-    apply type_inv_app' in H1 as (A1_Wt & B1_Wt & t1_Wt & v1_Wt & i0_eq & conv).
-    apply type_inv_app' in H2 as (A2_Wt & B2_Wt & t2_Wt & v2_Wt & i0_eq' & _).
+    apply type_inv in H1 as (A1_Wt & B1_Wt & t1_Wt & v1_Wt & i0_eq & conv).
+    apply type_inv in H2 as (A2_Wt & B2_Wt & t2_Wt & v2_Wt & i0_eq' & _).
     rewrite <- i0_eq in *. clear l0 i0_eq. rewrite <- i0_eq' in *. clear l2 i0_eq'.
     eapply conv_conv; eauto using conv_sym.
     assert (Γ ⊢< Ru l (ty i) > t1 ≡ t2 : Pi l (ty i) A1 B1) as t1_eq_t2 by eauto.
@@ -701,8 +701,8 @@ Proof.
     destruct u; dependent destruction H5.
     rename t0_1 into P1. rename t0_2 into p_zero1. rename t0_3 into p_succ1. rename t0_4 into k1.
     rename u1 into P2. rename u2 into p_zero2. rename u3 into p_succ2. rename u4 into k2.
-    apply type_inv_rec' in H3 as (P1_Wt & p_zero1_Wt & p_succ1_Wt & k1_Wt & i0_eq & conv).
-    apply type_inv_rec' in H4 as (P2_Wt & p_zero2_Wt & p_succ2_Wt & k2_Wt & _).
+    apply type_inv in H3 as (P1_Wt & p_zero1_Wt & p_succ1_Wt & k1_Wt & i0_eq & conv).
+    apply type_inv in H4 as (P2_Wt & p_zero2_Wt & p_succ2_Wt & k2_Wt & _).
     dependent destruction i0_eq.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_rec'; eauto.
