@@ -15,11 +15,13 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
 
 | ortho_var :
     ∀ Γ x l A,
+      ⊢ Γ ->
       Γ ∋< l > x : A →
       Γ ⊢< l > var x ⟹ var x : A
 
 | ortho_sort :
     ∀ Γ l,
+      ⊢ Γ ->
       Γ ⊢< Ax (Ax l) > Sort l ⟹ Sort l : Sort (Ax l)
 
 | ortho_pi :
@@ -45,10 +47,12 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
 
 | ortho_nat :
     ∀ Γ,
+      ⊢ Γ ->
       Γ ⊢< ty 1 > Nat ⟹ Nat : Sort (ty 0)
 
 | ortho_zero :
     ∀ Γ,
+      ⊢ Γ ->
       Γ ⊢< ty 0 > zero ⟹ zero : Nat
 
 | ortho_succ :
@@ -143,31 +147,37 @@ Theorem ortho_to_conv :
     Γ ⊢< l > t ≡ u : A.
 Proof.
   intros.
-  (* induction H; eauto using conversion.
+  induction H; eauto using conversion, validity_conv_left.
   - eapply conv_trans.
-    + eapply conv_app; eauto.
+    + eapply conv_app; eauto using validity_conv_left.
       eapply conv_conv.
-      ++ eapply conv_lam.  1,2: eapply conv_refl; eauto using conv_ty_in_ctx_ty, conv_sym, validity_conv_right.
+      ++ eapply conv_lam; eauto using validity_conv_right.  1,2: eapply conv_refl; eauto using conv_ty_in_ctx_ty, conv_sym, validity_conv_right.
         eauto using conv_conv, conv_ty_in_ctx_conv.
-      ++ eapply conv_pi; eauto using conv_sym, conv_ty_in_ctx_conv.
+      ++ eapply conv_pi; eauto using conv_sym, conv_ty_in_ctx_conv, validity_conv_right.
     + eapply conv_conv.
       eapply conv_beta; eauto using validity_conv_right, conv_ty_in_ctx_ty, type_conv.
-      admit.
-  - eapply conv_trans. eapply conv_rec_zero; eauto using validity_conv_left. eauto.
-  - admit. *)
-Admitted.
+      eapply subst; eauto using conv_sym, validity_conv_ctx, substs_one.
+  - eapply conv_trans. eapply conv_rec_succ; eauto using validity_conv_left.
+    eapply subst; eauto using validity_conv_ctx.
+    2:rasimpl;reflexivity.
+    eapply conv_scons_alt. eapply substs_one; eauto.
+    eapply conv_rec'; eauto.
+Qed.
 
 
 Lemma ortho_validity_left Γ l t u A :
   Γ ⊢< l > t ⟹ u : A ->
   Γ ⊢< l > t : A.
-Admitted.
-
+Proof.
+  intros. eauto using ortho_to_conv, validity_conv_left. 
+Qed.
 
 Lemma ortho_validity_right Γ l t u A :
   Γ ⊢< l > t ⟹ u : A ->
   Γ ⊢< l > u : A.
-Admitted.
+Proof.
+  intros. eauto using ortho_to_conv, validity_conv_right. 
+Qed.
 
 Theorem ortho_wk :
   forall Γ Δ l t u A ρ,
