@@ -192,6 +192,7 @@ Admitted.
 
 Theorem ortho_subst_property :
   forall Γ l t u A Δ σ τ,
+    ⊢ Δ ->
     Δ ⊢s σ ⟹ τ : Γ ->
     Γ ⊢< l > t ⟹ u : A ->
     Δ ⊢< l > (t <[ σ ]) ⟹ (u <[ τ ]) : A <[ σ ].
@@ -379,6 +380,22 @@ Proof.
   apply conv_ccons; eauto using refl_ctx, validity_ty_ctx, validity_conv_left.
 Qed.
 
+Lemma ctx_from_conv Γ A B l : 
+  Γ ⊢< Ax l > A ≡ B : Sort l ->
+  ⊢ Γ ,, (l , A).
+Proof.
+  intros.
+  eapply validity_conv_left in H. econstructor; eauto using validity_ty_ctx.
+Qed.
+
+
+(* Lemma ctx_from_red Γ A B l : 
+  Γ ⊢< Ax l > A ⟹ B : Sort l ->
+  ⊢ Γ ,, (l , A).
+Proof.
+  intros.
+  eapply ortho_validity_left in H. econstructor; eauto using validity_ty_ctx.
+Qed. *)
 
 (* --- Proof of the diamond property --- *)
 
@@ -612,14 +629,9 @@ Proof.
     + destruct (IH n ltac:(simpl; lia) _ _ _ _ _ n_red_n' n_red_n'') as (n''' & n'_red_n''' & n''_red_n''').
 
       do 4 eexists. exists (rec l P''' p_zero''' p_succ''' n''').
-      split; eapply ortho_rec;
-      eauto 11 using ortho_conv, subst_ty, aux_subst_1, type_zero, conv_ty_in_ctx_ortho, ortho_to_conv, aux_subst_2, ortho_validity_left, ctx_typing, type_nat, ortho_validity_right.
 
-      eapply ortho_conv. eapply conv_ty_in_ctx_ortho.
-      eauto. eauto using ortho_to_conv. eapply subst_ty; eauto using ortho_to_conv. eauto using ctx_typing, type_nat, ortho_validity_right.
-      eapply aux_subst_2; eauto using ortho_validity_right.
-      
-
+      split; eapply ortho_rec; 
+      eauto 10 using ortho_conv, subst_ty, aux_subst_1, type_zero, conv_ty_in_ctx_ortho, ortho_to_conv, aux_subst_2, ortho_validity_left, ctx_from_conv.
 
     (* rec x rec_zero *)
     + ttinv n_red_n'. rewrite n_red_n' in *. clear n' n_red_n'.
@@ -627,8 +639,8 @@ Proof.
       do 4 eexists. exists p_zero'''. split.
       2 : eauto.
       eapply ortho_rec_zero;
-      eauto 9 using conv_ty_in_ctx_ortho, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left,
-                ortho_validity_right, aux_subst_2, aux_subst_1, type_zero.
+      eauto 11 using conv_ty_in_ctx_ortho, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left,
+                ortho_validity_right, aux_subst_2, aux_subst_1, type_zero, ctx_from_conv.
 
     (* rec x rec_succ *)
     + ttinv n_red_n'. destruct n_red_n' as (k' & n'_eq & k_red_k'). rewrite n'_eq in *. clear n' n'_eq.
@@ -636,13 +648,13 @@ Proof.
 
       do 4 eexists. exists ( p_succ''' <[ (rec l P''' p_zero''' p_succ''' k''') .: k''' ..]). split.
       ++ eapply ortho_rec_succ;
-          eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
-                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
+          eauto 10 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
+                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left, ctx_from_conv.
       ++ eapply ortho_subst_property; eauto. apply red_scons_id_2; eauto.
         eapply ortho_conv.
         +++ eapply ortho_rec;
-          eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
-                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
+          eauto 10 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
+                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left, ctx_from_conv.
         +++ eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
 
     (* rec_zero x rec *)
@@ -652,8 +664,8 @@ Proof.
       do 4 eexists. exists p_zero'''. split.
       1 : eauto.
       eapply ortho_rec_zero;
-      eauto 9 using conv_ty_in_ctx_ortho, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left,
-                ortho_validity_right, aux_subst_2, aux_subst_1, type_zero.
+      eauto 11 using conv_ty_in_ctx_ortho, ortho_to_conv, subst_ty, ortho_conv, ortho_validity_left,
+                ortho_validity_right, aux_subst_2, aux_subst_1, type_zero, ctx_from_conv.
     (* rec_zero x rec_zero *)
     + do 4 eexists. exists p_zero'''. split; eauto.
 
@@ -669,12 +681,12 @@ Proof.
       ++ eapply ortho_subst_property; eauto. apply red_scons_id_2; eauto.
         eapply ortho_conv.
         +++ eapply ortho_rec;
-          eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
-                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
+          eauto 10 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
+                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left, ctx_from_conv.
         +++ eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
       ++ eapply ortho_rec_succ;
-          eauto 8 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
-                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left.
+          eauto 10 using conv_ty_in_ctx_ortho, subst_ty, ortho_to_conv, aux_subst_2,
+                    aux_subst_1, ortho_conv, type_zero, ortho_validity_left, ctx_from_conv.
 
     (* rec_succ x rec_zero *)
     + inversion n_eq_.
@@ -688,8 +700,8 @@ Proof.
       all : apply red_scons_id_2; eauto.
       all : eapply ortho_conv.
       1,3: eapply ortho_rec;
-        eauto 8 using ortho_rec, ortho_conv, subst_ty, aux_subst_1, type_zero,
-                  ortho_to_conv, conv_ty_in_ctx_ortho, ortho_validity_left, aux_subst_2.
+        eauto 10 using ortho_rec, ortho_conv, subst_ty, aux_subst_1, type_zero,
+                  ortho_to_conv, conv_ty_in_ctx_ortho, ortho_validity_left, aux_subst_2, ctx_from_conv.
       1,2: eauto 6 using subst_ty, ortho_to_conv, conv_sym, aux_subst_1, ortho_validity_left.
 
   (* box *)
@@ -824,7 +836,7 @@ Proof.
 Qed.
 
 
-Lemma aux Γ l t t' A l' B B' :
+(* Lemma aux Γ l t t' A l' B B' :
   Γ ⊢< l > t ≡ t' : A ->
   Γ ,, (l , A) ⊢< Ax l' > B ≡ B' : Sort l' ->
   Γ ⊢< Ax l' > B <[ t..] ≡ B' <[ t'..] : Sort l'.
@@ -835,7 +847,7 @@ Proof.
   eapply conv_conv; eauto.
   eapply subst; eauto.
   eapply conv_scons; ssimpl; eauto using subst_id, refl_subst, validity_ty_ctx, validity_conv_left.
-Qed.
+Qed. *)
 
 
 
@@ -896,7 +908,7 @@ Proof.
       eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
   - apply equiv_step. eapply ortho_conv.
     + eauto 8 using ortho_app, validity_conv_right, equiv_to_conv, ortho_refl.
-    + eauto 6 using aux, equiv_to_conv, conv_refl, conv_sym, validity_conv_left.
+    + eapply subst; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
 Qed.
 
 
@@ -935,13 +947,13 @@ Proof.
     + intros. apply equiv_step.
       eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - eapply (equiv_conv _ _ (P <[ t'..])).
-    2: eapply aux; eauto 6 using equiv_to_conv, conv_sym, validity_conv_left, conv_refl.
+    2: eapply subst; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
     3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. split.
       all: (intro temp; apply type_inv_rec in temp; destruct temp as [H1 [H2 [H3 H4]]]).
-      all: (apply type_rec; eauto 7 using equiv_to_conv, subst_ty, type_conv, type_zero,
-        aux_subst_1, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, aux_subst_2).
+      all: (apply type_rec; eauto 8 using equiv_to_conv, subst_ty, type_conv, type_zero,
+        aux_subst_1, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, aux_subst_2, ctx_from_conv).
     + intros v v' v_red_v' Wt.
       apply type_inv_rec in Wt. destruct Wt as [H1 [H2 [H3 H4]]].
       apply equiv_step. eauto using ortho_refl, ortho_rec.

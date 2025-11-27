@@ -317,9 +317,9 @@ Proof.
   rewrite j_eq_j' in *. clear j_eq_j' j.
   rewrite l_eq_j in *. clear l_eq_j l.
   eapply conv_trans.
-  eapply conv_app; eauto using conv_refl.
+  eapply conv_app; eauto using conv_refl, validity_conv_left.
   eapply conv_conv.
-  2: eapply subst_ty; eauto using aux_subst_1, conv_sym.
+  2: eapply subst_ty; eauto using aux_subst_1, conv_sym, validity_ty_ctx.
   eapply conv_beta; eauto using type_conv, validity_conv_right, conv_ty_in_ctx_ty.
 Qed.
 
@@ -705,9 +705,9 @@ Proof.
     apply type_inv_rec' in H4 as (_ & P2_Wt & p_zero2_Wt & p_succ2_Wt & k2_Wt & _).
     dependent destruction i0_eq.
     eapply conv_conv; eauto using conv_sym.
-    eapply conv_rec; eauto.
-    + eapply H0; eauto 7 using type_conv, subst_ty, aux_subst_1, validity_ty_ctx, type_zero, conv_sym.
-    + eapply H1; eauto 7 using type_conv, conv_ty_in_ctx_ty, subst_ty, aux_subst_2.
+    eapply conv_rec'; eauto.
+    + eapply H0; eauto 8 using type_conv, subst_ty, aux_subst_1, validity_ty_ctx, type_zero, conv_sym.
+    + eapply H1; eauto 9 using type_conv, conv_ty_in_ctx_ty, subst_ty, aux_subst_2, ctx_from_conv.
 Qed.
 
 
