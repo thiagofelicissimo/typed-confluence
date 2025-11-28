@@ -96,6 +96,23 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t : P <[ t .. ]
 
+| type_Eq :
+    ∀ Γ l A a b,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< l > a : A ->
+      Γ ⊢< l > b : A ->
+      Γ ⊢< Ax prop > Eq l A a b : Sort prop
+
+| type_J :
+    ∀ Γ l i A a P p b e,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< l > a : A ->
+      Γ ,, (l , A) ⊢< Ax i > P : Sort i ->
+      Γ ⊢< i > p : P <[a..] ->
+      Γ ⊢< l > b : A ->
+      Γ ⊢< prop > e : Eq l A a b ->
+      Γ ⊢< i > J l i A a P p b e : P <[b..]
+
 | type_conv :
     ∀ Γ l A B t,
       Γ ⊢< l > t : A ->
@@ -164,6 +181,24 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< ty 0 > t ≡ t' : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t ≡ rec l P' p_zero' p_succ' t' : P <[ t .. ]
 
+| conv_Eq :
+    ∀ Γ l A A' a a' b b',
+      Γ ⊢< Ax l > A ≡ A' : Sort l ->
+      Γ ⊢< l > a ≡ a' : A ->
+      Γ ⊢< l > b ≡ b' : A ->
+      Γ ⊢< Ax prop > Eq l A a b ≡ Eq l A' a' b' : Sort prop
+
+| conv_J :
+    ∀ Γ l i A A' a a' P P' p p' b b' e e',
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< Ax l > A ≡ A' : Sort l ->
+      Γ ⊢< l > a ≡ a' : A ->
+      Γ ,, (l , A) ⊢< Ax i > P ≡ P' : Sort i ->
+      Γ ⊢< i > p ≡ p' : P <[a..] ->
+      Γ ⊢< l > b ≡ b' : A ->
+      Γ ⊢< prop > e ≡ e' : Eq l A a b ->
+      Γ ⊢< i > J l i A a P p b e ≡ J l i A' a' P' p' b' e' : P <[b..]
+
 | conv_conv :
     ∀ Γ l A B t t',
       Γ ⊢< l > t ≡ t' : A ->
@@ -210,6 +245,15 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< l > rec l P p_zero p_succ (succ t) ≡
           p_succ <[(rec l P p_zero p_succ t) .: t ..] : P <[ (succ t) .. ]
 
+| conv_J_refl :
+    ∀ Γ l i A a P p b e,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< l > a ≡ b : A ->
+      Γ ,, (l , A) ⊢< Ax i > P : Sort i ->
+      Γ ⊢< i > p : P <[a..] ->
+      Γ ⊢< prop > e : Eq l A a b ->
+      Γ ⊢< i > J l i A a P p b e ≡ p : P <[b..]
+          
 | conv_sym :
     ∀ Γ l t u A,
       Γ ⊢< l > t ≡ u : A ->
