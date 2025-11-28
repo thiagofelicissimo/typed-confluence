@@ -23,7 +23,10 @@ Inductive cterm : Type :=
 | cNat : cterm
 | czero : cterm
 | csucc : cterm -> cterm
-| crec : cterm -> cterm -> cterm -> cterm -> cterm.
+| crec : cterm -> cterm -> cterm -> cterm -> cterm
+
+| cEq : cterm -> cterm -> cterm -> cterm 
+| cJ : cterm -> cterm -> cterm -> cterm -> cterm -> cterm -> cterm.
 
 Reserved Notation "Γ ⊢< l > M ⇒ T ↣ t" (at level 50, l, M, T, t at next level).
 Reserved Notation "Γ ⊢< l > M ⇐ T ↣ t" (at level 50, l, M, T, t at next level).
@@ -51,6 +54,13 @@ Definition rec_box l P p_zero p_succ k :=
     match l with
     | prop => box
     | _ => rec l P p_zero p_succ k
+    end.
+
+
+Definition J_box l i A a P p b e :=
+    match i with
+    | prop => box
+    | _ => J l i A a P p b e
     end.
 
 
@@ -99,6 +109,24 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > Mp_succ ⇐ P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] ↣ p_succ ->
     Γ ⊢< ty 0 > Mk ⇐ Nat ↣ k ->
     Γ ⊢< l > crec MP Mp_zero Mp_succ Mk ⇒ P <[ k ..] ↣ rec_box l P p_zero p_succ k
+
+| infer_eq Γ i MA T A Ma a Mb b : 
+    Γ ⊢< Ax i > MA ⇒ T ↣ A ->
+    T -->> Sort i ->
+    Γ ⊢< i > Ma ⇐ A ↣ a ->
+    Γ ⊢< i > Mb ⇐ A ↣ b ->
+    Γ ⊢< Ax prop > cEq MA Ma Mb ⇒ Sort prop ↣ Eq i A a b
+
+| infer_J Γ l MA T A Ma a i MP U P Mp p Mb b Me e :
+    Γ ⊢< Ax l > MA ⇒ T ↣ A ->
+    T -->> Sort l ->
+    Γ ⊢< l > Ma ⇐ A ↣ a ->
+    Γ ,, (l, A) ⊢< Ax i > MP ⇒ U ↣ P ->
+    U -->> Sort i ->
+    Γ ⊢< i > Mp ⇐ P<[a..] ↣ p ->
+    Γ ⊢< l > Mb ⇐ A ↣ b ->
+    Γ ⊢< prop > Me ⇐ Eq l A a b ↣ e ->
+    Γ ⊢< i > cJ MA Ma MP Mp Mb Me ⇒ P <[b..] ↣ J_box l i A a P p b e
 
 | infer_ann Γ MA Mt t l A T i :
     Γ ⊢< l > MA ⇒ T ↣ A ->
@@ -241,6 +269,15 @@ Proof.
     - repeat rewrite erasure_prop. auto.
 Qed.
 
+Lemma J_box_erasure l i A a P p b e :
+    erasure i (J l i A a P p b e) = J_box l i (erasure (Ax l) A) (erasure l a) (erasure (Ax i) P) (erasure i p) (erasure l b) box.
+Proof.
+    destruct i.
+    - simpl. reflexivity.
+    - repeat rewrite erasure_prop. auto.
+Qed.
+
+
 
 Lemma aux_subst_commute A l x Γ T :
     Γ ⊢< l > A : T ->
@@ -346,28 +383,62 @@ Proof.
       edestruct (H (Γ' ,, (ty 0, Nat))) as (_sort & P' & P'_Wt & erased_P'_eq & erased_sort_eq);
       eauto using ctx_cons, type_nat.
       dependent destruction erased_P'_eq. dependent destruction erased_sort_eq.
-      eapply reduce_to_sort in P'_Wt as (P'_Wt & l'_eq); eauto. dependent destruction l'_eq.
+      eapply reduce_to_sort in P'_Wt as (P'_Wt & l'_eq); eauto. subst.
 
       (* applying the ih to p_zero *)
       edestruct (H0 Γ' (P' <[ zero..])) as (p_zero' & p_zero'_Wt & erasure_eq); eauto.
       eapply (erasure_subst_1_commutes _ (ty 0)); eauto.
       eapply subst_ty; eauto using subst_one, type_zero.
-      dependent destruction erasure_eq.
+      subst.
 
       (* applying the ih to p_succ *)
       edestruct (H1 (Γ' ,, (ty 0, Nat) ,, (l, P')) (P' <[ succ (var 1) .: ↑ >> (↑ >> var)]))
         as (p_succ' & p_succ'_Wt & erasure_eq); eauto.
       eapply aux_subst_commute; eauto.
       eapply subst_ty; eauto using subst_id_var1, ctx_typing, type_nat.
-      dependent destruction erasure_eq.
+      subst.
 
       (* applying the ih to k *)
       edestruct (H2 Γ' Nat) as (k' & k'_Wt & erasure_eq); eauto using type_nat.
-      dependent destruction erasure_eq.
+      subst.
 
       exists (P' <[ k' ..]). exists (rec l P' p_zero' p_succ' k').
       repeat split.
       auto using type_rec.
+      eapply erasure_subst_1_commutes; eauto.
+    
+    (* case Eq *)
+    - edestruct H as (_sort & A' & _A'_Wt & erased_A'_eq & erased_sort_eq); eauto. subst.
+      eapply reduce_to_sort in r as (A'_Wt & _); eauto. clear _A'_Wt.
+
+      edestruct H0 as (a' & a'_Wt & erasure_a'_eq); eauto. subst.
+      edestruct H1 as (b' & b'_Wt & erasure_b'_eq); eauto. subst.
+      eexists. exists (Eq i A' a' b').
+      repeat split; eauto using type_Eq.
+
+    (* case J*)
+    - edestruct H as (_sort & A' & _A'_Wt & erased_A'_eq & erased_sort_eq); eauto. subst.
+      eapply reduce_to_sort in r as (A'_Wt & _); eauto. clear _A'_Wt _sort i0 H.
+
+      edestruct H0 as (a' & a'_Wt & erasure_a'_eq); eauto. subst.
+
+      edestruct (H1 (Γ' ,, (l, A'))) as (_sort & P' & Wt_P' & erasure_P'_eq & erasure_sort_eq); eauto using ctx_typing.
+      subst. eapply reduce_to_sort in Wt_P' as (Wt_P' & _); eauto.
+
+      edestruct H2 as (p' & p'_Wt & erasure_p'_eq); eauto. 
+      eapply (erasure_subst_1_commutes _ _); eauto.
+      eapply subst_ty; eauto. eapply subst_one; eauto.
+
+      edestruct H3 as (b' & b'_Wt & erasure_b'_eq); eauto. subst.
+
+      edestruct H4 as (e' & e'_Wt & erasure_e'_eq); eauto.
+      2:eapply type_Eq. 3:eapply a'_Wt. 3:eapply b'_Wt.
+      1,2:eauto.
+      subst.
+
+      eexists. exists (J l i A' a' P' p' b' e').
+      split; eauto using type_J.
+      split; eauto. rewrite J_box_erasure. rewrite erasure_prop. reflexivity.
       eapply erasure_subst_1_commutes; eauto.
 
     (* case annotation *)
@@ -447,7 +518,7 @@ Proof.
     apply CR in sort_eq_B as (_sort & sort_red_sort & B_red_sort).
     eapply sort_redd in sort_red_sort.
     dependent destruction sort_red_sort.
-    eapply ortho_redd_to_red in B_red_sort; eauto.
+    eapply ortho_redd_to_eq in B_red_sort; eauto.
     rewrite B_red_sort in erasure_A_red.
     auto.
 Qed.
@@ -472,7 +543,7 @@ Proof.
     dependent destruction pi_eq.
     apply redd_to_conv in A_red_A' as A_eq_A'.
     apply redd_to_conv in B_red_B' as B_eq_B'.
-    eapply ortho_redd_to_red in U_red_pi; eauto.
+    eapply ortho_redd_to_eq in U_red_pi; eauto.
     rewrite U_red_pi in erasure_T_red.
     exists A'. exists B'. split; eauto.
 Qed.
@@ -501,7 +572,10 @@ Inductive CTerm : label -> cterm -> Prop :=
 | czero_ h : CTerm h czero
 | csucc_ h M : CTerm h M -> CTerm h (csucc M)
 | crec_ h MP Mp_zero Mp_succ Mk : CTerm h MP -> CTerm h Mp_zero ->
-    CTerm h Mp_succ -> CTerm h Mk -> CTerm h (crec MP Mp_zero Mp_succ Mk).
+    CTerm h Mp_succ -> CTerm h Mk -> CTerm h (crec MP Mp_zero Mp_succ Mk)
+| cEq_ h MA Ma Mb : CTerm h MA -> CTerm h Ma -> CTerm h Mb -> CTerm h (cEq MA Ma Mb)
+| cJ_ h MA Ma MP Mp Mb Me : CTerm h MA -> CTerm h Ma -> CTerm h MP ->
+    CTerm h Mp -> CTerm h Mb -> CTerm h Me -> CTerm h (cJ MA Ma MP Mp Me Mb).
 
 
 Lemma completeness_aux Γ l t T Δ h :
@@ -597,6 +671,7 @@ Proof.
 
     (* in most cases, we show only the inference and then derive checking automatically *)
     1,2,3,5,6,7,8,9: (eapply completeness_aux; eauto).
+    10,11:(eapply completeness_aux; eauto).
 
     (* case var *)
     - eapply conv_in_ctx_ty in Wt'; eauto.
@@ -693,6 +768,39 @@ Proof.
             repeat split; eauto using CTerm.
             ++ erewrite lam_box_erasure; eauto. eapply infer_lam; eauto.
             ++ eauto using conv_pi, conv_refl.
+
+    (* case Eq *)
+    - edestruct IHWt1 as (_ & MA & UA & MA_infer & sort_eq_UA & CA); eauto.
+      eapply gen_red_to_sort in sort_eq_UA; eauto.
+
+      edestruct IHWt2 as ((Ma & Ma_checks & Ca) & _); eauto using conv_refl.
+      edestruct IHWt3 as ((Mb & Mb_checks & Cb) & _); eauto using conv_refl.
+
+      eexists (cEq MA Ma Mb). eexists (Sort prop). repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
+      simpl. eapply infer_eq; eauto.
+
+    (* case J *)
+    - edestruct IHWt1 as (_ & MA & UA & MA_infer & sort_eq_UA & CA); eauto.
+      eapply gen_red_to_sort in sort_eq_UA; eauto. clear IHWt1.
+    
+      edestruct IHWt2 as ((Ma & Ma_checks & Ca) & _); eauto using conv_refl. clear IHWt2.
+      edestruct IHWt5 as ((Mb & Mb_checks & Cb) & _); eauto using conv_refl. clear IHWt5.
+
+      edestruct IHWt3 as (_ & MP & UP & MP_infer & sort_eq_UP & CP); eauto using ConvCtx, conv_refl.
+      eapply gen_red_to_sort in sort_eq_UP; eauto. clear IHWt3.
+
+      edestruct IHWt4 as ((Mp & Mp_checks & Cp) & _); eauto using conv_refl, subst_ty, conv_refl, subst_one, validity_ty_ctx. 
+      clear IHWt4.
+
+      edestruct IHWt6 as ((Me & Me_checks & Ce) & _); eauto using conv_refl, validity_ty_ty, conv_refl.
+      clear IHWt6.
+
+      exists (cJ MA Ma MP Mp Mb Me). eexists.
+      repeat split;eauto using conv_refl, subst_ty, conv_refl, subst_one, validity_ty_ctx, CTerm. 
+      erewrite erasure_subst_1_commutes; eauto.
+      simpl. eapply infer_J; eauto.
+      + erewrite erasure_subst_1_commutes in Mp_checks; eauto. 
+      + rewrite erasure_prop in Me_checks. eauto.
 
     (* case conv *)
     - eapply IHWt in H0 as (IH_check & IH_infer); eauto. split; intros.
