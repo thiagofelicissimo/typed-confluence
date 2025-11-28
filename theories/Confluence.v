@@ -1074,11 +1074,40 @@ Proof.
 
     do 5 eexists. split; eauto 6 using ortho_Eq, ortho_conv, ortho_to_conv.
 
+  (* J *)
   - rename t1 into A. rename t2 into a. rename t3 into P. rename t4 into p. rename t5 into b. rename t6 into e.
     ttinv t_red_t'. destruct t_red_t' as (l_eq & T_conv & disj). 
     ttinv t_red_t''. destruct t_red_t'' as (l_eq' & T_conv' & disj').
-    subst. clear l_eq'. 
-  
+    subst. clear l_eq'.
+    destruct disj as [(A' & a' & P' & p' & b' & e' & A_red_A' & a_red_a' & P_red_P' & p_red_p' & b_red_b' & e_red_e' & eq) 
+                      | (p' & AWt & a_conv_b & PWt & p_red_p' & eWt & eq)]. 
+    all:destruct disj' as [(A'' & a'' & P'' & p'' & b'' & e'' & A_red_A'' & a_red_a'' & P_red_P'' & p_red_p'' & b_red_b'' & e_red_e'' & eq') 
+                      | (p'' & _ & a_conv_b' & _ & p_red_p'' & _ & eq')].
+    all:subst.
+
+    (* cong x cong *)
+    + destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
+      destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
+      destruct (IH P ltac:(simpl; lia) _ _ _ _ _ P_red_P' P_red_P'') as (P''' & P'_red_P''' & P''_red_P''').
+      destruct (IH p ltac:(simpl; lia) _ _ _ _ _ p_red_p' p_red_p'') as (p''' & p'_red_p''' & p''_red_p''').
+      destruct (IH b ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
+      destruct (IH e ltac:(simpl; lia) _ _ _ _ _ e_red_e' e_red_e'') as (e''' & e'_red_e''' & e''_red_e''').
+      do 5 eexists. 
+      split; eapply ortho_J; eauto 6 using ortho_conv, ortho_to_conv, conv_ty_in_ctx_ortho, conv_Eq, subst_conv, substs_one.
+
+    (* cong x red *)
+    + destruct (IH p ltac:(simpl; lia) _ _ _ _ _ p_red_p' p_red_p'') as (p''' & p'_red_p''' & p''_red_p''').
+      do 5 eexists. split; eauto.
+      eapply ortho_J_refl; eauto 8 using ortho_validity_right, conv_ty_in_ctx_ortho, ortho_to_conv, conv_sym, conv_trans, conv_conv, subst_conv, substs_one, ortho_conv, conv_Eq.
+ 
+    (* red x cong *)
+    + destruct (IH p ltac:(simpl; lia) _ _ _ _ _ p_red_p' p_red_p'') as (p''' & p'_red_p''' & p''_red_p''').
+      do 5 eexists. split; eauto.
+      eapply ortho_J_refl; eauto 8 using ortho_validity_right, conv_ty_in_ctx_ortho, ortho_to_conv, conv_sym, conv_trans, conv_conv, subst_conv, substs_one, ortho_conv, conv_Eq.
+ 
+    (* red x red *)
+    + destruct (IH p ltac:(simpl; lia) _ _ _ _ _ p_red_p' p_red_p'') as (p''' & p'_red_p''' & p''_red_p'''). 
+      do 5 eexists. split; eauto.
 Qed.
 
 Corollary diamond :
@@ -1332,13 +1361,130 @@ Proof.
       apply equiv_step. eauto using ortho_refl, ortho_rec.
 Qed.
 
+Lemma equiv_Eq Γ l A A' a a' b b' :
+  Γ ⊢< Ax l > A ≈ A' : Sort l ->
+  Γ ⊢< l > a ≈ a' : A ->
+  Γ ⊢< l > b ≈ b' : A ->
+  Γ ⊢< Ax prop > Eq l A a b ≈ Eq l A' a' b' : Sort prop.
+Proof.
+  intros A_equiv_A' a_equiv_a' b_equiv_b'.
+  eapply equiv_trans. eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun b => Eq l A a b) _ _ b_equiv_b' _).
+    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left.
+    + intros. split; eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. apply equiv_step.
+      eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun a => Eq l A a b') _ _ a_equiv_a' _).
+    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. split; eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. apply equiv_step.
+      eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun A => Eq l A _ _) _ _ A_equiv_A' _).
+    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. split; intro K;
+      eapply type_inv in K as (A'' & aWt & bWt & _); 
+      eauto 7 using type_Eq, validity_conv_left, type_conv, conv_sym.
+    + intros. apply equiv_step.
+      eapply type_inv in H0 as (A'' & aWt & bWt & _).
+      eapply ortho_Eq; eauto using ortho_refl.
+Qed.
+
+Lemma equiv_J Γ l i A A' a a' P P' p p' b b' e e' :
+  Γ ⊢< Ax l > A ≈ A' : Sort l ->
+  Γ ⊢< l > a ≈ a' : A ->
+  Γ ,, (l , A) ⊢< Ax i > P ≈ P' : Sort i ->
+  Γ ⊢< i > p ≈ p' : P <[a..] ->
+  Γ ⊢< l > b ≈ b' : A ->
+  Γ ⊢< prop > e ≈ e' : Eq l A a b ->
+  Γ ⊢< i > J l i A a P p b e ≈ J l i A' a' P' p' b' e' : P <[b..].
+Proof.
+  intros A_equiv_A' a_equiv_a' P_equiv_P' p_equiv_p' b_equiv_b' e_equiv_e'.
+  eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans.
+  - refine (equiv_red_ind _ (fun a => J l i A a P p b e) _ _ a_equiv_a' _).
+    3:eapply type_J; eauto using equiv_to_conv, validity_conv_left.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
+    + intros. apply equiv_step. 
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_J; eauto using ortho_refl. 
+  - refine (equiv_red_ind _ (fun e => J l i A _ P p b e) _ _ e_equiv_e' _).
+    3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right, 
+        type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
+    + intros. apply equiv_step. 
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_J; eauto 6 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv. 
+  - refine (equiv_red_ind _ (fun p => J l i A _ P p b _) _ _ p_equiv_p' _).
+    3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right, 
+        type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
+    + intros. apply equiv_step.  
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv, 
+        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
+  - refine (equiv_red_ind (fun b => P<[b..]) (fun b => J l i A _ P _ b _) _ _ b_equiv_b' _).
+    3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right, 
+        type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
+    + intros. apply equiv_step.  
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv, 
+        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
+  - refine (equiv_red_ind _ (fun A => J l i A _ P _ _ _) _ _ A_equiv_A' _).
+    3:eapply type_conv. 
+    3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right, 
+        type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.  
+    3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_conv.
+      1,3:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
+      all:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+    + intros. apply equiv_step.  
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_conv.
+      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv, 
+        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
+      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.          
+  - refine (equiv_red_ind (fun P => P<[b..]) (fun P => J l i _ _ P _ _ _) _ _ P_equiv_P' _).
+    3:eapply type_conv. 
+    3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right, 
+        type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv, conv_ty_in_ctx_ty.
+    3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
+      intro K; eapply type_inv in K as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      all:eapply type_conv.
+      1,3:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left, 
+      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
+      all:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+    + intros. apply equiv_step.  
+      eapply type_inv in H0 as (AWt & tWt & PWt & pWt & bWt & eWt & _).
+      eapply ortho_conv.
+      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv, 
+        substs_one, validity_conv_left, validity_ty_ctx, subst_conv, conv_ty_in_ctx_ortho.
+      eapply subst_conv; eauto 10 using substs_one, equiv_to_conv, validity_ty_ctx, conv_sym, validity_conv_left, conv_refl, ortho_to_conv.
+Qed.
+
+
 Lemma conv_to_equiv Γ l t u A :
   Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t ≈ u : A.
 Proof.
   intro H. induction H.
-  1,2,6,7,11,12,13,14 : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
+  all : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
   all : eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
-    equiv_rec, equiv_conv, equiv_sym, equiv_trans.
+    equiv_rec, equiv_conv, equiv_sym, equiv_trans, equiv_Eq, equiv_J.
 Qed.
 
 (* --- Proof of CR --- *)

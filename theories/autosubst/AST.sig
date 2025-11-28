@@ -15,3 +15,5 @@ zero : term
 succ : term -> term 
 rec : level -> (bind term in term) -> term -> (bind term , term in term) -> term -> term
 box : term
+Eq : level -> term -> term -> term -> term
+J : level -> level -> term -> term -> (bind term in term) -> term -> term -> term -> term
