@@ -1173,6 +1173,15 @@ Qed.
    TODO: replace in Confluence.v the occurrences of older inversion lemmas by the newer ones *)
 
 
+(* Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
+  | inv_data_var Γ l x A T
+    (var_in_ctx : Γ ∋< l > x : A) 
+    (conv_ty : Γ ⊢< Ax l > T ≡ A : Sort l) :
+    type_inv_data Γ l (var x) T.
+
+Lemma test Γ l x T (X : type_inv_data Γ l (var x) T) (Y : type_inv_data Γ l (var x) T) : False.
+inversion_clear X. inversion_clear Y. *)
+
 Definition type_inv_statement Γ l t T :=
   match t with 
   | var x => 

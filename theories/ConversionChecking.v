@@ -456,18 +456,6 @@ Proof.
 Qed.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 Definition nf t := forall u, t ---> u -> False.
 
 Definition is_elim t :=
@@ -548,6 +536,8 @@ Proof.
   - inversion nf_et. eauto.
 Qed.
 
+Hint Unfold ConversionChecking.nf.
+
 Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
 Proof.
@@ -556,36 +546,16 @@ Proof.
       destruct K as [l_eq_prop | (n & l_eq_n)];
       [rewrite l_eq_prop; rewrite erasure_prop; eauto using nf_box | idtac]).
   all: (try rewrite l_eq_n in *; try clear l).
-  all: eauto using Nf, Ne.
-  - apply nf_pi.
-    + apply IHt_Wt1. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
-    + apply IHt_Wt2. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
-  - apply nf_lam. apply IHt_Wt3. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
-  - apply nf_ne. apply ne_app.
-    + eapply nf_pi_is_ne.
-      ++  eauto.
-      ++  apply IHt_Wt3. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
-      ++ destruct t; unfold not_a_lam; eauto. unfold ConversionChecking.nf in *.  eapply nf. simpl. eauto using red.
-    + apply IHt_Wt4. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
+  all: eauto 24 using Nf, Ne, red.
+  - apply nf_ne. apply ne_app; eauto using red.
+    eapply nf_pi_is_ne; eauto using red.
+    destruct t; unfold not_a_lam; eauto. 
+    eapply nf. simpl. eauto using red.
   - apply nf_succ. fold erasure. rewrite l_eq_n. apply IHt_Wt. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. rewrite l_eq_n. eauto using red.
-  - apply nf_ne. apply ne_rec.
-    + apply IHt_Wt1. unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + apply IHt_Wt2. unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + apply IHt_Wt3. unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply nf_nat_is_ne; eauto.
-      ++ apply IHt_Wt4. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. eauto using red.
-      ++ destruct t; unfold not_zero_or_succ; eauto.
-        all: unfold ConversionChecking.nf in *; eapply nf; simpl; eauto using red.
-  - cbn. eapply nf_eq.
-    + eapply IHt_Wt1.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt2.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt3.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-  - cbn. eapply nf_ne. eapply ne_J.
-    + eapply IHt_Wt1.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt2.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt3.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt4.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
-    + eapply IHt_Wt5.  unfold ConversionChecking.nf in *. intros. eapply nf.  simpl. eauto using red.
+  - apply nf_ne. apply ne_rec; eauto using red.
+    eapply nf_nat_is_ne; eauto using red.
+    destruct t; unfold not_zero_or_succ; eauto.
+    all: eapply nf; simpl; eauto using red.
 Qed.
 
 Lemma eq_erased_adjust_IH {l' t4} : 
@@ -621,10 +591,8 @@ Proof.
     rename u1 into A2. rename u2 into B2.
     apply type_inv in H1 as (A1_Wt & B1_Wt & i0_eq & conv).
     apply type_inv in H2 as (A2_Wt & B2_Wt & _).
-    rewrite i0_eq. eapply conv_conv; eauto using conv_sym.
-    assert (Γ ⊢< Ax _ > A1 ≡ A2 : Sort _) by (eapply H; eauto).
-    apply conv_pi; eauto.
-    eapply H0; eauto using conv_ty_in_ctx_ty.
+    rewrite i0_eq. 
+    eapply conv_conv; eauto 6 using conv_sym, conv_pi, conv_ty_in_ctx_ty.
   - destruct t0; dependent destruction H3.
     destruct u; dependent destruction H2.
     rename t0_1 into A1. rename t0_2 into B1. rename t0_3 into t1.
@@ -636,8 +604,7 @@ Proof.
     assert (Γ ⊢< Ax (ty i) > Pi l l0 A1 B1 ≡ Pi l1 l2 A2 B2  : Sort (ty i)) as pi_eq_pi
       by eauto using conv_sym, conv_trans.
     apply pi_inj in pi_eq_pi as (l_eq_l1 & l0_eq_l2 & A1_eq_A2 & B1_eq_B2).
-    rewrite l_eq_l1 in *. clear l l_eq_l1.
-    rewrite l0_eq_l2 in *. clear l0 l0_eq_l2.
+    subst.
     apply conv_lam; eauto.
     destruct l2. 2:inversion i0_eq'.
     apply H; eauto using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv.
@@ -653,12 +620,9 @@ Proof.
   - destruct t0; dependent destruction H3.
     destruct u; dependent destruction H2.
     pose proof H0 as H'. pose proof H0 as H''.
-    apply type_inv in H0 as (H0 & _).
+    apply type_inv in H0 as (H0 & eq & T_conv_nat).
     apply type_inv in H1 as (H1 & _).
-    assert (Γ ⊢< ty 0 > succ t0 : Nat) by eauto using type_succ.
-    eapply sort_unicity in H'. 2: eapply H3.
-    eapply type_unicity in H''. 2:apply H3.
-    rewrite <- H' in *.
+    dependent destruction eq.
     eapply conv_conv. 2: eauto using conv_sym.
     apply conv_succ. eapply H; eauto.
   - eapply H; eauto.
@@ -859,13 +823,14 @@ Proof.
   intros t_wt u_wt t_redd u_redd t'_nf u'_nf t'_eq_u'.
   eapply subject_reduction_redd in t_redd as (t'' & t_eq_t'' & erased_t''_eq_t'); eauto.
   eapply subject_reduction_redd in u_redd as (u'' & u_eq_u'' & erased_u''_eq_u'); eauto.
-  rewrite <- erased_t''_eq_t' in *. clear erased_t''_eq_t' t'.
-  rewrite <- erased_u''_eq_u' in *. clear erased_u''_eq_u' u'.
-  apply validity_conv_right in t_eq_t'' as t''_wt.
-  apply validity_conv_right in u_eq_u'' as u''_wt.
-  eapply eq_erased_nf in t'_eq_u'; eauto.
-  eauto using conv_sym, conv_trans.
+  subst. 
+  assert (nf (erasure l u'')) by 
+    (rewrite erased_u''_eq_u'; assumption).
+  eauto 7 using eq_erased_nf, conv_trans, conv_sym, validity_conv_right.
 Qed.
+
+(* TODO: add the following discussion to the paper
+  Among the hypothesis of our theorem, we require the erasures of t and u to be in normal form in order to conclude that t and u are convertible. Most proof assistants however implement an optimization which first checks for syntactic equality before normalizing the terms. In the presence of normalization, this optimization is sound, given that, if t and u are equal, then they normal forms will also be equal. Nevertheless, this optimization becomes unsound in systems like type-in-type: A counter-example is obtained by considering Howe's looping combinators, which are equal when erasing annotations, but not convertible (see the file X.v in the formalization for more details). Therefore, one must be careful to prove normalization in order to employ this optimization. On the other hand, it would be possible to drop the assumption of normalization if we considered an erased syntax with some annotations, such as domain annotations in lambdas. *)
 
 Hint Unfold nf.
 
