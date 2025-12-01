@@ -1172,112 +1172,92 @@ Qed.
 (* newer versions of inversion lemmas.
    TODO: replace in Confluence.v the occurrences of older inversion lemmas by the newer ones *)
 
-
-(* Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
-  | inv_data_var Γ l x A T
-    (var_in_ctx : Γ ∋< l > x : A) 
-    (conv_ty : Γ ⊢< Ax l > T ≡ A : Sort l) :
-    type_inv_data Γ l (var x) T.
-
-Lemma test Γ l x T (X : type_inv_data Γ l (var x) T) (Y : type_inv_data Γ l (var x) T) : False.
-inversion_clear X. inversion_clear Y. *)
-
-Definition type_inv_statement Γ l t T :=
-  match t with 
-  | var x => 
-    ∃ A, Γ ∋< l > x : A ∧ Γ ⊢< Ax l > T ≡ A : Sort l
-  | Sort i => 
-    l = Ax (Ax i) /\
-    Γ ⊢< Ax (Ax (Ax i)) > T ≡ Sort (Ax i) : Sort (Ax (Ax i))
-  | Pi i j A B =>
-    Γ ⊢< Ax i > A : Sort i /\
-    Γ ,, (i, A) ⊢< Ax j > B : Sort j /\
-    l = Ax (Ru i j) /\
-    Γ ⊢< Ax (Ax (Ru i j)) > T ≡ Sort (Ru i j) : Sort (Ax (Ru i j))
-  | lam i j A B t =>
-    Γ ⊢< Ax i > A : Sort i /\
-    Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
-    Γ ,, (i , A) ⊢< j > t : B /\
-    l = Ru i j /\
-    Γ ⊢< Ax (Ru i j) > T ≡ Pi i j A B : Sort (Ru i j)
-  | app i j A B t u =>
-    Γ ⊢< Ax i > A : Sort i /\
-    Γ ,, (i , A) ⊢< Ax j > B : Sort j /\
-    Γ ⊢< Ru i j > t : Pi i j A B /\
-    Γ ⊢< i > u : A /\
-    l = j /\
-    Γ ⊢< Ax j > T ≡ B <[ u.. ] : Sort j
-  | Nat =>
-    l = ty 1 /\
-    Γ ⊢< ty 2 > T ≡ Sort (ty 0) : Sort (ty 1)
-  | zero =>
-    l = ty 0 /\
-    Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0)
-  | succ t =>
-    Γ ⊢< ty 0 > t : Nat /\
-    l = ty 0 /\
-    Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0)
-  | rec i P p_zero p_succ t =>
-    Γ ,, (ty 0 , Nat) ⊢< Ax i > P : Sort i /\
-    Γ ⊢< i > p_zero : P <[ zero .. ] /\
-    Γ ,, (ty 0 , Nat) ,, (i , P) ⊢< i > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] /\
-    Γ ⊢< ty 0 > t : Nat /\
-    l = i /\
-    Γ ⊢< Ax i > T ≡ P <[ t.. ] : Sort i
-  | box => 
-    False
-  | Eq i A a b =>
-    Γ ⊢< Ax i > A : Sort i /\
-    Γ ⊢< i > a : A /\
-    Γ ⊢< i > b : A /\
-    l = Ax prop /\
-    Γ ⊢< Ax (Ax prop) > T ≡ Sort prop : Sort (Ax prop)
-  | J l' i A a P p b e => 
-    Γ ⊢< Ax l' > A : Sort l' /\
-    Γ ⊢< l' > a : A /\
-    Γ ,, (l' , A) ⊢< Ax i > P : Sort i /\
-    Γ ⊢< i > p : P <[a..] /\
-    Γ ⊢< l' > b : A /\
-    Γ ⊢< prop > e : Eq l' A a b /\
-    l = i /\
-    Γ ⊢< Ax i > T ≡ P <[b..] : Sort i
-  end.
-
 Derive NoConfusion for term.
 Derive NoConfusion for level.
 
 
+Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
+  | inv_data_var Γ l x A T
+    (var_in_ctx : Γ ∋< l > x : A) 
+    (conv_ty : Γ ⊢< Ax l > T ≡ A : Sort l)
+    : type_inv_data Γ l (var x) T
+  | inv_data_sort Γ l i T 
+    (lvl_eq : l = Ax (Ax i))
+    (conv_ty : Γ ⊢< Ax (Ax (Ax i)) > T ≡ Sort (Ax i) : Sort (Ax (Ax i)))
+    : type_inv_data Γ l (Sort i) T
+  | inv_data_pi Γ l A B i j T
+    (A_Wt : Γ ⊢< Ax i > A : Sort i)
+    (B_Wt : Γ ,, (i, A) ⊢< Ax j > B : Sort j)
+    (lvl_eq : l = Ax (Ru i j))
+    (conv_ty : Γ ⊢< Ax (Ax (Ru i j)) > T ≡ Sort (Ru i j) : Sort (Ax (Ru i j)))
+    : type_inv_data Γ l (Pi i j A B) T
+  | inv_data_lam Γ l A B t i j T
+    (A_Wt : Γ ⊢< Ax i > A : Sort i)
+    (B_Wt : Γ ,, (i, A) ⊢< Ax j > B : Sort j)
+    (t_Wt : Γ ,, (i , A) ⊢< j > t : B)
+    (lvl_eq : l = Ru i j)
+    (conv_ty : Γ ⊢< Ax (Ru i j) > T ≡ Pi i j A B : Sort (Ru i j))
+    : type_inv_data Γ l (lam i j A B t) T
+  | inv_data_app Γ A B t u i j T l
+    (A_Wt : Γ ⊢< Ax i > A : Sort i)
+    (B_Wt : Γ ,, (i, A) ⊢< Ax j > B : Sort j)
+    (t_Wt : Γ ⊢< Ru i j > t : Pi i j A B)
+    (u_Wt : Γ ⊢< i > u : A)
+    (lvl_eq : l = j)
+    (conv_ty : Γ ⊢< Ax j > T ≡ B <[ u.. ] : Sort j)
+    : type_inv_data Γ l (app i j A B t u) T
+  | inv_data_Nat Γ l T
+    (lvl_eq : l = ty 1)
+    (conv_ty : Γ ⊢< ty 2 > T ≡ Sort (ty 0) : Sort (ty 1))
+    : type_inv_data Γ l Nat T
+  | type_inv_zero l Γ T
+    (lvl_eq : l = ty 0)
+    (conv_ty : Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0))
+    : type_inv_data Γ l zero T
+  | type_inv_succ Γ l t T
+    (t_Wt : Γ ⊢< ty 0 > t : Nat)
+    (lvl_eq : l = ty 0)
+    (conv_ty : Γ ⊢< ty 1 > T ≡ Nat : Sort (ty 0))
+    : type_inv_data Γ l (succ t) T
+  | type_inv_rec Γ l i P p_zero p_succ t T
+    (P_Wt : Γ ,, (ty 0 , Nat) ⊢< Ax i > P : Sort i)
+    (p_zero_Wt : Γ ⊢< i > p_zero : P <[ zero .. ])
+    (p_succ_Wt : Γ ,, (ty 0 , Nat) ,, (i , P) ⊢< i > p_succ : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ])
+    (t_Wt : Γ ⊢< ty 0 > t : Nat)
+    (lvl_eq : l = i)
+    (conv_ty : Γ ⊢< Ax i > T ≡ P <[ t.. ] : Sort i)
+    : type_inv_data Γ l (rec i P p_zero p_succ t) T
+  | type_inv_eq Γ l i A a b T
+    (A_Wt : Γ ⊢< Ax i > A : Sort i)
+    (a_Wt : Γ ⊢< i > a : A)
+    (b_Wt : Γ ⊢< i > b : A)
+    (lvl_eq : l = Ax prop)
+    (conv_ty : Γ ⊢< Ax (Ax prop) > T ≡ Sort prop : Sort (Ax prop))
+    : type_inv_data Γ l (Eq i A a b) T
+  | type_inv_J Γ l l' i A a P p b e T 
+    (A_Wt : Γ ⊢< Ax l' > A : Sort l')
+    (a_Wt : Γ ⊢< l' > a : A)
+    (P_Wt : Γ ,, (l' , A) ⊢< Ax i > P : Sort i)
+    (p_Wt : Γ ⊢< i > p : P <[a..])
+    (b_Wt : Γ ⊢< l' > b : A)
+    (e_Wt : Γ ⊢< prop > e : Eq l' A a b)
+    (lvl_eq : l = i)
+    (conv_ty : Γ ⊢< Ax i > T ≡ P <[b..] : Sort i)
+    : type_inv_data Γ l (J l' i A a P p b e) T.
+
+
 Lemma type_inv Γ l t T : 
   Γ ⊢< l > t : T -> 
-  type_inv_statement Γ l t T.
+  type_inv_data Γ l t T.
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  destruct t; simpl; depind H; eauto 9 using conv_refl.
-  - edestruct IHtyping as (C & eq & A_eq_C); 
-      eauto using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (l_eq & conv); 
-      try rewrite l_eq in *; eauto using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (AWt & BWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (AWt & BWt & tWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (AWt & BWt & tWt & uWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (tWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (PWt & p_zeroWt & p_succWt & tWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping; eauto using validity_conv_left.
-  - edestruct IHtyping as (AWt & aWt & bWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 9 using validity_conv_left, conv_trans, conv_sym.
-  - edestruct IHtyping as (AWt & aWt & PWt & pWt & bWt & eWt & l_eq & conv); 
-      try rewrite l_eq in *; eauto 11 using validity_conv_left, conv_trans, conv_sym.
+  induction H. 1-11:econstructor; eauto using conv_refl.
+  eapply validity_conv_left in H0 as AWt.
+  eapply IHtyping in AWt as IH.
+  depelim IH; econstructor; subst; eauto using conv_sym, conv_trans.
 Qed.
+
 
 Theorem var_unicity Γ l x A l' A' : 
   Γ ∋< l > x : A ->
@@ -1299,28 +1279,10 @@ Theorem type_sort_unicity Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  - eapply type_inv in H0 as (A' & H1' & Hconv).
+  2-11:eapply type_inv in H0; dependent elimination H0; subst; eauto 13 using conv_sym.
+  - eapply type_inv in H0. dependent elimination H0. 
     eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (HA & HB ). subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & eq & conv).
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & _ & eq & conv).
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & _ & _ & eq & conv).
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & _ & _ & eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & _ & eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply type_inv in H0 as (_ & _ & _ & _ & _ & _ & eq & conv). 
-    subst. eauto using conv_sym.
-  - eapply IHtyping in H0 as (HA & HB). eauto using conv_sym, conv_trans.
+  - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
 Qed.
 
 Corollary type_unicity Γ l l' t A B : 
@@ -1339,24 +1301,6 @@ Corollary sort_unicity Γ l l' t A B :
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto.
 Qed.
-
-
-
-(* not needed anymore *)
-(* Lemma conv_ctx_var Γ x l A Δ :
-  Γ ∋< l > x : A →
-  ⊢ Γ ≡ Δ ->
-  ∃ B, Δ ∋< l > x : B ∧ Γ ⊢< Ax l > A ≡ B : Sort l.
-Proof.
-  intros hx hctx.
-  eapply type_var in hx; eauto using validity_ctx_conv_left.
-  eapply conv_in_ctx_ty in hx; eauto.
-  eapply type_inv in hx as 
-    (A0 & varin & conv).
-  exists A0. split; eauto.
-  eauto using conv_in_ctx_conv, ctx_conv_sym.
-Qed. *)
-
 
 Lemma conv_rec' Γ l P p_zero p_succ t P' p_zero' p_succ' t' P_ :
       Γ ,, (ty 0 , Nat) ⊢< Ax l > P ≡ P' : Sort l ->
