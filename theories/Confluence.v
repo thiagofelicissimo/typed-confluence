@@ -3,7 +3,7 @@
 From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
 From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing BasicMetaTheory. (*  Env Inst. *)
+From TypedConfluence Require Import Util BasicAST Contexts Typing BasicMetaTheory.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 (* Require Import Stdlib.Program.Equality. *)
 Require Import Equations.Prop.DepElim.

@@ -1,8 +1,8 @@
 
 From Stdlib Require Import Utf8 List Arith Bool Lia.
 From TypedConfluence
-Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Util BasicAST Weakenings Contexts Typing. (*  Env Inst. *)
+Require Import core unscoped Util Ast SubstNotations RAsimpl AST_rasimpl.
+From TypedConfluence Require Import BasicAST Contexts Typing.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 (* Require Import Stdlib.Program.Equality. *)
 From Equations Require Import Equations.
