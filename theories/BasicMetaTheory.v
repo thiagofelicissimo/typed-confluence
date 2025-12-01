@@ -228,64 +228,26 @@ Lemma typing_conversion_ren :
       Δ ⊢< l > ρ ⋅ u ≡ ρ ⋅ v : ρ ⋅ A).
 Proof.
   apply typing_mutind.
-  all: try solve [ intros ; try econstructor ; eauto using WellRen_up, ctx_cons ].
-  all: try solve [
-    intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv) ; [
-      econstructor ; eauto using WellRen_up, ctx_cons
-    | rasimpl ; reflexivity
-    ]
-  ].
+  2,3,4,6,7,8,10,12,14,15,16,18,19,20,22,24,25,30,31: 
+    solve [ intros ; try econstructor ; eauto using WellRen_up, ctx_cons ].
 
+  2,3,4,6,7,8:
+    solve [intros; cbn in *; (eapply meta_conv_conv + eapply meta_conv) ; 
+            [ (econstructor ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ; 
+              [ eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing, ctx_cons 
+              | rasimpl ; reflexivity]]) 
+            | rasimpl; reflexivity]].
 
-  (* The proof is not very satisfactory, I expect there is some automation
-    hidden below this but I'm not sure what.
-  *)
-  - intros.
-    cbn. constructor. 1: auto.
-    eapply varty_ren. all: eassumption.
-  - intros. cbn in *. eapply meta_conv.
-    + econstructor.
-      all : try solve [ eapply meta_conv ; [
-        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
-    + rasimpl. reflexivity.
-  - intros. cbn in *. eapply meta_conv.
-    + econstructor.
-      all : try solve [ eapply meta_conv ; [
-        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
-    + rasimpl. reflexivity.
-  - intros.
-    cbn. constructor. 1: auto.
-    eapply varty_ren. all: eassumption.
-  - intros. cbn in *. eapply meta_conv_conv.
-    + econstructor.
-      all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
-        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
-    + rasimpl. reflexivity.
-  - intros. cbn in *. eapply meta_conv_conv.
-    + econstructor.
-      all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
-        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
-    + rasimpl. reflexivity.
-  - intros. cbn. eapply meta_conv_conv. 
-    1: eapply meta_rhs_conv.
-    1: eapply conv_beta; eauto using ctx_typing, typing, WellRen_up.
-    all:rasimpl; eauto.
-  - intros. cbn. eapply meta_conv_conv. 1:eapply meta_rhs_conv.
-    1: { eapply conv_rec_zero; eauto using ctx_typing, typing, WellRen_up.
-         1: eapply meta_conv.  1: eapply H0. 1-3:rasimpl; eauto.
-         eapply meta_conv. 1:eapply H1.  
-         1-3:rasimpl; eauto 9 using ctx_typing, typing, WellRen_up. }
-    all:rasimpl; eauto.
-  - intros. cbn. eapply meta_conv_conv. 1:eapply meta_rhs_conv.
-    1: { eapply conv_rec_succ; eauto using ctx_typing, typing, WellRen_up.
-         1: eapply meta_conv.  1: eapply H0. 1-3:rasimpl; eauto.
-         eapply meta_conv. 1:eapply H1.  
-         1-3:rasimpl; eauto 9 using ctx_typing, typing, WellRen_up. }
-    all:ssimpl; reflexivity.
-  - intros. cbn. eapply meta_conv_conv. 
-    1:eapply conv_J_refl; eauto using WellRen_up, ctx_typing.
-    1:eapply meta_conv. 1:eapply H2; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
+  3-6: solve [ intros; cbn; eapply meta_conv_conv; 
+              [ eapply meta_rhs_conv; 
+                [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl) ; 
+                  eauto using ctx_typing, typing, WellRen_up; try (eapply meta_conv; 
+                  [ eauto 12 using ctx_typing, typing, WellRen_up 
+                  | rasimpl; reflexivity]))
+                | ssimpl; reflexivity] 
+              | ssimpl; reflexivity] ].
+
+  all: solve [intro;cbn; econstructor; eauto using varty_ren].
 Qed.
 
 Lemma type_ren Γ l t A Δ ρ A' :
@@ -414,128 +376,47 @@ Lemma typing_conversion_subst :
       Δ ⊢< l > u <[ σ ] ≡ v <[ σ ] : A <[ σ ]).
 Proof.
   (* Basically copy-pasted from renaming *)
-  apply typing_mutind.
-  all: try solve [ intros ; try econstructor ; eauto 8 using WellSubst_up, ctx_typing ].
-  all: try solve [
-    intros ; cbn in * ; (eapply meta_conv + eapply meta_conv_conv) ; [
-      econstructor ; eauto 8 using WellSubst_up, ctx_typing
-    | rasimpl ; reflexivity
-    ]
-  ].
+  apply typing_mutind; intros.
 
+  2,3,4,6,7,8,10,12,14,15,16,18,19,20,22,24,25,30,31: 
+    solve [ try econstructor ; eauto 8 using WellSubst_up, ctx_cons ].
 
-  - intros.
-    cbn. eapply varty_subst. all: eassumption.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? wf hs.
-    cbn in *. 
-    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
-    { 
-      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
-      all: eauto. all:eauto using typing.
-    }
-    eapply meta_conv.
-    + econstructor. all: eauto using WellSubst_up, WellSubst_meta.
-      * eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
-        rasimpl. reflexivity.
-      * {
-        eapply meta_conv.
-        - eapply ihs.
-          1:econstructor;  eauto using ctx_typing, typing. 
-        eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto.
-          1,2: eauto using typing.
-          reflexivity.
-        - rasimpl. reflexivity.
-      }
-    + rasimpl. reflexivity.
-  - intros. cbn. eapply meta_conv. 
-    1:eapply type_J; eauto 7 using ctx_typing, WellSubst_up.
-    1:eapply meta_conv. 1:eapply H2; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
-  - intros.
-    cbn. apply conv_refl.
+  all: try assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l) 
+      by eauto 6 using ctx_typing, typing, WellSubst_meta, WellSubst_up. 
+
+  2,3,4,6,7,8:solve [cbn in *; (eapply meta_conv_conv + eapply meta_conv) ; 
+            [ (econstructor ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ; 
+              [ eauto 11 using WellRen_up, WellSubst_up, WellSubst_meta, ctx_typing, typing, ctx_cons 
+              | rasimpl ; reflexivity]]) 
+            | rasimpl; reflexivity]].
+
+  3-6: solve [ intros; cbn; eapply meta_conv_conv; 
+                [ eapply meta_rhs_conv; 
+                  [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl) ; 
+                    eauto using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta; try (eapply meta_conv; 
+                    [ eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta
+                    | rasimpl; reflexivity]))
+                  | ssimpl; reflexivity] 
+                | ssimpl; reflexivity] ].
+
+                
+  - cbn. eapply varty_subst. all: eassumption.
+  - cbn. apply conv_refl.
     eapply varty_subst. all: eassumption.
-  - intros.
-    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
-    { 
-      eapply H; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
-      all: eauto. all:eauto using typing.
-    }
-    cbn in *. eapply meta_conv_conv.
-    + econstructor. all: eauto using WellSubst_up, WellSubst_meta.
-      * eapply H0; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
-        all: eauto using typing. 1:eauto using typing.
-        reflexivity.
-      * eapply meta_conv_conv. all: eauto using WellSubst_up, WellSubst_meta.
-        rasimpl. reflexivity.
-      * {
-        eapply meta_conv_conv.
-        - eapply H2; eauto using ctx_typing, typing.  
-          eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto. 1,2:eauto using typing.
-          reflexivity.
-        - rasimpl. reflexivity.
-      }
-    + rasimpl. reflexivity.
-  - intros. cbn. eapply meta_conv_conv. 
-    1:eapply conv_J; eauto 8 using WellSubst_up, ctx_typing.
-    1:eapply meta_conv_conv. 1:eapply H3; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
-  - intros.
-    cbn. rasimpl. 
-    assert (Δ ⊢< Ax i > A <[ σ] : Sort i) by (eapply H; eauto using ctx_typing, typing).
-    eapply meta_conv_conv.
-    1:{
-      eapply meta_rhs_conv.
-      1:{
-        eapply conv_beta. all: eauto using WellSubst_up, ctx_typing.
-      }
-      rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - intros ?????? ihP ? ihz ? ihs ?? hs wf.
-    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
-    { 
-      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
-      all: eauto. all:eauto using typing.
-    }
-    cbn. eapply meta_conv_conv.
-    1:{
-      eapply conv_rec_zero. 1:eauto.
-      - eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
-        rasimpl. reflexivity.
-      - eapply meta_conv.
-        + eapply ihs;eauto using ctx_typing, typing. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto. all:eauto using typing.
-        + rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - intros ??????? ihP ? ihz ? ihs ? iht ?? hs wf.
-    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l).
-    { 
-      eapply ihP; eauto using ctx_typing, typing. eapply WellSubst_meta. 1: eapply WellSubst_up. 
-      all: eauto. all:eauto using typing.
-    }
-    cbn. eapply meta_conv_conv.
-    1:{
-      eapply meta_rhs_conv.
-      1:{
-        eapply conv_rec_succ.  all: eauto using WellSubst_up, WellSubst_meta.
-        - eapply meta_conv. all: eauto using WellSubst_up, WellSubst_meta.
-          rasimpl. reflexivity.
-      - eapply meta_conv.
-        + eapply ihs;eauto using ctx_typing, typing. eapply WellSubst_meta. 1: repeat eapply WellSubst_up.
-          all: eauto. all:eauto using typing.
-        + rasimpl. reflexivity.
-      }
-      rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - intros. cbn. eapply meta_conv_conv. 
-    1:eapply conv_J_refl; eauto 7 using WellSubst_up, ctx_typing.
-    1:eapply meta_conv. 1:eapply H2; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
 Qed.
+
+
+
+Theorem subst_ty Γ l t A Δ σ A' : 
+  ⊢ Δ -> 
+  Δ ⊢s σ : Γ -> 
+  Γ ⊢< l > t : A ->
+  A' = A <[ σ ] ->
+  Δ ⊢< l > t <[ σ ] : A'.
+Proof.
+  intros. subst. eapply typing_conversion_subst in H1; eauto.
+Qed.
+
 
 Theorem subst_id Γ :
   ⊢ Γ ->
@@ -753,6 +634,23 @@ Proof.
   - rasimpl. apply ih. assumption.
 Qed.
 
+Lemma subst_conv_meta_conv_ctx Γ Δ σ τ Γ' :
+  Γ ⊢s σ ≡ τ : Δ ->
+  Γ = Γ' ->
+  Γ' ⊢s σ ≡ τ : Δ.
+Proof.
+  intros. subst. assumption.
+Qed.
+
+Lemma subst_meta_conv_ctx Γ Δ σ Γ' :
+  Γ ⊢s σ : Δ ->
+  Γ = Γ' ->
+  Γ' ⊢s σ : Δ.
+Proof.
+  intros. subst. assumption.
+Qed.
+
+
 Lemma conv_substs Γ Δ σ σ' t l A :
   ⊢ Δ ->
   Δ ⊢s σ ≡ σ' : Γ →
@@ -761,57 +659,28 @@ Lemma conv_substs Γ Δ σ σ' t l A :
   Δ ⊢< l > t <[ σ ] ≡ t <[ σ' ] : A <[ σ ].
 Proof.
   intros h hs hst ht.
-  induction ht in Δ, σ, σ', h, hs, hst |- *.
-  3,4,5:assert (Δ ⊢< Ax i > A <[ σ] : Sort i) by (eapply typing_conversion_subst in ht1; eauto).
-  all: try solve [ cbn in * ; econstructor ; eauto using conv_substs_up, WellSubst_up, ctx_typing ].
-  - cbn. eauto using varty_conv_substs.
-  - cbn in *. 
-    eapply meta_conv_conv.
-    { constructor. all: eauto using conv_substs_up, WellSubst_up, ctx_typing. }
-    rasimpl. reflexivity.
-  - cbn in *. 
-    assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l) 
+  induction ht in Δ, σ, σ', h, hs, hst |- *; cbn.
+  2-4,6-8,10: solve [ econstructor ; eauto 10 using conv_substs_up, WellSubst_up, ctx_typing, subst_ty ].
+  - eauto using varty_conv_substs.
+  - eapply meta_conv_conv.
+    + econstructor. all: eauto 9 using conv_substs_up, WellSubst_up, ctx_typing, subst_ty. 
+    + rasimpl; reflexivity.
+  - assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l) 
       by (eapply typing_conversion_subst in ht1; eauto using typing, ctx_typing, WellSubst_up).
     eapply meta_conv_conv.
-    { constructor. all: eauto using conv_substs_up.
-      - eapply meta_conv_conv.
-        + eapply IHht1; eauto using ctx_typing, typing.
-          * eapply ConvSubst_morphism.
-            5: eapply conv_substs_up. 5: eauto.
-            2-4: reflexivity.
-            1:reflexivity.
-            econstructor; eauto.
-          * eapply WellSubst_morphism.
-            4: eapply WellSubst_up. 4: eauto.
-            2-3: reflexivity.
-            3:econstructor;eauto.
-            all:reflexivity.
-        + reflexivity.
-      - eapply meta_conv_conv.
-        + eauto.
-        + rasimpl. reflexivity.
-      - eapply meta_conv_conv.
-        + eapply IHht3; eauto using ctx_typing, typing.
-          * eapply ConvSubst_morphism.
-            5: eapply conv_substs_up.
-            5: eapply conv_substs_up.
-            all:eauto using typing. all:eauto. 1,2:reflexivity.
-          * eapply WellSubst_morphism.
-            4:eapply WellSubst_up. 4:eapply WellSubst_up.
-            all:eauto using typing. reflexivity.
-        + rasimpl. reflexivity.
-    }
-    rasimpl. reflexivity.
-  - assert (Δ ⊢< Ax _ > A <[ σ] : Sort _) by (eapply typing_conversion_subst in ht1; eauto).
-    cbn. eapply meta_conv_conv. 1:eapply conv_J; eauto.
-    1:eapply IHht3; eauto using ctx_typing, conv_substs_up, WellSubst_up.
-    1:eapply meta_conv_conv.
-    1:eapply IHht4; eauto using ctx_typing, conv_substs_up, WellSubst_up.
-    all:rasimpl;reflexivity.
+    + econstructor. 
+          all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
+        eauto 12 using ctx_typing, typing, WellSubst_up, conv_substs_up, subst_conv_meta_conv_ctx, subst_meta_conv_ctx | rasimpl ; reflexivity]].
+    + rasimpl; reflexivity.
+  - eapply meta_conv_conv. 
+    + econstructor. 
+          all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
+        eauto 8 using subst_ty, ctx_typing, typing, WellSubst_up, conv_substs_up, subst_conv_meta_conv_ctx, subst_meta_conv_ctx | rasimpl ; reflexivity]].
+    + rasimpl; reflexivity.
   - eapply conv_conv. 1: eauto.
     eapply meta_conv_conv.
-    { eapply typing_conversion_subst. all: eauto. }
-    reflexivity.
+    + eapply typing_conversion_subst; eauto. all: eauto.
+    + reflexivity.
 Qed.
 
 
@@ -845,22 +714,11 @@ Proof.
   all: try solve [
     intros ; try econstructor ; try econstructor ; intuition eauto using validity_ty_ctx, validity_conv_ctx
   ].
-  - eauto using valid_varty.
-  - intros.
-    eapply meta_conv.
-    { eapply typing_conversion_subst.
-      all: eauto using subst_one, validity_ty_ctx.
-    }
-    reflexivity.
+
+  1,2,4,5,6,11,13,14,17,18: solve [ intuition eauto using subst_ty, subst_one, validity_ty_ctx, typing, validity_ty_ctx, subst_one, valid_varty].
+
+
   - intros. eapply meta_lvl; eauto using typing.
-  - intros.
-    eapply meta_conv.
-    { eapply typing_conversion_subst.
-      all: eauto using subst_one, validity_ty_ctx.
-    }
-    reflexivity.
-  - intros. eapply subst_one in t3. eapply typing_conversion_subst in t1; eauto using validity_ty_ctx.
-  - intros. intuition eauto.
   - intros Γ i j A B **.
     split ; econstructor. all: intuition eauto.
     eapply pre_conv_in_ctx_ty. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
@@ -952,23 +810,13 @@ Proof.
           }
           reflexivity.
       }
-  - intros. destruct H, H0, H1. split; eauto using type_Eq, type_conv.
+  (* - intros. destruct H, H0, H1. split; eauto using type_Eq, type_conv. *)
   - intros. destruct H0, H1, H2, H3, H4, H5. split.
     + eapply type_J; eauto.
     + eapply type_conv. 1:eapply type_J; eauto using type_conv, conv_Eq.
       1:eapply pre_conv_in_ctx_ty; eauto using ctx_typing, validity_ty_ctx, conv_ccons, ctx_conv_refl, conv_sym.
       1:eapply type_conv; eauto.
       1,2: eapply pre_subst_conv; eauto using subst_one, validity_ty_ctx, substs_one, conv_sym.
-  - intros Γ i j A B **.
-    split.
-    + econstructor. all: intuition eauto.
-      econstructor. all: intuition eauto.
-    + eapply typing_conversion_subst. all: eauto using subst_one, validity_ty_ctx.
-  - intros Γ l P **.
-    split.
-    + econstructor. all: intuition eauto.
-      econstructor. eauto using validity_ty_ctx.
-    + auto.
   - intros Γ l P **.
     split.
     + econstructor. all: intuition eauto.
@@ -986,10 +834,7 @@ Proof.
     + eapply type_J; eauto.
     + eapply type_conv; eauto. 
       eapply conv_substs in t0; eauto using validity_ty_ctx, subst_one, substs_one.
-  - intros.
-    split. all: intuition eauto.
-  - intros.
-    split. all: intuition eauto.
+
 Qed.
 
 Theorem validity_conv_left Γ l t u A : 
@@ -1055,16 +900,6 @@ Theorem subst_conv Γ l t u A Δ σ τ A' :
   Δ ⊢< l > t <[ σ ] ≡ u <[ τ ] : A'.
 Proof.
   intros. eauto using pre_subst_conv, validity_conv_left, validity_conv_right, validity_subst_conv_left.
-Qed.
-
-Theorem subst_ty Γ l t A Δ σ A' : 
-  ⊢ Δ -> 
-  Δ ⊢s σ : Γ -> 
-  Γ ⊢< l > t : A ->
-  A' = A <[ σ ] ->
-  Δ ⊢< l > t <[ σ ] : A'.
-Proof.
-  intros. subst. eapply validity_conv_left. eapply subst_conv; eauto using refl_subst, conv_refl.
 Qed.
 
 
