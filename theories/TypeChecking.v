@@ -190,7 +190,7 @@ Proof.
     eapply subject_reduction_redd in erasure_red as (_sort & TA_eq_sort & erasure_sort_eq_sort) ; eauto using validity_ty_ty.
     destruct _sort; dependent destruction erasure_sort_eq_sort.
     apply validity_conv_right in TA_eq_sort as Sort_wt.
-    apply type_inv in Sort_wt. dependent elimination Sort_wt. 
+    apply type_inv in Sort_wt. dependent destruction Sort_wt. 
     apply Ax_inj in lvl_eq. subst.
     split; eauto using type_conv.
 Qed.
@@ -205,8 +205,8 @@ Proof.
     eapply subject_reduction_redd in erasure_red as (_pi & TA_eq_pi & erasure_pi_eq_pi) ; eauto using validity_ty_ty.
     destruct _pi; dependent destruction erasure_pi_eq_pi.
     apply validity_conv_right in TA_eq_pi as pi_wt.
-    apply type_inv in pi_wt as temp. dependent elimination temp.
-    apply Ax_inj in lvl_eq0. subst.
+    apply type_inv in pi_wt as temp. dependent destruction temp.
+    apply Ax_inj in lvl_eq. subst.
     eexists. eexists.
     split; eauto using type_conv.
 Qed.
@@ -327,14 +327,14 @@ Proof.
       eapply type_conv in t'_Wt; eauto. clear T'_eq.
 
       apply validity_ty_ty in t'_Wt as PiA0B0_Wt.
-      apply type_inv in PiA0B0_Wt as temp. dependent elimination temp.
+      apply type_inv in PiA0B0_Wt as temp. dependent destruction temp.
 
       (* applying the ih to u *)
       edestruct H0 as (u' & u'_Wt & erasure_u'_eq); eauto. subst.
 
-      exists (B <[ u' .. ]). eexists.
+      exists (B0 <[ u' .. ]). exists (app i j A0 B0 t' u').
       repeat split; eauto using type_app.
-      destruct j0.
+      destruct j.
         + eapply app_box_erasure. eauto.
         + simpl. rewrite erasure_prop. auto.
         + eapply erasure_subst_1_commutes; eauto.
@@ -446,13 +446,13 @@ Proof.
          and that A' B' are well-typed *)
       eapply reduce_to_pi in T'Wt as (A' & B' & A_eq & B_eq & T'_eq & l_eq); eauto. subst.
       apply validity_conv_right in T'_eq as Pi_Wt.
-      apply type_inv in Pi_Wt as temp. dependent elimination temp.
+      apply type_inv in Pi_Wt as temp. dependent destruction temp.
 
       (* applying the ih to t *)
       edestruct H as (t' & t'_Wt & erased_t'_eq); eauto.
       unfold erase_ctx. reflexivity. subst.
 
-      exists (lam i1 j0 A0 B t'). split; eauto using type_lam, type_conv, conv_sym, lam_box_erasure.
+      exists (lam i j A' B' t'). split; eauto using type_lam, type_conv, conv_sym, lam_box_erasure.
 Qed.
 
 
@@ -651,8 +651,8 @@ Proof.
 
     (* case var *)
     - eapply conv_in_ctx_ty in Wt'; eauto.
-      eapply type_inv in Wt'. dependent elimination Wt'.
-      exists (cvar x0). eexists.
+      eapply type_inv in Wt'. dependent destruction Wt'.
+      exists (cvar x). eexists.
       repeat split; eauto using CTerm.
       + eapply infer_var. apply varty_erase. eassumption.
       + eapply conv_in_ctx_conv; eauto using ctx_conv_sym. 

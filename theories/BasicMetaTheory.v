@@ -4,7 +4,7 @@ From TypedConfluence
 Require Import core unscoped Util Ast SubstNotations RAsimpl AST_rasimpl.
 From TypedConfluence Require Import BasicAST Contexts Typing.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-(* Require Import Stdlib.Program.Equality. *)
+Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 Import ListNotations.
@@ -235,48 +235,37 @@ Proof.
     | rasimpl ; reflexivity
     ]
   ].
+
+
   (* The proof is not very satisfactory, I expect there is some automation
     hidden below this but I'm not sure what.
   *)
   - intros.
     cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
-  - intros ?? P ???? ihP ? ihz ? ihs ? iht Δ ρ ? hr.
-    assert (Δ ,, (ty 0, Nat) ⊢< Ax l > up_ren ρ ⋅ P : Sort l).
-    { eapply ihP. 1: eauto using ctx_typing, type_nat.
-      eapply WellRen_meta. 1: eapply WellRen_up. all: eauto.
-      reflexivity.
-    }
-    cbn in *. eapply meta_conv.
-    + econstructor. all: eauto using WellRen_up, WellRen_meta.
-      * eapply meta_conv. all: eauto using WellRen_up, WellRen_meta.
-        rasimpl. reflexivity.
-      * {
-        eapply meta_conv.
-        - eapply ihs. 1:{ constructor. all: eauto using ctx_typing, type_nat. }
-          eapply WellRen_meta. 1: repeat eapply WellRen_up.
-          all: eauto.
-          reflexivity.
-        - rasimpl. reflexivity.
-      }
+  - intros. cbn in *. eapply meta_conv.
+    + econstructor.
+      all : try solve [ eapply meta_conv ; [
+        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
     + rasimpl. reflexivity.
-  - intros. cbn. eapply meta_conv. 
-    1:eapply type_J; eauto using WellRen_up, ctx_typing.
-    1:eapply meta_conv. 1:eapply H2; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
+  - intros. cbn in *. eapply meta_conv.
+    + econstructor.
+      all : try solve [ eapply meta_conv ; [
+        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
+    + rasimpl. reflexivity.
   - intros.
     cbn. constructor. 1: auto.
     eapply varty_ren. all: eassumption.
   - intros. cbn in *. eapply meta_conv_conv.
-    + econstructor. all: eauto using WellRen_up, ctx_typing, typing.
-      * eapply meta_conv_conv. 1:eapply H1. all:rasimpl;eauto.
-      * eapply meta_conv_conv. 1:eapply H2.
-        all: rasimpl; eauto 9 using ctx_typing, typing, WellRen_up.
-    + rasimpl; eauto.
-  - intros. cbn. eapply meta_conv_conv. 
-    1:eapply conv_J; eauto using WellRen_up, ctx_typing.
-    1:eapply meta_conv_conv. 1:eapply H3; eauto using WellRen_up, ctx_typing.
-    all:rasimpl;reflexivity.
+    + econstructor.
+      all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
+        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
+    + rasimpl. reflexivity.
+  - intros. cbn in *. eapply meta_conv_conv.
+    + econstructor.
+      all : try solve [ (eapply meta_conv_conv + eapply meta_conv) ; [
+        eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing | rasimpl ; reflexivity]].
+    + rasimpl. reflexivity.
   - intros. cbn. eapply meta_conv_conv. 
     1: eapply meta_rhs_conv.
     1: eapply conv_beta; eauto using ctx_typing, typing, WellRen_up.
@@ -1039,7 +1028,7 @@ Lemma subst_sym Δ Γ σ τ :
   Δ ⊢s τ ≡ σ : Γ.
 Proof.
   intros. induction H1; eauto using ConvSubst.
-  econstructor; dependent elimination H0; eauto. 
+  econstructor; dependent destruction H0; eauto. 
   eapply conv_sym. eapply conv_conv. 1:eauto.
   eapply conv_substs in H1; eauto using validity_subst_conv_left.
   eauto.
@@ -1164,7 +1153,7 @@ Proof.
     assert (S >> (S >> var) = (var >> ren_term S) >> ren_term S) by reflexivity.
     setoid_rewrite H0.
     eapply WellSubst_weak; eauto.
-    eapply validity_ty_ctx in H. dependent elimination H.
+    eapply validity_ty_ctx in H. dependent destruction H.
     eapply WellSubst_weak; eauto using subst_id.
   - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. eapply (vartyS _ _ _ Nat _ 0). eapply vartyO.
 Qed.
@@ -1245,7 +1234,6 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (conv_ty : Γ ⊢< Ax i > T ≡ P <[b..] : Sort i)
     : type_inv_data Γ l (J l' i A a P p b e) T.
 
-
 Lemma type_inv Γ l t T : 
   Γ ⊢< l > t : T -> 
   type_inv_data Γ l t T.
@@ -1266,9 +1254,9 @@ Theorem var_unicity Γ l x A l' A' :
 Proof.
   generalize Γ l l' A A'. clear Γ l l' A A'.
   induction x; intros.
-  - dependent elimination H. dependent elimination H0. split; eauto.
-  - dependent elimination H. dependent elimination H0.
-    eapply IHx in v as (HA & HB); eauto. subst. split; eauto.
+  - dependent destruction H. dependent destruction H0. split; eauto.
+  - dependent destruction H. dependent destruction H0.
+    eapply IHx in H as (HA & HB); eauto. subst. split; eauto.
 Qed.
 
 
@@ -1279,8 +1267,8 @@ Theorem type_sort_unicity Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  2-11:eapply type_inv in H0; dependent elimination H0; subst; eauto 13 using conv_sym.
-  - eapply type_inv in H0. dependent elimination H0. 
+  2-11:eapply type_inv in H0; dependent destruction H0; subst; eauto 13 using conv_sym.
+  - eapply type_inv in H0. dependent destruction H0. 
     eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
 Qed.
