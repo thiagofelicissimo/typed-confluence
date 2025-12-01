@@ -718,6 +718,8 @@ Proof.
   1,2,4,5,6,11,13,14,17,18: solve [ intuition eauto using subst_ty, subst_one, validity_ty_ctx, typing, validity_ty_ctx, subst_one, valid_varty].
 
 
+  (* TODO: investigate if the remaining cases can be further automated *)
+
   - intros. eapply meta_lvl; eauto using typing.
   - intros Γ i j A B **.
     split ; econstructor. all: intuition eauto.
