@@ -19,12 +19,6 @@ Proof.
   intro H. destruct l; destruct l'; inversion H; auto.
 Qed.
 
-(*
-  To prove the following properties, we can try to follow the same order as in
-  Harper & Pfenning's "On equivalence and canonical forms in the lf type theory".
-  In any case, there is no doubt that they can be proven.
-*)
-
 Lemma conv_refl Γ t l A :
   Γ ⊢< l > t : A →
   Γ ⊢< l > t ≡ t : A.
@@ -812,7 +806,6 @@ Proof.
           }
           reflexivity.
       }
-  (* - intros. destruct H, H0, H1. split; eauto using type_Eq, type_conv. *)
   - intros. destruct H0, H1, H2, H3, H4, H5. split.
     + eapply type_J; eauto.
     + eapply type_conv. 1:eapply type_J; eauto using type_conv, conv_Eq.
@@ -987,16 +980,14 @@ Proof.
   intro H.
   apply well_scons.
   - ssimpl.
-    assert (S >> (S >> var) = (var >> ren_term S) >> ren_term S) by reflexivity.
-    setoid_rewrite H0.
+    change (↑ >> (↑ >> var)) with ((var >> ren_term ↑) >> ren_term ↑).
     eapply WellSubst_weak; eauto.
     eapply validity_ty_ctx in H. dependent destruction H.
     eapply WellSubst_weak; eauto using subst_id.
-  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. all:eauto using validity_ty_ctx, ctx_cons. eapply (vartyS _ _ _ Nat _ 0). eapply vartyO.
+  - ssimpl. apply type_succ. apply (type_var _ 1 _ Nat); eauto. 
+    all:eauto using validity_ty_ctx, ctx_cons. 
+    eapply (vartyS _ _ _ Nat _ 0). eapply vartyO.
 Qed.
-
-(* newer versions of inversion lemmas.
-   TODO: replace in Confluence.v the occurrences of older inversion lemmas by the newer ones *)
 
 Derive NoConfusion for term.
 Derive NoConfusion for level.
@@ -1125,30 +1116,4 @@ Corollary sort_unicity Γ l l' t A B :
   l = l'.
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto.
-Qed.
-
-Lemma conv_rec' Γ l P p_zero p_succ t P' p_zero' p_succ' t' P_ :
-      Γ ,, (ty 0 , Nat) ⊢< Ax l > P ≡ P' : Sort l ->
-      Γ ⊢< l > p_zero ≡ p_zero' : P <[ zero .. ] ->
-      Γ ,, (ty 0 , Nat) ,, (l , P) ⊢< l > p_succ ≡ p_succ' : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ] ->
-      Γ ⊢< ty 0 > t ≡ t' : Nat ->
-      P_ = P <[ t .. ] ->
-      Γ ⊢< l > rec l P p_zero p_succ t ≡ rec l P' p_zero' p_succ' t' : P_.
-Proof.
-  intros.
-  subst.
-  eapply conv_rec; eauto using validity_conv_left.
-Qed.
-
-Lemma conv_J' Γ l i A A' a a' P P' p p' b b' e e' P_:
-  Γ ⊢< Ax l > A ≡ A' : Sort l ->
-  Γ ⊢< l > a ≡ a' : A ->
-  Γ ,, (l , A) ⊢< Ax i > P ≡ P' : Sort i ->
-  Γ ⊢< i > p ≡ p' : P <[a..] ->
-  Γ ⊢< l > b ≡ b' : A ->
-  Γ ⊢< prop > e ≡ e' : Eq l A a b ->
-  P_ = P <[b..] ->
-  Γ ⊢< i > J l i A a P p b e ≡ J l i A' a' P' p' b' e' : P_.
-Proof.
-  intros. subst. eapply conv_J; eauto using validity_conv_left.
 Qed.

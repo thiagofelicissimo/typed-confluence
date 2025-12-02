@@ -809,14 +809,3 @@ Qed.
 
 
 Print Assumptions completeness_infer.
-
-Definition Decidable (P : Prop) := sum P (not P).
-
-Theorem decidable Γ M :
-    wt_is_wn ->
-    (⊢ Γ -> Decidable (exists l T t, Γ ⊢< l > M ⇒ T ↣ t))
-    *
-    (forall T l, Γ ⊢< Ax l > T : Sort l ->
-        Decidable (exists t, Γ ⊢< l > M ⇐ T ↣ t)).
-Proof.
-Admitted.

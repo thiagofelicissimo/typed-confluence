@@ -36,6 +36,11 @@ Proof.
 Qed.
 
 
+(* TODO: When adding Lean's eq, these are not normal forms anymore, because J is always a neutral,
+  even if a and b are the same, which would allow for the term to reduce. Maybe it would be better to call them
+  Chk and Inf, for checkable and inferable terms. The important property is that the typing annotations of Chk are
+  uniquely determined when we know their types, whereas the typing annotations of Inf are always uniquely determined.
+  But this could cause a confusion with the terms used by the bidirectional typing system. *)
 Inductive Nf : term -> Prop :=
 | nf_pi i j A B : Nf A -> Nf B -> Nf (Pi i j A B)
 | nf_lam t : Nf t -> Nf (lam prop prop box box t)
@@ -573,7 +578,7 @@ Proof.
     eapply conv_app; eauto using type_conv, conv_sym, conv_ty_in_ctx_conv.
   - dependent destruction lvl_eq0.
     eapply conv_conv; eauto using conv_sym.
-    eapply conv_rec'; eauto.
+    eapply conv_rec; eauto.
     + eapply H0'; eauto 9 using type_conv, subst_conv, subst_one, validity_ty_ctx, type_zero, conv_sym, refl_subst.
     + eapply H1'; eauto. 
       eapply conv_ty_in_ctx_ty; eauto 8 using type_conv, subst_conv, subst_id_var1, ctx_from_conv, refl_subst.
@@ -727,7 +732,7 @@ Proof.
 Qed.
 
 (* TODO: add the following discussion to the paper
-  Among the hypothesis of our theorem, we require the erasures of t and u to be in normal form in order to conclude that t and u are convertible. Most proof assistants however implement an optimization which first checks for syntactic equality before normalizing the terms. In the presence of normalization, this optimization is sound, given that, if t and u are equal, then they normal forms will also be equal. Nevertheless, this optimization becomes unsound in systems like type-in-type: A counter-example is obtained by considering Howe's looping combinators, which are equal when erasing annotations, but not convertible (see the file X.v in the formalization for more details). Therefore, one must be careful to prove normalization in order to employ this optimization. On the other hand, it would be possible to drop the assumption of normalization if we considered an erased syntax with some annotations, such as domain annotations in lambdas. *)
+  Among the hypothesis of our theorem, we require the erasures of t and u to reduce to normal forms in order to conclude that t and u are convertible. Most proof assistants however implement an optimization which first checks for syntactic equality before normalizing the terms. In the presence of normalization, this optimization is sound, given that, if t and u are equal, then they will have normal forms which are also equal. Nevertheless, this optimization becomes unsound in systems like type-in-type: A counter-example is obtained by considering Howe's looping combinators, which are equal when erasing annotations, but not convertible (see the file X.v in the formalization for more details). Therefore, one must be careful to prove normalization in order to employ this optimization. On the other hand, it would be possible to drop the assumption of normalization if we considered an erased syntax with some annotations, such as domain annotations in lambdas. *)
 
 Hint Unfold nf.
 
