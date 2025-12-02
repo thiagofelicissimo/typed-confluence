@@ -332,43 +332,6 @@ Proof.
     eapply IHt3; eauto using refines_cons. setoid_rewrite cons_ctx_commute. eauto using refines_cons.
 Qed.
 
-
-
-
-Lemma SR_aux Γ l i j A B i' j' A' B' t u T :
-  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T ->
-  i = i' /\
-  j = j' /\
-  l = j  /\
-  Γ ⊢< Ax i > A ≡ A' : Sort i /\
-  Γ ,, (i, A) ⊢< Ax j > B ≡ B' : Sort j /\
-  Γ ,, (i, A) ⊢< j > t : B /\
-  Γ ⊢< i > u : A.
-Proof.
-  intro Wt.
-  pose proof (Wt' := Wt).
-  apply type_inv in Wt. dependent destruction Wt. subst.
-  apply type_inv in t_Wt. dependent destruction t_Wt. subst.
-  apply pi_inj in conv_ty0 as (i_eq_i' & j_eq_j' & A_eq_A' & B_eq_B').
-  subst. eauto 11 using conv_ty_in_ctx_ty, type_conv, conv_sym.
-Qed.
-
-Lemma SR_aux2 Γ l i j A B i' j' A' B' t u T :
-  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u : T ->
-  Γ ⊢< l > app i j A B (lam i' j' A' B' t) u ≡ t <[u .. ] : B <[ u..].
-Proof.
-  intro Wt.
-  pose proof Wt as temp.
-  apply type_inv in temp. dependent destruction temp.
-  apply SR_aux in Wt as (i_eq_i' & j_eq_j' & l_eq_j & A_eq_A' & B_eq_B' & tWt & uWt).
-  subst.
-  eapply conv_trans.
-  eapply conv_app; eauto using conv_refl, validity_conv_left.
-  eapply conv_conv.
-  2: eapply subst_conv; eauto using subst_one, conv_sym, validity_ty_ctx, refl_subst.
-  eapply conv_beta; eauto using type_conv, validity_conv_right, conv_ty_in_ctx_ty.
-Qed.
-
 Lemma erasure_aux i u : erasure_subst ((fun _ => ty 0) ;; i) (u ..) ~ ((erasure i u) ..).
 Proof.
   intro x. destruct x.
@@ -636,12 +599,11 @@ Proof.
   - destruct t. all : inversion H. clear t0 H H1.
     rename l into i'. rename l0 into j'. rename t1 into A'.
     rename t2 into B'. rename t3 into v.
+    eapply type_inv in tWt3 as temp; dependent destruction temp.
+    eapply pi_inj in conv_ty as (eq1 & eq2 & A_conv_A' & B_conv_B'); subst.
     exists (v <[ u..]). split.
-    ++ assert (Γ ⊢< ty n > app i (ty n) A B (lam i' j' A' B' v) u : B <[ u..]) by eauto using type_app. eauto using SR_aux2.
-    ++ pose proof tWt3 as K.
-      apply type_inv in tWt3. dependent destruction tWt3.
-      eapply pi_inj in conv_ty as (l_eq_i & l0_eq_n & _).
-      subst. eapply erasure_subst_1_commutes; eauto.
+    * eapply conv_beta'; eauto.
+    * eapply erasure_subst_1_commutes; eauto.
 
   (* case succ cong *)
   (* TODO: further investigate why succ cong case must be done seperately *)

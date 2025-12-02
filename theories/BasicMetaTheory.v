@@ -1132,3 +1132,20 @@ Proof.
   1:eapply subst_conv; eauto using substs_one, conv_refl, validity_ty_ctx.
   1:eapply type_conv; eauto using conv_Eq, validity_conv_right, conv_refl.
 Qed.
+
+Lemma conv_beta' Γ i j A A' B B' t u :
+      Γ ⊢< Ax i > A ≡ A' : Sort i →
+      Γ ,, (i , A) ⊢< Ax j > B ≡ B' : Sort j →
+      Γ ,, (i , A') ⊢< j > t : B' →
+      Γ ⊢< i > u : A →
+      Γ ⊢< j > app i j A B (lam i j A' B' t) u ≡ t <[ u .. ] : B <[ u .. ].
+Proof.
+  intros.
+  eapply conv_trans.
+  1:eapply conv_app. 4:eapply conv_conv. 4:eapply conv_lam.
+  all: eauto using conv_refl, validity_conv_left, validity_conv_right, validity_ty_ty.
+  1:eapply conv_pi; eauto using validity_conv_right, conv_sym, conv_ty_in_ctx_conv.
+  eapply conv_conv. 1:eapply conv_beta.
+  all:eauto using validity_ty_ty, validity_conv_right, type_conv.
+  eapply subst_conv; eauto using substs_one, conv_refl, validity_ty_ctx, conv_sym.
+Qed.
