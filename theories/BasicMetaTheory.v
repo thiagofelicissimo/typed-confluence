@@ -825,11 +825,9 @@ Proof.
           + econstructor. all: intuition eauto.
       }
       rasimpl. reflexivity.
-  - intros. destruct H0. split.
+  - intros. split.
     + eapply type_J; eauto.
-    + eapply type_conv; eauto. 
-      eapply conv_substs in t0; eauto using validity_ty_ctx, subst_one, substs_one.
-
+    + eauto. 
 Qed.
 
 Theorem validity_conv_left Γ l t u A : 
@@ -1116,4 +1114,21 @@ Corollary sort_unicity Γ l l' t A B :
   l = l'.
 Proof.
   intros. eapply type_sort_unicity in H as (HA & HB); eauto.
+Qed.
+
+
+Lemma conv_J_refl' Γ l i A a b P p e :
+  Γ ⊢< Ax l > A : Sort l ->
+  Γ ⊢< l > a ≡ b : A ->
+  Γ ,, (l , A) ⊢< Ax i > P : Sort i ->
+  Γ ⊢< i > p : P <[a..] ->
+  Γ ⊢< prop > e : Eq l A a b ->
+  Γ ⊢< i > J l i A a P p b e ≡ p : P <[b..].
+Proof.
+  intros.
+  eapply conv_trans. 1:eapply conv_J; eauto using conv_refl, validity_conv_right.
+  eapply conv_J_refl; eauto using validity_conv_right.
+  1:eapply type_conv; eauto using validity_conv_right.
+  1:eapply subst_conv; eauto using substs_one, conv_refl, validity_ty_ctx.
+  1:eapply type_conv; eauto using conv_Eq, validity_conv_right, conv_refl.
 Qed.

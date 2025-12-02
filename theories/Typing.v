@@ -236,13 +236,13 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
           p_succ <[(rec l P p_zero p_succ t) .: t ..] : P <[ (succ t) .. ]
 
 | conv_J_refl :
-    ∀ Γ l i A a P p b e,
+    ∀ Γ l i A a P p e,
       Γ ⊢< Ax l > A : Sort l ->
-      Γ ⊢< l > a ≡ b : A ->
+      Γ ⊢< l > a : A ->
       Γ ,, (l , A) ⊢< Ax i > P : Sort i ->
       Γ ⊢< i > p : P <[a..] ->
-      Γ ⊢< prop > e : Eq l A a b ->
-      Γ ⊢< i > J l i A a P p b e ≡ p : P <[b..]
+      Γ ⊢< prop > e : Eq l A a a ->
+      Γ ⊢< i > J l i A a P p a e ≡ p : P <[a..]
           
 | conv_sym :
     ∀ Γ l t u A,

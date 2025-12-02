@@ -663,7 +663,7 @@ Proof.
     
   (* case J_refl *)
   - eexists. split.
-    eapply conv_J_refl; eauto. 2:eauto.
+    eapply conv_J_refl'; eauto. 2:eauto.
     destruct l. 2:eauto using conv_irrel. eapply (proj1 eq_erased) in H; eauto.
 
   (* case conv *)

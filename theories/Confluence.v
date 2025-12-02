@@ -189,7 +189,7 @@ Proof.
     2:rasimpl;reflexivity.
     eapply conv_scons_alt. eapply substs_one; eauto.
     eapply conv_rec; eauto using validity_conv_left.
-  - eapply conv_trans. eapply conv_J_refl; eauto using validity_conv_left.
+  - eapply conv_trans. eapply conv_J_refl'; eauto using validity_conv_left.
     eapply conv_conv; eauto. eapply subst_conv; eauto using validity_ty_ctx, substs_one, conv_refl.
 Qed.
 
