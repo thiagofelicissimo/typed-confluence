@@ -151,6 +151,8 @@ Inductive red : term -> term -> Prop :=
 
 where "t ---> u" := (red t u).
 
+Derive Signature for red.
+
 Lemma case_lvl l : l = prop \/ exists i, l = ty i.
 Proof.
   destruct l; eauto.
@@ -325,7 +327,7 @@ Proof.
       2: eauto.
       setoid_rewrite <- erasure_subst_cons2.
       eapply IHt3; eauto. setoid_rewrite cons_ctx_commute. setoid_rewrite cons_ctx_commute. eauto using refines_cons.
-  - subst. simpl. f_equal; eauto. 
+  - subst. simpl. f_equal; eauto.
     transitivity ((erasure (Ax (ty n)) t3) <[ erasure (ty 0) (var 0) .: erasure_subst Δ σ >> ren_term ↑]).
     2:eauto.
     setoid_rewrite <- erasure_subst_cons.
@@ -450,7 +452,7 @@ Proof.
   all:(inversion nf_et; eauto).
 Qed.
 
-Hint Unfold ConversionChecking.nf.
+Hint Unfold ConversionChecking.nf : core.
 
 Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
@@ -463,7 +465,7 @@ Proof.
   all: eauto 24 using Nf, Ne, red.
   - apply nf_ne. apply ne_app; eauto using red.
     eapply nf_pi_is_ne; eauto using red.
-    destruct t; unfold not_a_lam; eauto. 
+    destruct t; unfold not_a_lam; eauto.
     eapply nf. simpl. eauto using red.
   - apply nf_succ. fold erasure. rewrite l_eq_n. apply IHt_Wt. unfold ConversionChecking.nf in *. intros. eapply nf. simpl. rewrite l_eq_n. eauto using red.
   - apply nf_ne. apply ne_rec; eauto using red.
@@ -472,7 +474,7 @@ Proof.
     all: eapply nf; simpl; eauto using red.
 Qed.
 
-Lemma eq_erased_adjust_IH {l' t4} : 
+Lemma eq_erased_adjust_IH {l' t4} :
   (∀ (Γ : ctx) (i : nat) (t u T : term), Γ ⊢< ty i > t : T → Γ ⊢< ty i > u : T → erasure (ty i) t = erasure (ty i) u
     → erasure l' t4 = erasure (ty i) t → Γ ⊢< ty i > t ≡ u : T) ->
   ∀ (Γ : ctx) l (t u T : term), Γ ⊢< l > t : T → Γ ⊢< l > u : T → erasure l t = erasure l u
@@ -513,7 +515,7 @@ Proof.
   all: try (pose proof (H2' := eq_erased_adjust_IH H2); clear H2).
   all: try (pose proof (H3' := eq_erased_adjust_IH H3); clear H3).
 
-  - rewrite lvl_eq0. 
+  - rewrite lvl_eq0.
     eapply conv_conv; eauto 6 using conv_sym, conv_pi, conv_ty_in_ctx_ty.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'.
@@ -532,7 +534,7 @@ Proof.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_Eq; eauto using conv_conv, conv_sym, type_conv.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t. rename t0_4 into u.
-    rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'. rename u0_4 into u'.  
+    rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'. rename u0_4 into u'.
     eapply conv_conv; eauto using conv_sym.
     assert (Γ ⊢< Ru l (ty i) > t ≡ t' : Pi l (ty i) A B) as t1_eq_t2 by eauto.
     eapply validity_conv_right, type_unicity in t1_eq_t2 as pi_eq_pi. 2:exact t_Wt0.
@@ -543,12 +545,12 @@ Proof.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_rec; eauto.
     + eapply H0'; eauto 9 using type_conv, subst_conv, subst_one, validity_ty_ctx, type_zero, conv_sym, refl_subst.
-    + eapply H1'; eauto. 
+    + eapply H1'; eauto.
       eapply conv_ty_in_ctx_ty; eauto 8 using type_conv, subst_conv, subst_id_var1, ctx_from_conv, refl_subst.
   - eapply conv_conv; eauto using conv_sym.
-    eapply conv_J; eauto using type_conv, conv_ty_in_ctx_ty. 
+    eapply conv_J; eauto using type_conv, conv_ty_in_ctx_ty.
     + eapply H2'; eauto using type_conv, subst_conv, substs_one.
-      eapply type_conv; eauto. 
+      eapply type_conv; eauto.
       eapply subst_conv; eauto using validity_ty_ctx, substs_one, conv_refl, type_conv, conv_ty_in_ctx_ty.
     + eapply conv_irrel; eauto.
       eapply type_conv; eauto. eapply conv_Eq; eauto using type_conv, conv_ty_in_ctx_ty.
@@ -622,7 +624,7 @@ Proof.
     split.
     + apply type_inv in tWt4. dependent destruction tWt4. eauto using conv_rec_succ.
     + erewrite erasure_subst_2_commutes; eauto. reflexivity.
-    
+
   (* case J_refl *)
   - eexists. split.
     eapply conv_J_refl'; eauto. 2:eauto.
@@ -687,8 +689,8 @@ Proof.
   intros t_wt u_wt t_redd u_redd t'_nf u'_nf t'_eq_u'.
   eapply subject_reduction_redd in t_redd as (t'' & t_eq_t'' & erased_t''_eq_t'); eauto.
   eapply subject_reduction_redd in u_redd as (u'' & u_eq_u'' & erased_u''_eq_u'); eauto.
-  subst. 
-  assert (nf (erasure l u'')) by 
+  subst.
+  assert (nf (erasure l u'')) by
     (rewrite erased_u''_eq_u'; assumption).
   eauto 7 using eq_erased_nf, conv_trans, conv_sym, validity_conv_right.
 Qed.
@@ -696,12 +698,12 @@ Qed.
 (* TODO: add the following discussion to the paper
   Among the hypothesis of our theorem, we require the erasures of t and u to reduce to normal forms in order to conclude that t and u are convertible. Most proof assistants however implement an optimization which first checks for syntactic equality before normalizing the terms. In the presence of normalization, this optimization is sound, given that, if t and u are equal, then they will have normal forms which are also equal. Nevertheless, this optimization becomes unsound in systems like type-in-type: A counter-example is obtained by considering Howe's looping combinators, which are equal when erasing annotations, but not convertible (see the file X.v in the formalization for more details). Therefore, one must be careful to prove normalization in order to employ this optimization. On the other hand, it would be possible to drop the assumption of normalization if we considered an erased syntax with some annotations, such as domain annotations in lambdas. *)
 
-Hint Unfold nf.
+Hint Unfold nf : core.
 
 
 Lemma pre_ortho_redd_to_eq Γ l t t' A :
-  (∀ l' u, size (erasure l' u) <= size (erasure l t) → 
-    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) → 
+  (∀ l' u, size (erasure l' u) <= size (erasure l t) →
+    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) →
     erasure l' u = erasure l' t') ->
   Γ ⊢< l > t ⟹* t' : A ->
   nf (erasure l t) -> erasure l t = erasure l t'.
@@ -729,8 +731,8 @@ Proof.
   eapply wf_inverse_image, lt_wf. intros. destruct x.
   simpl in *.
 
-  assert (∀ l' u, size (erasure l' u) < size (erasure l t) → 
-    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) → erasure l' u = erasure l' t') 
+  assert (∀ l' u, size (erasure l' u) < size (erasure l t) →
+    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) → erasure l' u = erasure l' t')
       as IH by (intros; eapply (H (l', u)); eauto). clear H.
 
   destruct l. 2:rewrite erasure_prop; rewrite erasure_prop; reflexivity.
