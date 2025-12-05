@@ -226,19 +226,19 @@ Lemma typing_conversion_ren :
       Δ ⊢< l > ρ ⋅ u ≡ ρ ⋅ v : ρ ⋅ A).
 Proof.
   apply typing_mutind.
-  2,3,4,6,7,8,10,12,14,15,16,18,19,20,22,24,25,30,31:
+  2,3,4,6,7,8,10,15,17,18,19,21,22,23,25,30,31,38,39:
     solve [ intros ; try econstructor ; eauto using WellRen_up, ctx_cons ].
 
-  2,3,4,6,7,8:
+  2,3,4,5,6,7,9,10,11,12,13,14:
     solve [intros; cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
             [ (econstructor ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ;
               [ eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | rasimpl; reflexivity]].
 
-  3-6: solve [ intros; cbn; eapply meta_conv_conv;
+  3-8: solve [ intros; cbn; eapply meta_conv_conv;
               [ eapply meta_rhs_conv;
-                [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl) ;
+                [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower) ;
                   eauto using ctx_typing, typing, WellRen_up; try (eapply meta_conv;
                   [ eauto 12 using ctx_typing, typing, WellRen_up
                   | rasimpl; reflexivity]))
@@ -376,21 +376,22 @@ Proof.
   (* Basically copy-pasted from renaming *)
   apply typing_mutind; intros.
 
-  2,3,4,6,7,8,10,12,14,15,16,18,19,20,22,24,25,30,31:
+  2,3,4,6,7,8,10,15,17,18,19,21,22,23,25,30,31,38,39:
     solve [ try econstructor ; eauto 8 using WellSubst_up, ctx_cons ].
 
   all: try assert (Δ,, (ty 0, Nat) ⊢< Ax l > P <[ up_term_term σ] : Sort l)
       by eauto 6 using ctx_typing, typing, WellSubst_meta, WellSubst_up.
 
-  2,3,4,6,7,8:solve [cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
+  2,3,4,5,6,7,9,10,11,12,13,14:
+    solve [cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
             [ (econstructor ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ;
               [ eauto 11 using WellRen_up, WellSubst_up, WellSubst_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | rasimpl; reflexivity]].
 
-  3-6: solve [ intros; cbn; eapply meta_conv_conv;
+  3-8: solve [ intros; cbn; eapply meta_conv_conv;
                 [ eapply meta_rhs_conv;
-                  [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl) ;
+                  [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower) ;
                     eauto using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta; try (eapply meta_conv;
                     [ eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta
                     | rasimpl; reflexivity]))
@@ -402,6 +403,7 @@ Proof.
   - cbn. apply conv_refl.
     eapply varty_subst. all: eassumption.
 Qed.
+
 
 
 
@@ -658,7 +660,7 @@ Lemma conv_substs Γ Δ σ σ' t l A :
 Proof.
   intros h hs hst ht.
   induction ht in Δ, σ, σ', h, hs, hst |- *; cbn.
-  2-4,6-8,10: solve [ econstructor ; eauto 10 using conv_substs_up, WellSubst_up, ctx_typing, subst_ty ].
+  2-4,6-8,10,12,13,14: solve [ econstructor ; eauto 10 using conv_substs_up, WellSubst_up, ctx_typing, subst_ty ].
   - eauto using varty_conv_substs.
   - eapply meta_conv_conv.
     + econstructor. all: eauto 9 using conv_substs_up, WellSubst_up, ctx_typing, subst_ty.
@@ -708,12 +710,12 @@ Lemma validity_gen :
     Γ ⊢< l > u : A ∧ Γ ⊢< l > v : A).
 Proof.
   apply typing_mutind.
-  all: try solve [ intros ; econstructor ; eauto using validity_ty_ctx, validity_conv_ctx].
-  all: try solve [
+  2,3,4,7,8,10,12,13,16,17,21,22,23,27,30: solve [
     intros ; try econstructor ; try econstructor ; intuition eauto using validity_ty_ctx, validity_conv_ctx
   ].
-
-  1,2,4,5,6,11,13,14,17,18: solve [ intuition eauto using subst_ty, subst_one, validity_ty_ctx, typing, validity_ty_ctx, subst_one, valid_varty].
+  16: solve [ intros ; econstructor ; eauto using validity_ty_ctx, validity_conv_ctx].
+  14,15:solve [ intros ; intuition eauto 6 using conversion, typing].
+  1,2,4,5,6,7,12,14,15,17,18,19,20,21: solve [ intuition eauto using subst_ty, subst_one, validity_ty_ctx, conversion, typing, validity_ty_ctx, subst_one, valid_varty].
 
 
   (* TODO: investigate if the remaining cases can be further automated *)
@@ -829,9 +831,6 @@ Proof.
           + econstructor. all: intuition eauto.
       }
       rasimpl. reflexivity.
-  - intros. split.
-    + eapply type_J; eauto.
-    + eauto.
 Qed.
 
 Theorem validity_conv_left Γ l t u A :
@@ -1062,7 +1061,25 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (e_Wt : Γ ⊢< prop > e : Eq l' A a b)
     (lvl_eq : l = i)
     (conv_ty : Γ ⊢< Ax i > T ≡ P <[b..] : Sort i)
-    : type_inv_data Γ l (J l' i A a P p b e) T.
+    : type_inv_data Γ l (J l' i A a P p b e) T
+  | type_inv_Lift Γ l l' A T
+    (A_Wt : Γ ⊢< Ax l' > A : Sort l')
+    (lvl_eq : l = Ax (Ax l'))
+    (conv_ty : Γ ⊢< Ax (Ax (Ax l')) > T ≡ Sort (Ax l') : Sort (Ax (Ax l')))
+    : type_inv_data Γ l (Lift l' A) T
+  | type_inv_lift Γ l l' A a T
+    (A_Wt : Γ ⊢< Ax l' > A : Sort l')
+    (a_Wt : Γ ⊢< l' > a : A)
+    (lvl_eq : l = Ax l')
+    (conv_ty : Γ ⊢< Ax (Ax l') > T ≡ Lift l' A : Sort (Ax l'))
+    : type_inv_data Γ l (lift l' A a) T
+  | type_inv_lower Γ l l' A a T
+    (A_Wt : Γ ⊢< Ax l' > A : Sort l')
+    (a_Wt : Γ ⊢< Ax l' > a : Lift l' A)
+    (lvl_eq : l = l')
+    (conv_ty : Γ ⊢< Ax l' > T ≡ A : Sort l')
+    : type_inv_data Γ l (lower l' A a) T
+    .
 
 Derive Signature for type_inv_data.
 
@@ -1072,7 +1089,7 @@ Lemma type_inv Γ l t T :
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  induction H. 1-11:econstructor; eauto using conv_refl.
+  induction H. 1-14:econstructor; eauto using conv_refl.
   eapply validity_conv_left in H0 as AWt.
   eapply IHtyping in AWt as IH.
   depelim IH; econstructor; subst; eauto using conv_sym, conv_trans.
@@ -1099,7 +1116,7 @@ Theorem type_sort_unicity Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  2-11:eapply type_inv in H0; dependent destruction H0; subst; eauto 13 using conv_sym.
+  2-14:eapply type_inv in H0; dependent destruction H0; subst; eauto 13 using conv_sym.
   - eapply type_inv in H0. dependent destruction H0.
     eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
@@ -1154,4 +1171,29 @@ Proof.
   eapply conv_conv. 1:eapply conv_beta.
   all:eauto using validity_ty_ty, validity_conv_right, type_conv.
   eapply subst_conv; eauto using substs_one, conv_refl, validity_ty_ctx, conv_sym.
+Qed.
+
+Lemma conv_lower_lift' Γ n A A' a :
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ->
+      Γ ⊢< ty n > a : A ->
+      Γ ⊢< ty n > lower (ty n) A (lift (ty n) A' a) ≡ a : A.
+Proof.
+  intros.
+  eapply conv_trans. 
+  + eapply conv_lower. 1:eapply conv_refl; eauto using validity_conv_left.
+    eapply conv_conv. 1:eapply conv_lift; eauto using conv_sym, conv_conv, conv_refl.
+    eapply conv_Lift; eauto using conv_sym.
+  + eapply conv_lower_lift; eauto using validity_conv_left, validity_conv_right.
+Qed.
+
+Lemma conv_lift_lower' Γ n A A' a : 
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ->
+      Γ ⊢< Ax (ty n) > a : Lift (ty n) A ->
+      Γ ⊢< Ax (ty n) > lift (ty n) A (lower (ty n) A' a) ≡ a : Lift (ty n) A.
+Proof.
+  intros. eapply conv_trans. 
+  + eapply conv_lift. 1:eapply conv_refl; eauto using validity_conv_left.
+    eapply conv_conv. 1:eapply conv_lower; eauto using conv_sym, conv_conv, conv_Lift, conv_refl.
+    eauto using conv_sym.
+  + eapply conv_lift_lower; eauto using validity_conv_left, validity_conv_right.
 Qed.

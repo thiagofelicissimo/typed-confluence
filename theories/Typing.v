@@ -37,6 +37,12 @@ Inductive varty : ctx → nat → level → term → Prop :=
 | vartyS Γ i j A B x : Γ ∋< i > x : A → Γ ,, (j, B) ∋< i > S x : S ⋅ A
 
 where "Γ ∋< l > x : T" := (varty Γ x l T).
+(* 
+1 - 11 : ok 
+12 - 23 : +3
+24 - 29 : +6
+30 - 31 : +8
+*)
 
 Inductive typing : ctx -> level -> term → term → Prop :=
 
@@ -112,6 +118,23 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< l > b : A ->
       Γ ⊢< prop > e : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e : P <[b..]
+
+| type_Lift : 
+    ∀ Γ l A,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< Ax (Ax l) > Lift l A : Sort (Ax l)
+
+| type_lift : 
+    ∀ Γ l A a,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< l > a : A ->
+      Γ ⊢< Ax l > lift l A a : Lift l A
+
+| type_lower : 
+    ∀ Γ l A a,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< Ax l > a : Lift l A ->
+      Γ ⊢< l > lower l A a : A
 
 | type_conv :
     ∀ Γ l A B t,
@@ -199,6 +222,23 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< prop > e ≡ e' : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e ≡ J l i A' a' P' p' b' e' : P <[b..]
 
+| conv_Lift : 
+    ∀ Γ l A A',
+      Γ ⊢< Ax l > A ≡ A' : Sort l ->
+      Γ ⊢< Ax (Ax l) > Lift l A ≡ Lift l A' : Sort (Ax l)
+
+| conv_lift : 
+    ∀ Γ l A A' a a',
+      Γ ⊢< Ax l > A ≡ A' : Sort l ->
+      Γ ⊢< l > a ≡ a' : A ->
+      Γ ⊢< Ax l > lift l A a ≡ lift l A' a' : Lift l A
+
+| conv_lower : 
+    ∀ Γ l A A' a a',
+      Γ ⊢< Ax l > A ≡ A' : Sort l ->
+      Γ ⊢< Ax l > a ≡ a' : Lift l A ->
+      Γ ⊢< l > lower l A a ≡ lower l A' a' : A
+
 | conv_conv :
     ∀ Γ l A B t t',
       Γ ⊢< l > t ≡ t' : A ->
@@ -243,7 +283,22 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< i > p : P <[a..] ->
       Γ ⊢< prop > e : Eq l A a a ->
       Γ ⊢< i > J l i A a P p a e ≡ p : P <[a..]
-          
+
+
+
+
+| conv_lower_lift :  (* derivable for l = prop *)
+    ∀ Γ n A a,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
+      Γ ⊢< ty n > a : A ->
+      Γ ⊢< ty n > lower (ty n) A (lift (ty n) A a) ≡ a : A
+
+| conv_lift_lower :  (* ill behaved for l = prop *)
+    ∀ Γ n A a,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
+      Γ ⊢< Ax (ty n) > a : Lift (ty n) A ->
+      Γ ⊢< Ax (ty n) > lift (ty n) A (lower (ty n) A a) ≡ a : Lift (ty n) A
+      
 | conv_sym :
     ∀ Γ l t u A,
       Γ ⊢< l > t ≡ u : A ->

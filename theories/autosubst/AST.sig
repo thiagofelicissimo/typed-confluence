@@ -17,3 +17,6 @@ rec : level -> (bind term in term) -> term -> (bind term , term in term) -> term
 box : term
 Eq : level -> term -> term -> term -> term
 J : level -> level -> term -> term -> (bind term in term) -> term -> term -> term -> term
+Lift : level -> term -> term 
+lift : level -> term -> term -> term
+lower : level -> term -> term -> term

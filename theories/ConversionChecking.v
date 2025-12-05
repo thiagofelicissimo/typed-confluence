@@ -28,6 +28,9 @@ Fixpoint erasure l t : term :=
   | ty _, box => t
   | ty _, Eq i A a b => Eq i (erasure (Ax i) A) (erasure i a) (erasure i b)
   | ty _, J l i A a P p b e => J l i (erasure (Ax l) A) (erasure l a) (erasure (Ax i) P) (erasure i p) (erasure l b) box
+  | ty _, Lift i A => Lift i (erasure (Ax i) A)
+  | ty _, lift i A a => lift prop box (erasure i a)
+  | ty _, lower i A a => lower prop box (erasure (Ax i) a)
 end.
 
 Lemma erasure_prop t : erasure prop t = box.
@@ -50,12 +53,15 @@ Inductive Nf : term -> Prop :=
 | nf_succ t : Nf t -> Nf (succ t)
 | nf_ne t : Ne t -> Nf t
 | nf_eq i A a b : Nf A -> Nf a -> Nf b -> Nf (Eq i A a b)
+| nf_Lift i A : Nf A -> Nf (Lift i A)
+| nf_lift a : Nf a -> Nf (lift prop box a)
 | nf_box : Nf box
 with Ne : term -> Prop :=
 | ne_var x : Ne (var x)
 | ne_app t u : Ne t -> Nf u -> Ne (app prop prop box box t u)
 | ne_rec l P p_zero p_succ t : Nf P -> Nf p_zero -> Nf p_succ -> Ne t -> Ne (rec l P p_zero p_succ t)
-| ne_J l i A a P p b : Nf A -> Nf a -> Nf P -> Nf p -> Nf b -> Ne (J l i A a P p b box).
+| ne_J l i A a P p b : Nf A -> Nf a -> Nf P -> Nf p -> Nf b -> Ne (J l i A a P p b box)
+| ne_lower a : Ne a -> Ne (lower prop box a).
 
 Scheme Nf_mut := Induction for Nf Sort Prop
 with Ne_mut := Induction for Ne Sort Prop.
@@ -148,6 +154,24 @@ Inductive red : term -> term -> Prop :=
 | red_J_refl l i A a P p :
     Nf a ->
     J l i A a P p a box ---> p
+
+| red_Lift A A' i :
+    A ---> A' -> 
+    Lift i A ---> Lift i A'
+
+| red_lift a a' :
+    a ---> a' -> 
+    lift prop box a ---> lift prop box a' 
+
+| red_lower a a' :
+    a ---> a' -> 
+    lower prop box a ---> lower prop box a' 
+
+| red_lift_lower a :
+    lift prop box (lower prop box a) ---> a
+
+| red_lower_lift a :
+    lower prop box (lift prop box a) ---> a
 
 where "t ---> u" := (red t u).
 
@@ -301,7 +325,7 @@ Proof.
   all : destruct l_.
   all : (try rewrite erasure_prop; try rewrite erasure_prop; eauto).
   all: (simpl; apply type_inv in Wt; dependent destruction Wt).
-  4,5,7: (f_equal;eauto).
+  4,5,7,9,10,11: (f_equal;eauto).
   - unfold erasure_subst. unfold refines in ref.
     eapply varty_fun_of_ctx in var_in_ctx.
     eapply ref in var_in_ctx as (j & eq).
@@ -426,7 +450,8 @@ Proof.
   induction t; intros  nf_et t_neq_lam; eauto using Nf, Ne.
   all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
   3:inversion t_neq_lam.
-  1,2,4,8: (eapply conv_sym, sort_neq_pi in conv_ty; intuition eauto).
+  1,2,4,8,10: (eapply conv_sym, sort_neq_pi in conv_ty; intuition eauto).
+  6: eapply conv_sym, Lift_neq_pi in conv_ty; intuition eauto.
   2,3: (eapply conv_sym, nat_neq_pi in conv_ty; intuition eauto).
   all: (inversion nf_et; eauto).
 Qed.
@@ -448,7 +473,29 @@ Proof.
   all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
   6,7:inversion t_neq_zero_or_succ.
   3:(eapply nat_neq_pi in conv_ty; intuition eauto).
-  1,2,4,6: (eapply conv_sym, sort_neq_nat in conv_ty; intuition eauto).
+  1,2,4,6,8: (eapply conv_sym, sort_neq_nat in conv_ty; intuition eauto).
+  4: eapply conv_sym, Lift_neq_nat in conv_ty; intuition eauto.
+  all:(inversion nf_et; eauto).
+Qed.
+
+Definition not_a_lift t :=
+  match t with
+  | lift _ _ _ => False
+  | _ => True
+end.
+
+Lemma nf_lift_is_ne Γ l i A t :
+  Γ ⊢< ty l > t : Lift i A ->
+  Nf (erasure (ty l) t) -> not_a_lift t -> Ne (erasure (ty l) t).
+Proof.
+  intros t_Wt.
+  induction t; intros  nf_et t_neq_lift; eauto using Nf, Ne.
+  all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
+  all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
+  12:inversion t_neq_lift.
+  1,2,5,9,11: (eapply conv_sym, sort_neq_Lift in conv_ty; intuition eauto).
+  3,4:(eapply Lift_neq_nat in conv_ty; intuition eauto).
+  1:(eapply Lift_neq_pi in conv_ty; intuition eauto).
   all:(inversion nf_et; eauto).
 Qed.
 
@@ -472,6 +519,10 @@ Proof.
     eapply nf_nat_is_ne; eauto using red.
     destruct t; unfold not_zero_or_succ; eauto.
     all: eapply nf; simpl; eauto using red.
+  - eapply nf_ne. simpl. eapply ne_lower; eauto using red.
+    eapply nf_lift_is_ne; eauto using red.
+    destruct a; unfold not_a_lift; eauto.
+    eapply nf. simpl. eauto using red.
 Qed.
 
 Lemma eq_erased_adjust_IH {l' t4} :
@@ -502,7 +553,7 @@ Lemma eq_erased :
     Γ ⊢< ty i > t0 ≡ u0 : T).
 Proof.
   apply Nf_Ne_mutind; intros.
-  1-6, 8-13:(destruct t0; dependent destruction et_eq_erased_t0;
+  1-6, 8-16:(destruct t0; dependent destruction et_eq_erased_t0;
     destruct u0; dependent destruction erased_t0_eq_erased_u0;
     eapply type_inv in t0_Wt as temp; dependent destruction temp;
     eapply type_inv in u0_Wt as temp; dependent destruction temp;  subst).
@@ -533,6 +584,18 @@ Proof.
   - dependent destruction lvl_eq.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_Eq; eauto using conv_conv, conv_sym, type_conv.
+  - dependent destruction lvl_eq. cbn in *. 
+    eapply conv_conv; eauto using conv_sym. 
+    eapply conv_Lift; eauto using conv_conv, conv_sym, type_conv.
+  - rename t0_1 into A. rename u0_1 into A'.
+    rename t0_2 into a. rename u0_2 into a'.
+    rewrite lvl_eq in lvl_eq0. eapply Ax_inj in lvl_eq0. subst.
+    assert (_ ⊢< _ > Lift _ A ≡ Lift l0 A' : _) as lift_eq_lift by eauto using conv_sym, conv_trans.
+    eapply Lift_inj in lift_eq_lift as (_ & A_equiv_A').
+    dependent destruction lvl_eq.
+    eapply conv_conv.
+    eapply conv_lift; eauto using type_conv, conv_sym.
+    eauto using conv_sym.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t. rename t0_4 into u.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'. rename u0_4 into u'.
     eapply conv_conv; eauto using conv_sym.
@@ -554,6 +617,14 @@ Proof.
       eapply subst_conv; eauto using validity_ty_ctx, substs_one, conv_refl, type_conv, conv_ty_in_ctx_ty.
     + eapply conv_irrel; eauto.
       eapply type_conv; eauto. eapply conv_Eq; eauto using type_conv, conv_ty_in_ctx_ty.
+  - rename t0_1 into A. rename u0_1 into A'.
+    rename t0_2 into a. rename u0_2 into a'.
+    eapply H in H0 as a'_conv_a; eauto.
+    eapply validity_conv_right, type_unicity in a'_conv_a as temp. 2:exact a_Wt.
+    eapply Lift_inj in temp as (i_eq_i' & A_conv_A'). dependent destruction i_eq_i'.
+    eapply conv_conv.
+    eapply conv_lower; eauto.
+    eauto using conv_sym.
 Qed.
 
 
@@ -584,15 +655,17 @@ Proof.
     [ rewrite l_eq_prop in erased_t_red_u; rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u | idtac ].
   1,2,6,7: (rewrite l_eq_n in *; inversion erased_t_red_u).
   all : rewrite l_eq_n in erased_t_red_u at 1.
-  1-7 : dependent destruction erased_t_red_u.
-  1-5,8-11, 14-21: (
+  1-10 : dependent destruction erased_t_red_u. 
+
+  1-5,8-11, 14-21, 23,24,26: (
+  try destruct (IHtWt ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt1 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt2 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt3 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt4 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt5 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt6 ltac:(eauto using case_lvl) _ erased_t_red_u) as (X & conv & eq);
-  eexists; split; [ eauto 13 using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, conv_refl, conv_Eq, conv_J
+  eexists; split; [ eauto 13 using conv_pi, conv_lam, conv_app, conv_succ, conv_rec, conv_refl, conv_Eq, conv_J, conv_Lift, conv_lift, conv_lower
                 | rewrite <- eq; rewrite l_eq_n; eauto ]).
 
   all:subst.
@@ -629,6 +702,23 @@ Proof.
   - eexists. split.
     eapply conv_J_refl'; eauto. 2:eauto.
     destruct l. 2:eauto using conv_irrel. eapply (proj1 eq_erased) in H; eauto.
+
+  (* case lift_lower *)
+  - destruct l. 2: rewrite erasure_prop in H; inversion H.
+    destruct a; dependent destruction H. 
+    eapply type_inv in tWt2 as temp. dependent destruction temp. subst.
+    eexists. split.
+    + eapply conv_lift_lower'; eauto using conv_sym, conv_Lift, type_conv.
+    + reflexivity.
+
+  (* case lower_lift *)
+  - destruct a; dependent destruction H.
+    eapply type_inv in tWt2 as temp. dependent destruction temp.
+    eapply Lift_inj in conv_ty as (_ & A_conv_a1).
+    eapply Ax_inj in lvl_eq. subst.
+    eexists. split.
+    + eapply conv_lower_lift'; eauto using type_conv, conv_sym.
+    + reflexivity.
 
   (* case conv *)
   - edestruct IHtWt.
