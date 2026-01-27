@@ -700,6 +700,24 @@ Proof.
   eapply conv_substs; eauto.
 Qed.
 
+
+Lemma pre_conv_ty_in_ctx_ty Γ l A A' l' t B :
+  Γ ,, (l , A) ⊢< l' > t : B ->
+  Γ ⊢< Ax l > A' : Sort l ->
+  Γ ⊢< Ax l > A ≡ A' : Sort l ->
+  Γ ,, (l , A') ⊢< l' > t : B.
+Proof.
+  intros t_eq_u A'Wt A_eq_A'.
+  eapply pre_conv_in_ctx_ty; eauto using ctx_typing, validity_ty_ctx.
+  apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, conv_sym, ctx_conv_refl.
+Qed.
+
+Ltac validitysplit := 
+  intros ; split ; [   
+    eapply meta_conv ; [ eapply meta_lvl ; [ econstructor | idtac ] | idtac ] |
+    eapply type_conv ; [ eapply meta_lvl ; [ econstructor | idtac ] | idtac ]
+  ].
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -710,59 +728,19 @@ Lemma validity_gen :
     Γ ⊢< l > u : A ∧ Γ ⊢< l > v : A).
 Proof.
   apply typing_mutind.
-  2,3,4,7,8,10,12,13,16,17,21,22,23,27,30: solve [
-    intros ; try econstructor ; try econstructor ; intuition eauto using validity_ty_ctx, validity_conv_ctx
+
+  1,2,3,4,6,7,8,10,12,13,14,15,16,17,18,21,22,23,27,28,29,30,31: solve [
+    intuition eauto 6 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty
   ].
-  16: solve [ intros ; econstructor ; eauto using validity_ty_ctx, validity_conv_ctx].
-  14,15:solve [ intros ; intuition eauto 6 using conversion, typing].
-  1,2,4,5,6,7,12,14,15,17,18,19,20,21: solve [ intuition eauto using subst_ty, subst_one, validity_ty_ctx, conversion, typing, validity_ty_ctx, subst_one, valid_varty].
 
+  1,2,3,7,9,10,12,13,14,15,16: solve [ 
+    intuition eauto using subst_ty, subst_one, validity_ty_ctx, typing
+  ].
 
-  (* TODO: investigate if the remaining cases can be further automated *)
+  1,2,4: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
 
-  - intros. eapply meta_lvl; eauto using typing.
-  - intros Γ i j A B **.
-    split ; econstructor. all: intuition eauto.
-    eapply pre_conv_in_ctx_ty. all: eauto using ctx_typing, validity_ty_ctx, ctx_conv_refl, conv_ccons, conv_sym.
-  - intros Γ i j A B **.
-    split.
-    + econstructor. all: intuition eauto.
-    + econstructor.
-      * {
-        econstructor. 1: intuition eauto.
-        all: intuition eauto 9 using pre_conv_in_ctx_ty, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
-        eapply pre_conv_in_ctx_ty.
-        - eapply type_conv. all: intuition eauto.
-        - econstructor; eauto using validity_ty_ctx.
-        - econstructor; eauto using conv_sym, ctx_conv_refl, validity_ty_ctx.
-      }
-      * apply conv_sym. constructor.
-        all: intuition eauto.
-  - intros Γ i j A B **.
-    split.
-    + econstructor. all: intuition eauto.
-    + eapply type_conv.
-      * {
-        econstructor. 1: intuition eauto.
-        all: intuition eauto 8 using type_conv, pre_conv_in_ctx_ty, ctx_conv_refl, conv_ccons, conv_sym, ctx_typing, validity_ty_ctx.
-        eapply type_conv. 1: intuition eauto.
-        constructor. all: intuition eauto.
-      }
-      * {
-        apply conv_sym. eapply conv_trans.
-        - eapply meta_conv_conv.
-          + eapply typing_conversion_subst.
-            all: intuition eauto using subst_one, validity_ty_ctx.
-          + reflexivity.
-        - eapply meta_conv_conv.
-          { eapply conv_substs.
-            - eauto using validity_ty_ctx.
-            - eapply substs_one. eauto.
-            - eapply subst_one. intuition eauto.
-            - intuition eauto.
-          }
-          reflexivity.
-      }
+  (* the only cases left are ones in which we have to change or apply a substitution not of the form t.. *)
+
   - intros Γ l P **.
     split.
     + econstructor. all: intuition eauto.
@@ -812,12 +790,7 @@ Proof.
           }
           reflexivity.
       }
-  - intros. destruct H0, H1, H2, H3, H4, H5. split.
-    + eapply type_J; eauto.
-    + eapply type_conv. 1:eapply type_J; eauto using type_conv, conv_Eq.
-      1:eapply pre_conv_in_ctx_ty; eauto using ctx_typing, validity_ty_ctx, conv_ccons, ctx_conv_refl, conv_sym.
-      1:eapply type_conv; eauto.
-      1,2: eapply pre_subst_conv; eauto using subst_one, validity_ty_ctx, substs_one, conv_sym.
+
   - intros Γ l P **.
     split.
     + econstructor. all: intuition eauto.
@@ -962,15 +935,12 @@ Proof.
   apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, validity_conv_left.
 Qed.
 
-
 Lemma conv_ty_in_ctx_ty Γ l A A' l' t B :
   Γ ,, (l , A) ⊢< l' > t : B ->
   Γ ⊢< Ax l > A ≡ A' : Sort l ->
   Γ ,, (l , A') ⊢< l' > t : B.
 Proof.
-  intros t_eq_u A_eq_A'.
-  eapply conv_in_ctx_ty; eauto.
-  apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, validity_conv_left.
+  intros. eauto using pre_conv_ty_in_ctx_ty, validity_conv_right.
 Qed.
 
 (* the following lemma helps automation to type some substitutions that appear often in the proof *)

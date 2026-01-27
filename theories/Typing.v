@@ -77,7 +77,7 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ,, (i , A) ⊢< Ax j > B : Sort j →
       Γ ⊢< Ru i j > t : Pi i j A B →
       Γ ⊢< i > u : A →
-      Γ ⊢< j > app i j A B  t u : B <[ u .. ]
+      Γ ⊢< j > app i j A B t u : B <[ u .. ]
 
 | type_nat :
     ∀ Γ,
@@ -119,6 +119,9 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< prop > e : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e : P <[b..]
 
+(* Cumulativity using a one-field record with beta/eta, so that Lift l A is 
+  in definitional isomorphism with A. This is the approach taken in the Agda stdlib: 
+  https://github.com/agda/agda-stdlib/blob/master/src/Level.agda *)      
 | type_Lift : 
     ∀ Γ l A,
       Γ ⊢< Ax l > A : Sort l ->
