@@ -1295,42 +1295,43 @@ Proof.
   - eapply equiv_sym; eauto.
 Qed.
 
+
 (* The typed version of lemma equiv_red_ind from Theo's local_comp.
-   Going from the original untyped version to this typed one took me a lot of trial and error. *)
+  Going from the original untyped version to this typed one took me a lot of trial and error.
+  
+  Important: We cannot ask that Δ ⊢< i > t : A -> Γ ⊢< l > f t : P t, because the contexts f, P
+  might constraint t to be of a certain form, like
+    f t := refl t
+    P t := Eq Nat 0 t
+  But we need at least to ensure that, for t and u convertible, f and P are defined for t iff 
+  f and P are defined for u. Indeed, we need to avoid evil contexts like 
+    f t := match t with | zero => v | _ => w end
+  which do not respect conversion.
+  *)
 Lemma equiv_red_ind {Γ Δ l A i} P f :
-    (forall t u, Δ ⊢< i > t ≡ u : A -> Γ ⊢< l > f t : P t <-> Γ ⊢< l > f u : P u) ->
+    (forall t u, Δ ⊢< i > t ≡ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f u : P u) ->
     (forall t u, Δ ⊢< i > t ⟹ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ≈ f u : P t) ->
     forall {t u}, Δ ⊢< i > t ≈ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ≈ f u : P t.
 Proof.
   intros. induction H1.
-  - eauto.
-  - apply equiv_to_conv in H1_ as t_eq_v.
-    apply H in t_eq_v as temp.
-    apply temp in H2 as fv_Pv.
-    clear temp.
-    apply IHortho_equiv1 in H2 as ft_equiv_fv.
-    apply IHortho_equiv2 in fv_Pv as fv_equiv_fu.
-    apply equiv_to_conv in ft_equiv_fv as ft_eq_fv.
-    apply validity_conv_right in ft_eq_fv as fv_Pt.
-    assert (Γ ⊢< Ax l > P t ≡ P v : Sort l) as Pt_eq_Pv by eauto using type_unicity.
-    eapply equiv_trans.
-    apply ft_equiv_fv.
-    eapply equiv_conv.
-    eapply fv_equiv_fu.
-    eauto using conv_sym.
-  - apply equiv_to_conv in H1 as u_eq_t.
-    apply H in u_eq_t as temp.
-    apply temp in H2 as fu_Pu.
-    apply IHortho_equiv in fu_Pu.
-    apply equiv_to_conv in fu_Pu as  K.
-    apply validity_conv_right in K.
-    assert (Γ ⊢< Ax l > P t ≡ P u : Sort l) by eauto using type_unicity.
-    eapply equiv_sym.
-    eapply equiv_conv.
-    apply fu_Pu.
-    eauto using conv_sym.
+  - eapply H0; eauto.
+  - eapply equiv_to_conv in H1_ as H1'. 
+    eapply H in H1'; eauto.
+    eapply IHortho_equiv1 in H2.
+    eapply IHortho_equiv2 in H1'.
+    eapply equiv_trans. 1:eassumption.
+    eapply equiv_conv. 1:eassumption.
+    eapply equiv_to_conv in H2, H1'.
+    eauto using type_unicity, validity_conv_left, validity_conv_right.
+  - eapply equiv_to_conv in H1 as H1'.
+    eapply conv_sym in H1'.
+    eapply H in H1'; eauto.
+    eapply IHortho_equiv in H1'.
+    eapply equiv_sym. 
+    eapply equiv_conv; eauto.
+    eapply equiv_to_conv, validity_conv_right in H1'.
+    eauto using type_unicity.
 Qed.
-
 
 Lemma equiv_pi Γ i j A B A' B' :
       Γ ⊢< Ax i > A ≈ A' : Sort i →
@@ -1341,12 +1342,11 @@ Proof.
   eapply equiv_trans.
   - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun B => Pi i j A B) _ _ B_equiv_B' _).
     3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step. eauto using ortho_pi, equiv_to_conv, validity_conv_left, ortho_refl.
   - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun A => Pi i j A B') _ _ A_equiv_A' _).
     3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros.
-      split; intro temp; apply type_inv in temp; dependent destruction temp;
+    + intros; apply type_inv in H0; dependent destruction H0;
       eauto using type_pi, validity_conv_right, validity_conv_left, conv_sym, conv_ty_in_ctx_ty.
     + intros v v' v_red_v' Wt. apply type_inv in Wt. dependent destruction Wt.
       apply equiv_step. eauto using ortho_pi, ortho_refl, conv_ty_in_ctx_ty.
@@ -1363,7 +1363,7 @@ Proof.
   eapply equiv_trans.
   - refine (equiv_red_ind (fun _ => Pi i j A B) (fun t => lam i j A B t) _ _ H1 _).
     3 : eauto 6 using equiv_to_conv, type_lam, validity_conv_left.
-    + intros v v' v_red_v'. split; eauto using type_lam, validity_conv_left, validity_conv_right.
+    + intros; eauto using type_lam, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step. eauto 6 using ortho_lam, validity_conv_left, conv_refl.
   - eapply equiv_step. eauto using equiv_to_conv, ortho_lam, validity_conv_right, ortho_refl.
 Qed.
@@ -1379,12 +1379,12 @@ Proof.
   eapply equiv_trans. eapply equiv_trans.
   - refine (equiv_red_ind (fun _ => B <[ u ..]) (fun t => app i j A B t u) _ _ H1 _).
     3: eauto 8 using type_app, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 7 using equiv_to_conv, validity_conv_left, validity_conv_right, type_app.
+    + intros. eauto 7 using equiv_to_conv, validity_conv_left, validity_conv_right, type_app.
     + intros. apply equiv_step.
       eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, ortho_refl, conv_refl.
   - refine (equiv_red_ind (fun u => B <[ u ..]) (fun u => app i j A B t' u) _ _ H2 _).
     3:eauto 8 using type_app, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; eauto 7 using type_app, validity_conv_left, equiv_to_conv, validity_conv_right.
+    + intros. eauto 7 using type_app, validity_conv_left, equiv_to_conv, validity_conv_right.
     + intros. eapply equiv_step.
       eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
   - apply equiv_step. eapply ortho_conv.
@@ -1400,7 +1400,7 @@ Proof.
   intro t_equiv_t'.
   refine (equiv_red_ind (fun _ => Nat) (fun t => succ t) _ _ t_equiv_t' _).
   3: eauto using type_succ, equiv_to_conv, validity_conv_left.
-  - intros. split; eauto using type_succ, validity_conv_left, validity_conv_right.
+  - intros. eauto using type_succ, validity_conv_left, validity_conv_right.
   - intros. apply equiv_step. eauto using ortho_succ.
 Qed.
 
@@ -1415,25 +1415,25 @@ Proof.
   eapply equiv_trans. eapply equiv_trans. eapply equiv_trans.
   - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_zero => rec l P p_zero p_succ t) _ _ p_zero_equiv_p_zero' _).
     3: eauto 10 using type_rec, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step. eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, ortho_refl.
   - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_succ => rec l P p_zero' p_succ t) _ _ p_succ_equiv_p_succ' _).
     3: eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step.
       eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - refine (equiv_red_ind (fun t => P <[ t.. ]) (fun t => rec l P p_zero' p_succ' t) _ _ t_equiv_t' _).
     3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step.
       eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - eapply (equiv_conv _ _ (P <[ t'..])).
     2: eapply subst_conv; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
     3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; intro temp; apply type_inv in temp; dependent destruction temp.
-      all: (apply type_rec; eauto 9 using equiv_to_conv, subst_conv, type_conv, type_zero,
-        subst_one, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, subst_id_var1, ctx_from_conv, refl_subst).
+    + intros; apply type_inv in H0; dependent destruction H0.
+      apply type_rec; eauto 9 using equiv_to_conv, subst_conv, type_conv, type_zero,
+        subst_one, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, subst_id_var1, ctx_from_conv, refl_subst.
     + intros v v' v_red_v' Wt.
       apply type_inv in Wt. dependent destruction Wt.
       apply equiv_step. eauto using ortho_refl, ortho_rec.
@@ -1449,18 +1449,18 @@ Proof.
   eapply equiv_trans. eapply equiv_trans.
   - refine (equiv_red_ind (fun _ => Sort prop) (fun b => Eq l A a b) _ _ b_equiv_b' _).
     3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step.
       eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - refine (equiv_red_ind (fun _ => Sort prop) (fun a => Eq l A a b') _ _ a_equiv_a' _).
     3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step.
       eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
   - refine (equiv_red_ind (fun _ => Sort prop) (fun A => Eq l A _ _) _ _ A_equiv_A' _).
     3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; intro K;
-      eapply type_inv in K; dependent destruction K;
+    + intros.
+      eapply type_inv in H0; dependent destruction H0;
       eauto 7 using type_Eq, validity_conv_left, type_conv, conv_sym.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
@@ -1480,9 +1480,9 @@ Proof.
   eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans.
   - refine (equiv_red_ind _ (fun a => J l i A a P p b e) _ _ a_equiv_a' _).
     3:eapply type_J; eauto using equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros.
+      eapply type_inv in H0; dependent destruction H0.
+      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
@@ -1490,9 +1490,8 @@ Proof.
   - refine (equiv_red_ind _ (fun e => J l i A _ P p b e) _ _ e_equiv_e' _).
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros. eapply type_inv in H0; dependent destruction H0.
+      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
@@ -1500,9 +1499,9 @@ Proof.
   - refine (equiv_red_ind _ (fun p => J l i A _ P p b _) _ _ p_equiv_p' _).
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros. 
+      eapply type_inv in H0; dependent destruction H0.
+      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
@@ -1511,9 +1510,9 @@ Proof.
   - refine (equiv_red_ind (fun b => P<[b..]) (fun b => J l i A _ P _ b _) _ _ b_equiv_b' _).
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros. 
+      eapply type_inv in H0; dependent destruction H0.
+      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
@@ -1524,12 +1523,11 @@ Proof.
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
     3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_conv.
-      1,3:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros. eapply type_inv in H0; dependent destruction H0.
+      eapply type_conv.
+      1:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
-      all:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
       eapply ortho_conv.
@@ -1541,12 +1539,11 @@ Proof.
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv, conv_ty_in_ctx_ty.
     3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. split; eauto 14 using type_J, equiv_to_conv, validity_conv_left, validity_conv_right;
-      intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_conv.
-      1,3:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
+    + intros. eapply type_inv in H0; dependent destruction H0.
+      eapply type_conv.
+      1:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
       validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
-      all:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
     + intros. apply equiv_step.
       eapply type_inv in H0. dependent destruction H0.
       eapply ortho_conv.
@@ -1561,7 +1558,7 @@ Lemma equiv_Lift Γ l A A' :
 Proof.
   intros A_equiv_A'. refine (equiv_red_ind _ (fun A => Lift l A) _ _ A_equiv_A' _).
   3:eauto 8 using type_Lift, equiv_to_conv, validity_conv_left.
-  + intros. split; eauto 11 using type_Lift, equiv_to_conv, validity_conv_left, validity_conv_right.
+  + intros. eauto 11 using type_Lift, equiv_to_conv, validity_conv_left, validity_conv_right.
   + intros. apply equiv_step.
     eauto 12 using ortho_Lift, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
 Qed.
@@ -1574,13 +1571,13 @@ Proof.
   intros A_equiv_A' a_equiv_a'. eapply equiv_trans.
   - refine (equiv_red_ind _ (fun a => lift l A a) _ _ a_equiv_a' _).
     3:eauto 8 using type_lift, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 11 using type_lift, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 11 using type_lift, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
       eauto 12 using ortho_lift, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
   - refine (equiv_red_ind (fun A => Lift _ A) (fun A => lift l A _) _ _ A_equiv_A' _).
     3:eauto 8 using type_lift, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_lift; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym.
+    + intros. eapply type_inv in H0; dependent destruction H0.
+      eapply type_lift; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym.
     + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
       eapply ortho_lift; eauto using ortho_refl, ortho_to_conv.
 Qed.
@@ -1594,13 +1591,13 @@ Proof.
   intros A_equiv_A' a_equiv_a'. eapply equiv_trans.
   - refine (equiv_red_ind _ (fun a => lower l A a) _ _ a_equiv_a' _).
     3:eauto 8 using type_lower, equiv_to_conv, validity_conv_left.
-    + intros. split; eauto 11 using type_lower, equiv_to_conv, validity_conv_left, validity_conv_right.
+    + intros. eauto 11 using type_lower, equiv_to_conv, validity_conv_left, validity_conv_right.
     + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
       eauto 12 using ortho_lower, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
   - refine (equiv_red_ind (fun A => A) (fun A => lower l A _) _ _ A_equiv_A' _).
     3:eauto 8 using type_lower, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. split; intro K; eapply type_inv in K; dependent destruction K.
-      all:eapply type_lower; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym, conv_Lift.
+    + intros. eapply type_inv in H0; dependent destruction H0.
+      eapply type_lower; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym, conv_Lift.
     + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
       eapply ortho_lower; eauto using ortho_refl, ortho_to_conv.
 Qed.
