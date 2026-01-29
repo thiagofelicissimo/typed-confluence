@@ -57,12 +57,13 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       ⊢ Γ →
       Γ ⊢< Ax (Ax l) > Sort l : Sort (Ax l)
 
+(* Dependent functions *)
+
 | type_pi :
     ∀ Γ i j A B,
       Γ ⊢< Ax i > A : Sort i →
       Γ ,, (i , A) ⊢< Ax j > B : Sort j →
       Γ ⊢< Ax (Ru i j) > Pi i j A B : Sort (Ru i j)
-
 
 | type_lam :
     ∀ Γ i j A B t,
@@ -78,6 +79,41 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< Ru i j > t : Pi i j A B →
       Γ ⊢< i > u : A →
       Γ ⊢< j > app i j A B t u : B <[ u .. ]
+
+(* Dependent pairs *)
+(* Only for relevant types, because we already have all inductive types in Prop 
+  using the impredicative encoding. Moreover, sigmas with mixed relevance can be 
+  constructed by boxing irrelevant types *)
+
+| type_sigma :
+    ∀ Γ n m A B,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B : Sort (ty (max n m))
+
+| type_pair :
+    ∀ Γ n m A B a b,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< ty n > a : A →
+      Γ ⊢< ty m > b : B <[a..] →
+      Γ ⊢< ty (max n m) > pair (ty n) (ty m) A B a b : Sigma (ty n) (ty m) A B
+
+| type_pi1 :
+    ∀ Γ n m A B t,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty n > pi1 (ty n) (ty m) A B t : A
+
+| type_pi2 :
+    ∀ Γ n m A B t,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty m > pi2 (ty n) (ty m) A B t : B <[(pi1 (ty n) (ty m) A B t)..]
+
+(* Natural numbers *)
 
 | type_nat :
     ∀ Γ,
@@ -102,6 +138,8 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< ty 0 > t : Nat ->
       Γ ⊢< l > rec l P p_zero p_succ t : P <[ t .. ]
 
+(* Equality *)
+
 | type_Eq :
     ∀ Γ l A a b,
       Γ ⊢< Ax l > A : Sort l ->
@@ -121,7 +159,9 @@ Inductive typing : ctx -> level -> term → term → Prop :=
 
 (* Cumulativity using a one-field record with beta/eta, so that Lift l A is 
   in definitional isomorphism with A. This is the approach taken in the Agda stdlib: 
-  https://github.com/agda/agda-stdlib/blob/master/src/Level.agda *)      
+  https://github.com/agda/agda-stdlib/blob/master/src/Level.agda 
+  Note that, for l = prop, we get a boxing operation for irrelevant types. *)
+
 | type_Lift : 
     ∀ Γ l A,
       Γ ⊢< Ax l > A : Sort l ->
@@ -182,6 +222,38 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< Ru i j > t ≡ t' : Pi i j A B →
       Γ ⊢< i > u ≡ u' : A →
       Γ ⊢< j > app i j A B t u ≡ app i j A' B' t' u' : B <[ u .. ]
+
+| conv_sigma :
+    ∀ Γ n m A B A' B',
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≡ Sigma (ty n) (ty m) A' B' : Sort (ty (max n m))
+
+| conv_pair :
+    ∀ Γ n m A B a b A' B' a' b',
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty n > a ≡ a' : A →
+      Γ ⊢< ty m > b ≡ b' : B <[a..] →
+      Γ ⊢< ty (max n m) > pair (ty n) (ty m) A B a b ≡ pair (ty n) (ty m) A' B' a' b' : Sigma (ty n) (ty m) A B
+
+| conv_pi1 :
+    ∀ Γ n m A B t A' B' t',
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t ≡ t' : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty n > pi1 (ty n) (ty m) A B t ≡ pi1 (ty n) (ty m) A' B' t' : A
+
+| conv_pi2 :
+    ∀ Γ n m A B t A' B' t',
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t ≡ t' : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty m > pi2 (ty n) (ty m) A B t ≡ pi2 (ty n) (ty m) A' B' t' : B <[(pi1 (ty n) (ty m) A B t)..]
 
 | conv_nat :
     ∀ Γ,
@@ -261,6 +333,25 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ,, (i , A) ⊢< j > t : B →
       Γ ⊢< i > u : A →
       Γ ⊢< j > app i j A B (lam i j A B t) u ≡ t <[ u .. ] : B <[ u .. ]
+
+    
+| conv_pi1pair :
+    ∀ Γ n m A B a b,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< ty n > a : A →
+      Γ ⊢< ty m > b : B <[a..] →
+      Γ ⊢< ty n > pi1 (ty n) (ty m) A B (pair (ty n) (ty m) A B a b) ≡ a : A
+
+| conv_pi2pair :
+    ∀ Γ n m A B a b,
+      Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B : Sort (ty m) →
+      Γ ⊢< ty n > a : A →
+      Γ ⊢< ty m > b : B <[a..] →
+      Γ ⊢< ty m > pi2 (ty n) (ty m) A B (pair (ty n) (ty m) A B a b) ≡ b : B <[a..]
+
+
 
 | conv_rec_zero :
     ∀ Γ l P p_zero p_succ,
