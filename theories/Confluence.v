@@ -1607,6 +1607,41 @@ Proof.
     eauto using type_unicity.
 Qed.
 
+Ltac equiv_red_ind_aux0 := 
+  ty_inj_tac ; subst ;
+  try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left,
+      validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
+  try solve [ eapply type_conv ; 
+    [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty,
+        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym 
+    | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl]].
+
+Ltac equiv_red_ind_aux1 := 
+  intros _t _u _t_conv_u _deriv ; 
+  eapply type_inv in _deriv ; 
+  dependent destruction _deriv ;
+  equiv_red_ind_aux0.
+
+Ltac equiv_red_ind_aux2 := 
+  intros _t _u _t_red_u _deriv ; 
+  eapply type_inv in _deriv ; 
+  dependent destruction _deriv ;
+  ty_inj_tac ; subst ;
+  eapply equiv_step ;
+  try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, ortho_refl, ortho_conv, ortho_to_conv,
+      validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
+  try solve [ eapply ortho_conv ; 
+    [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty, ortho_refl, ortho_conv, conv_ty_in_ctx_ortho,
+        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym 
+    | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl, ortho_to_conv]].
+
+Ltac equiv_red_ind_aux := 
+  try solve [ equiv_red_ind_aux1 ];
+  try solve [ equiv_red_ind_aux2 ];
+  try solve [ equiv_red_ind_aux0 ].
+
+
+
 Lemma equiv_pi Γ i j A B A' B' :
       Γ ⊢< Ax i > A ≈ A' : Sort i →
       Γ ,, (i , A) ⊢< Ax j > B ≈ B' : Sort j →
@@ -1614,18 +1649,67 @@ Lemma equiv_pi Γ i j A B A' B' :
 Proof.
   intros A_equiv_A' B_equiv_B'.
   eapply equiv_trans.
-  - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun B => Pi i j A B) _ _ B_equiv_B' _).
-    3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left.
-    + intros. eauto using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eauto using ortho_pi, equiv_to_conv, validity_conv_left, ortho_refl.
-  - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun A => Pi i j A B') _ _ A_equiv_A' _).
-    3 : eauto 6 using type_pi, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros; apply type_inv in H0; dependent destruction H0;
-      eauto using type_pi, validity_conv_right, validity_conv_left, conv_sym, conv_ty_in_ctx_ty.
-    + intros v v' v_red_v' Wt. apply type_inv in Wt. dependent destruction Wt.
-      apply equiv_step. eauto using ortho_pi, ortho_refl, conv_ty_in_ctx_ty.
+  - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun B => Pi i j A B) _ _ B_equiv_B' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => Sort (Ru i j)) (fun A => Pi i j A B') _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
 
+Lemma equiv_sigma Γ n m A B A' B' :
+      Γ ⊢< Ax (ty n) > A ≈ A' : Sort (ty n) →
+      Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≈ B' : Sort (ty m) →
+      Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≈ Sigma (ty n) (ty m) A' B' : Sort (ty (max n m)).
+Proof.
+  intros A_equiv_A' B_equiv_B'.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun B => Sigma _ _ A B) _ _ B_equiv_B' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => Sort (ty (max n m))) (fun A => Sigma (ty n) (ty m) A B') _ _ A_equiv_A' _); equiv_red_ind_aux.
+Qed.
+
+
+Lemma equiv_pair Γ n m A B a b A' B' a' b' :
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty n > a ≈ a' : A →
+      Γ ⊢< ty m > b ≈ b' : B <[a..] →
+      Γ ⊢< ty (max n m) > pair (ty n) (ty m) A B a b ≈ pair (ty n) (ty m) A' B' a' b' : Sigma (ty n) (ty m) A B.
+Proof.
+  intros A_conv_A' B_conv_B' a_equiv_a' b_equiv_b'.
+  eapply equiv_trans. eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun a => pair _ _ _ _ a _) _ _ a_equiv_a' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => _) (fun b => pair _ _ _ _ _ b) _ _ b_equiv_b' _).
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
+    + eapply type_conv.
+      * econstructor; 
+        eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
+      * econstructor; eauto using equiv_to_conv, validity_conv_left, conv_refl.
+  - eapply equiv_step; econstructor; 
+    eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
+Qed.
+
+Lemma equiv_pi1 Γ n m A B t A' B' t' :
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t ≈ t' : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty n > pi1 (ty n) (ty m) A B t ≈ pi1 (ty n) (ty m) A' B' t' : A.
+Proof.
+  intros A_conv_A' B_conv_B' t_equiv_t'.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun t => pi1 _ _ _ _ t) _ _ t_equiv_t' _); equiv_red_ind_aux.
+  - eapply equiv_step. econstructor; eauto using equiv_to_conv, validity_conv_right, ortho_refl.
+Qed.
+  
+Lemma equiv_pi2 Γ n m A B t A' B' t' :
+      Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+      Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+      Γ ⊢< ty (max n m) > t ≈ t' : Sigma (ty n) (ty m) A B →
+      Γ ⊢< ty m > pi2 (ty n) (ty m) A B t ≈ pi2 (ty n) (ty m) A' B' t' : B <[(pi1 (ty n) (ty m) A B t)..].
+Proof.
+  intros A_conv_A' B_conv_B' t_equiv_t'.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun t => B <[(pi1 (ty n) (ty m) A B t)..]) (fun t => pi2 _ _ _ _ t) _ _ t_equiv_t' _); equiv_red_ind_aux.
+  - eapply equiv_step. eapply ortho_conv. 1:econstructor; eauto using equiv_to_conv, validity_conv_right, ortho_refl.
+    eapply subst_conv; eauto 10 using validity_conv_left, validity_ty_ctx, conv_refl, substs_one, conv_pi1, equiv_to_conv, conv_sym.
+Qed.
 
 Lemma equiv_lam Γ i j A B t A' B' t' :
       Γ ⊢< Ax i > A ≡ A' : Sort i →
@@ -1635,10 +1719,7 @@ Lemma equiv_lam Γ i j A B t A' B' t' :
 Proof.
   intros.
   eapply equiv_trans.
-  - refine (equiv_red_ind (fun _ => Pi i j A B) (fun t => lam i j A B t) _ _ H1 _).
-    3 : eauto 6 using equiv_to_conv, type_lam, validity_conv_left.
-    + intros; eauto using type_lam, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eauto 6 using ortho_lam, validity_conv_left, conv_refl.
+  - refine (equiv_red_ind (fun _ => Pi i j A B) (fun t => lam i j A B t) _ _ H1 _); equiv_red_ind_aux.
   - eapply equiv_step. eauto using equiv_to_conv, ortho_lam, validity_conv_right, ortho_refl.
 Qed.
 
@@ -1651,31 +1732,19 @@ Lemma equiv_app Γ i j A B t u A' B' t' u' :
 Proof.
   intros.
   eapply equiv_trans. eapply equiv_trans.
-  - refine (equiv_red_ind (fun _ => B <[ u ..]) (fun t => app i j A B t u) _ _ H1 _).
-    3: eauto 8 using type_app, equiv_to_conv, validity_conv_left.
-    + intros. eauto 7 using equiv_to_conv, validity_conv_left, validity_conv_right, type_app.
-    + intros. apply equiv_step.
-      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, ortho_refl, conv_refl.
-  - refine (equiv_red_ind (fun u => B <[ u ..]) (fun u => app i j A B t' u) _ _ H2 _).
-    3:eauto 8 using type_app, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eauto 7 using type_app, validity_conv_left, equiv_to_conv, validity_conv_right.
-    + intros. eapply equiv_step.
-      eauto 9 using ortho_app, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
+  - refine (equiv_red_ind (fun _ => B <[ u ..]) (fun t => app i j A B t u) _ _ H1 _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun u => B <[ u ..]) (fun u => app i j A B t' u) _ _ H2 _); equiv_red_ind_aux.
   - apply equiv_step. eapply ortho_conv.
     + eauto 8 using ortho_app, validity_conv_right, equiv_to_conv, ortho_refl.
     + eapply subst_conv; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
 Qed.
-
 
 Lemma equiv_succ Γ t t' :
       Γ ⊢< ty 0 > t ≈ t' : Nat ->
       Γ ⊢< ty 0 > succ t ≈ succ t' : Nat.
 Proof.
   intro t_equiv_t'.
-  refine (equiv_red_ind (fun _ => Nat) (fun t => succ t) _ _ t_equiv_t' _).
-  3: eauto using type_succ, equiv_to_conv, validity_conv_left.
-  - intros. eauto using type_succ, validity_conv_left, validity_conv_right.
-  - intros. apply equiv_step. eauto using ortho_succ.
+  refine (equiv_red_ind (fun _ => Nat) (fun t => succ t) _ _ t_equiv_t' _); equiv_red_ind_aux.
 Qed.
 
 Lemma equiv_rec Γ l P p_zero p_succ t P' p_zero' p_succ' t' :
@@ -1687,30 +1756,19 @@ Lemma equiv_rec Γ l P p_zero p_succ t P' p_zero' p_succ' t' :
 Proof.
   intros P_equiv_P' p_zero_equiv_p_zero' p_succ_equiv_p_succ' t_equiv_t'.
   eapply equiv_trans. eapply equiv_trans. eapply equiv_trans.
-  - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_zero => rec l P p_zero p_succ t) _ _ p_zero_equiv_p_zero' _).
-    3: eauto 10 using type_rec, equiv_to_conv, validity_conv_left.
-    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, ortho_refl.
-  - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_succ => rec l P p_zero' p_succ t) _ _ p_succ_equiv_p_succ' _).
-    3: eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step.
-      eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
-  - refine (equiv_red_ind (fun t => P <[ t.. ]) (fun t => rec l P p_zero' p_succ' t) _ _ t_equiv_t' _).
-    3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eauto 9 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step.
-      eauto 12 using ortho_rec, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
+  - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_zero => rec l P p_zero p_succ t) _ _ p_zero_equiv_p_zero' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => P <[ t.. ]) (fun p_succ => rec l P p_zero' p_succ t) _ _ p_succ_equiv_p_succ' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun t => P <[ t.. ]) (fun t => rec l P p_zero' p_succ' t) _ _ t_equiv_t' _); equiv_red_ind_aux.
   - eapply (equiv_conv _ _ (P <[ t'..])).
     2: eapply subst_conv; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
-    3 : eauto 10 using type_rec, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros; apply type_inv in H0; dependent destruction H0.
+    + (* adding all the required lemmas to the eauto database of equiv_red_ind_aux1 would make 
+        other cases too slow, so we handle this case manually *)
+      intros; apply type_inv in H0; dependent destruction H0.
       apply type_rec; eauto 9 using equiv_to_conv, subst_conv, type_conv, type_zero,
         subst_one, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, subst_id_var1, ctx_from_conv, refl_subst.
-    + intros v v' v_red_v' Wt.
-      apply type_inv in Wt. dependent destruction Wt.
-      apply equiv_step. eauto using ortho_refl, ortho_rec.
+    + equiv_red_ind_aux2.
+    + equiv_red_ind_aux0.
 Qed.
 
 Lemma equiv_Eq Γ l A A' a a' b b' :
@@ -1721,25 +1779,11 @@ Lemma equiv_Eq Γ l A A' a a' b b' :
 Proof.
   intros A_equiv_A' a_equiv_a' b_equiv_b'.
   eapply equiv_trans. eapply equiv_trans.
-  - refine (equiv_red_ind (fun _ => Sort prop) (fun b => Eq l A a b) _ _ b_equiv_b' _).
-    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left.
-    + intros. eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step.
-      eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
-  - refine (equiv_red_ind (fun _ => Sort prop) (fun a => Eq l A a b') _ _ a_equiv_a' _).
-    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eauto 11 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step.
-      eauto 12 using ortho_Eq, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
-  - refine (equiv_red_ind (fun _ => Sort prop) (fun A => Eq l A _ _) _ _ A_equiv_A' _).
-    3:eauto 8 using type_Eq, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros.
-      eapply type_inv in H0; dependent destruction H0;
-      eauto 7 using type_Eq, validity_conv_left, type_conv, conv_sym.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_Eq; eauto using ortho_refl.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun b => Eq l A a b) _ _ b_equiv_b' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun a => Eq l A a b') _ _ a_equiv_a' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => Sort prop) (fun A => Eq l A _ _) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
+
 
 Lemma equiv_J Γ l i A A' a a' P P' p p' b b' e e' :
   Γ ⊢< Ax l > A ≈ A' : Sort l ->
@@ -1752,89 +1796,44 @@ Lemma equiv_J Γ l i A A' a a' P P' p p' b b' e e' :
 Proof.
   intros A_equiv_A' a_equiv_a' P_equiv_P' p_equiv_p' b_equiv_b' e_equiv_e'.
   eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans. eapply equiv_trans.
-  - refine (equiv_red_ind _ (fun a => J l i A a P p b e) _ _ a_equiv_a' _).
-    3:eapply type_J; eauto using equiv_to_conv, validity_conv_left.
-    + intros.
-      eapply type_inv in H0; dependent destruction H0.
-      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_J; eauto using ortho_refl.
+  - refine (equiv_red_ind _ (fun a => J l i A a P p b e) _ _ a_equiv_a' _); equiv_red_ind_aux.
   - refine (equiv_red_ind _ (fun e => J l i A _ P p b e) _ _ e_equiv_e' _).
+  (* 3:equiv_red_ind_aux0. *)
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. eapply type_inv in H0; dependent destruction H0.
-      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_J; eauto 6 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv.
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
   - refine (equiv_red_ind _ (fun p => J l i A _ P p b _) _ _ p_equiv_p' _).
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. 
-      eapply type_inv in H0; dependent destruction H0.
-      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv,
-        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
   - refine (equiv_red_ind (fun b => P<[b..]) (fun b => J l i A _ P _ b _) _ _ b_equiv_b' _).
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
-    + intros. 
-      eapply type_inv in H0; dependent destruction H0.
-      eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv,
-        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
   - refine (equiv_red_ind _ (fun A => J l i A _ P _ _ _) _ _ A_equiv_A' _).
     3:eapply type_conv.
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv.
     3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. eapply type_inv in H0; dependent destruction H0.
-      eapply type_conv.
-      1:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
-      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_conv.
-      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv,
-        substs_one, validity_conv_left, validity_ty_ctx, subst_conv.
-      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
   - refine (equiv_red_ind (fun P => P<[b..]) (fun P => J l i _ _ P _ _ _) _ _ P_equiv_P' _).
     3:eapply type_conv.
     3:eapply type_J; eauto 13 using equiv_to_conv, validity_conv_left, validity_conv_right,
         type_conv, conv_Eq, conv_refl, substs_one, validity_ty_ctx, subst_conv, conv_ty_in_ctx_ty.
     3:eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. eapply type_inv in H0; dependent destruction H0.
-      eapply type_conv.
-      1:eapply type_J; eauto 9 using equiv_to_conv, validity_conv_left,
-      validity_conv_right, conv_Eq, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym, conv_ty_in_ctx_ty.
-      eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl.
-    + intros. apply equiv_step.
-      eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_conv.
-      eapply ortho_J; eauto 7 using ortho_refl, ortho_conv, conv_Eq, conv_refl, equiv_to_conv,
-        substs_one, validity_conv_left, validity_ty_ctx, subst_conv, conv_ty_in_ctx_ortho.
-      eapply subst_conv; eauto 10 using substs_one, equiv_to_conv, validity_ty_ctx, conv_sym, validity_conv_left, conv_refl, ortho_to_conv.
+    + equiv_red_ind_aux1.
+    + equiv_red_ind_aux2.
 Qed.
 
 Lemma equiv_Lift Γ l A A' : 
   Γ ⊢< Ax l > A ≈ A' : Sort l ->
   Γ ⊢< Ax (Ax l) > Lift l A ≈ Lift l A' : Sort (Ax l).
 Proof.
-  intros A_equiv_A'. refine (equiv_red_ind _ (fun A => Lift l A) _ _ A_equiv_A' _).
-  3:eauto 8 using type_Lift, equiv_to_conv, validity_conv_left.
-  + intros. eauto 11 using type_Lift, equiv_to_conv, validity_conv_left, validity_conv_right.
-  + intros. apply equiv_step.
-    eauto 12 using ortho_Lift, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl.
+  intros A_equiv_A'. refine (equiv_red_ind _ (fun A => Lift l A) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
 
 Lemma equiv_lift Γ l A A' a a' : 
@@ -1843,17 +1842,8 @@ Lemma equiv_lift Γ l A A' a a' :
   Γ ⊢< Ax l > lift l A a ≈ lift l A' a' : Lift l A.
 Proof.
   intros A_equiv_A' a_equiv_a'. eapply equiv_trans.
-  - refine (equiv_red_ind _ (fun a => lift l A a) _ _ a_equiv_a' _).
-    3:eauto 8 using type_lift, equiv_to_conv, validity_conv_left.
-    + intros. eauto 11 using type_lift, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
-      eauto 12 using ortho_lift, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
-  - refine (equiv_red_ind (fun A => Lift _ A) (fun A => lift l A _) _ _ A_equiv_A' _).
-    3:eauto 8 using type_lift, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eapply type_inv in H0; dependent destruction H0.
-      eapply type_lift; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym.
-    + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_lift; eauto using ortho_refl, ortho_to_conv.
+  - refine (equiv_red_ind _ (fun a => lift l A a) _ _ a_equiv_a' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun A => Lift _ A) (fun A => lift l A _) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
   
 
@@ -1863,17 +1853,8 @@ Lemma equiv_lower Γ l A A' a a' :
   Γ ⊢< l > lower l A a ≈ lower l A' a' : A.
 Proof.
   intros A_equiv_A' a_equiv_a'. eapply equiv_trans.
-  - refine (equiv_red_ind _ (fun a => lower l A a) _ _ a_equiv_a' _).
-    3:eauto 8 using type_lower, equiv_to_conv, validity_conv_left.
-    + intros. eauto 11 using type_lower, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
-      eauto 12 using ortho_lower, equiv_to_conv, validity_conv_left, validity_conv_right, ortho_refl, conv_refl.
-  - refine (equiv_red_ind (fun A => A) (fun A => lower l A _) _ _ A_equiv_A' _).
-    3:eauto 8 using type_lower, equiv_to_conv, validity_conv_left, validity_conv_right.
-    + intros. eapply type_inv in H0; dependent destruction H0.
-      eapply type_lower; eauto; eauto using validity_conv_left, validity_conv_right, type_conv, conv_sym, conv_Lift.
-    + intros. apply equiv_step. eapply type_inv in H0. dependent destruction H0.
-      eapply ortho_lower; eauto using ortho_refl, ortho_to_conv.
+  - refine (equiv_red_ind _ (fun a => lower l A a) _ _ a_equiv_a' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun A => A) (fun A => lower l A _) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
 
 Lemma conv_to_equiv Γ l t u A :
@@ -1882,7 +1863,8 @@ Proof.
   intro H. induction H.
   all : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
   all : eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
-    equiv_rec, equiv_conv, equiv_sym, equiv_trans, equiv_Eq, equiv_J, equiv_Lift, equiv_lower, equiv_lift.
+    equiv_rec, equiv_conv, equiv_sym, equiv_trans, equiv_Eq, equiv_J, equiv_Lift, equiv_lower, equiv_lift,
+    equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2.
 Qed.
 
 (* --- Proof of CR --- *)
@@ -1912,6 +1894,125 @@ Proof.
   - eapply redd_trans; eauto.
 Qed.
 
+
+Lemma redd_conv_ty_in_ctx Γ B B' i l t u A :
+  Γ ,, (i, B) ⊢< l > t ⟹* u : A -> 
+  Γ ⊢< Ax i > B ≡ B' : Sort i ->
+  Γ ,, (i, B') ⊢< l > t ⟹* u : A.
+Proof.
+  intros.
+  eapply redd_conv_in_ctx; eauto.
+  econstructor; eauto using validity_conv_ctx, ctx_conv_refl.
+Qed.
+
+
+
+Lemma redd_conv Γ l t u A B :
+  Γ ⊢< l > t ⟹* u : A ->
+  Γ ⊢< Ax l > A ≡ B : Sort l ->
+  Γ ⊢< l > t ⟹* u : B.
+Proof.
+  intros. induction H; eauto using ortho_conv, redd_step, redd_trans.
+Qed.
+
+
+Definition is_type_former T :=
+  match T with 
+  | Sort i => True
+  | Pi i j A B => True 
+  | Sigma i j A B => True 
+  | Nat => True 
+  | Lift i A => True 
+  | Eq i A a b => True 
+  | _ => False 
+  end.
+
+Proposition type_former_redd Γ l U T T' : 
+  is_type_former T ->
+  Γ ⊢< l > T ⟹* T' : U ->
+  match T with 
+  | Pi l1 l2 A B => 
+    exists A' B',
+    T' = Pi l1 l2 A' B' /\
+    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
+    Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
+  | Sigma l1 l2 A B => 
+    exists A' B',
+    T' = Sigma l1 l2 A' B' /\
+    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
+    Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
+  | Sort i =>
+    T' = Sort i 
+  | Nat => 
+    T' = Nat 
+  | Eq l A a b => 
+    exists A' a' b', 
+    T' = Eq l A' a' b' /\ 
+    Γ ⊢< Ax l > A ⟹* A' : Sort l /\ 
+    Γ ⊢< l > a ⟹* a' : A /\ 
+    Γ ⊢< l > b ⟹* b' : A
+  | Lift l A =>
+    exists A', 
+    T' = Lift l A' /\
+    Γ ⊢< Ax l > A ⟹* A' : Sort l
+  | _ => False
+  end.
+Proof.
+  intros is_tf T_redd_T'.
+  destruct T; inversion_clear is_tf; dependent induction T_redd_T'; subst; eauto.
+
+  all : try solve [ ttinv H ; repeat destruct H as (? & H) ; subst; repeat eexists ; intuition eauto using redd_step ].
+
+  all : repeat destruct IHT_redd_T'1 as (? & IHT_redd_T'1); subst; 
+        try edestruct IHT_redd_T'2 as (? & h); eauto; repeat destruct h as (? & h); subst ; eauto; clear IHT_redd_T'2.
+
+  all: repeat eexists; eauto using redd_trans, redd_conv_ty_in_ctx, redd_to_conv, conv_sym, conv_trans, redd_conv.
+Qed.
+
+Proposition type_formers_inj Γ l T T1 T2 :
+  Γ ⊢< l > T1 ≡ T2 : T ->
+  is_type_former T1 -> 
+  is_type_former T2 ->
+  match T1, T2 with 
+  | Pi l0 l1 A B, Pi l2 l3 A' B' =>
+    l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
+  | Sigma l0 l1 A B, Sigma l2 l3 A' B' =>
+    l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
+  | Lift i A, Lift i' A' =>
+    i = i' /\ Γ ⊢< Ax i > A ≡ A' : Sort i
+  | Nat, Nat => True 
+  | Sort l, Sort l0 => l = l0 
+  | Eq l A a b, Eq l' A' a' b' => 
+    l = l' /\ Γ ⊢< Ax l > A ≡ A' : Sort l /\ Γ ⊢< l > a ≡ a' : A /\ Γ ⊢< l > b ≡ b' : A
+  | _, _ => False 
+  end.
+Proof.
+  intros.
+  destruct T1; destruct T2; inversion_clear H0; inversion_clear H1.
+
+  all:apply CR in H; destruct H as (t & H1 & H2).
+  all:try eapply type_former_redd in H1; repeat destruct H1 as (? & H1); unfold is_type_former; eauto.
+  all:try eapply type_former_redd in H2; repeat destruct H2 as (? & H2); unfold is_type_former; eauto; subst.
+  all: match goal with | H : _ = _ |- _ => dependent destruction H end; subst; eauto.
+
+  - intuition trivial.
+    eauto using conv_sym, conv_trans, redd_to_conv.
+    eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_ty_in_ctx_conv.
+   
+  - intuition trivial.
+    eauto using conv_sym, conv_trans, redd_to_conv.
+    eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_ty_in_ctx_conv.
+
+  - intuition trivial.
+    eauto using conv_sym, conv_trans, redd_to_conv.
+    all:eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_conv.
+
+  - intuition trivial.
+    eauto using conv_sym, conv_trans, redd_to_conv.
+Qed.
+
+(* OLD VERSIONS OF THE RESULTS, REMOVE LATER *)
+
 Lemma pi_redd Γ l l1 l2 A B T U :
   Γ ⊢< l > Pi l1 l2 A B ⟹* T : U ->
   exists A' B',
@@ -1922,6 +2023,24 @@ Proof.
   intros pi_red_T.
   dependent induction pi_red_T.
   - ttinv H. destruct H as (A' & B' & T_eq & _ & A_red & B_red & _). do 2 eexists. repeat split; eauto using redd_step.
+  - destruct IHpi_red_T1 as (A'' & B'' & v_eq & A_red & B_red). subst.
+    destruct (IHpi_red_T2 l1 l2 A'' B'' _ eq_refl) as (A''' & B''' & u_eq & A''_red & B''_red). subst.
+    exists A'''. exists B'''. repeat split.
+    all : (eapply redd_trans; eauto).
+    + apply redd_to_conv in A_red. eapply (redd_conv_in_ctx (Γ ,, (l1, A'')));
+      eauto 6 using conv_ccons, ctx_conv_refl, conv_sym, validity_conv_left, validity_ty_ctx.
+Qed.
+
+Lemma sigma_redd Γ l l1 l2 A B T U :
+  Γ ⊢< l > Sigma l1 l2 A B ⟹* T : U ->
+  exists A' B',
+  T = Sigma l1 l2 A' B' /\
+  Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
+  Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2.
+Proof.
+  intros pi_red_T.
+  dependent induction pi_red_T.
+  - ttinv H. destruct H as (A' & B' & n & m & eq1 & eq2 & T_eq & _ & A_red & B_red & _). subst. do 2 eexists. repeat split; eauto using redd_step.
   - destruct IHpi_red_T1 as (A'' & B'' & v_eq & A_red & B_red). subst.
     destruct (IHpi_red_T2 l1 l2 A'' B'' _ eq_refl) as (A''' & B''' & u_eq & A''_red & B''_red). subst.
     exists A'''. exists B'''. repeat split.
@@ -1943,6 +2062,21 @@ Proof.
     edestruct IHlift_redd_t2 as (A'' & eq & A'_redd_A''); eauto. subst.
     exists A''. split; eauto using redd_trans.
 Qed.
+
+Lemma Eq_redd Γ l l' A a b t T :
+  Γ ⊢< l' > Eq l A a b ⟹* t : T ->
+  exists A' a' b', 
+    t = Eq l A' a' b' /\ Γ ⊢< Ax l > A ⟹* A' : Sort l /\ Γ ⊢< l > a ⟹* a' : A /\ Γ ⊢< l > b ⟹* b' : A.
+Proof.
+  intro eq_redd_t.
+  dependent induction eq_redd_t.
+  - ttinv H. destruct H as (l'_eq & conv_ty & A' & a' & b' & A_red_A' & a_red_a' & b_red_b' & u_eq). subst.
+    do 3 eexists. intuition eauto using redd_step.
+  - destruct IHeq_redd_t1 as (A' & a' & b' & eq & A_redd_A' & a_redd_a' & b_redd_b'). subst.  
+    edestruct IHeq_redd_t2 as (A'' & a'' & b'' & eq & A'_redd_A'' & a_redd_a'' & b_redd_b''); eauto. subst.
+    do 3 eexists. intuition eauto using redd_trans, redd_conv, redd_to_conv, conv_sym, redd_conv.
+Qed.
+
 
 Lemma sort_redd Γ l l' t T :
   Γ ⊢< l' > Sort l ⟹* t : T ->
@@ -1992,6 +2126,24 @@ Proof.
   - eapply conv_trans. apply B_redd_B0. eauto using conv_ty_in_ctx_conv, conv_sym.
 Qed.
 
+Corollary sigma_inj Γ l l0 l1 l2 l3 A B A' B' T :
+  Γ ⊢< l > Sigma l0 l1 A B ≡ Sigma l2 l3 A' B' : T ->
+  l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1.
+Proof.
+  intro Sigma_eq.
+  apply CR in Sigma_eq.
+  destruct Sigma_eq as (v & Sigma_red_1 & Sigma_red_2).
+  apply sigma_redd in Sigma_red_1.
+  destruct Sigma_red_1 as (A0 & B0 & v_eq & A_redd_A0 & B_redd_B0).
+  apply sigma_redd in Sigma_red_2.
+  destruct Sigma_red_2 as (A1 & B1 & v_eq_ & A'_redd_A1 & B'_redd_B1). subst.
+  dependent destruction v_eq_.
+  apply redd_to_conv in A_redd_A0, B_redd_B0, A'_redd_A1, B'_redd_B1.
+  split; split; split; auto.
+  - eauto using conv_trans, conv_sym.
+  - eapply conv_trans. apply B_redd_B0. eauto using conv_ty_in_ctx_conv, conv_sym.
+Qed.
+
 Corollary Lift_inj Γ l i A i' A' T :
   Γ ⊢< l > Lift i A ≡ Lift i' A' : T ->
   i = i' /\ Γ ⊢< Ax i > A ≡ A' : Sort i.
@@ -2026,6 +2178,17 @@ Proof.
   destruct sort_eq_pi as (t & sort_redd_t & pi_redd_t).
   apply sort_redd in sort_redd_t.
   apply pi_redd in pi_redd_t as (A' & B' & H & _). subst.
+  inversion H.
+Qed.
+
+Proposition sort_neq_sigma Γ l l' i j A B T :
+  Γ ⊢< l' > Sort l ≡ Sigma i j A B : T -> False.
+Proof.
+  intro sort_eq_sigma.
+  apply CR in sort_eq_sigma.
+  destruct sort_eq_sigma as (t & sort_redd_t & sigma_redd_t).
+  apply sort_redd in sort_redd_t.
+  apply sigma_redd in sigma_redd_t as (A' & B' & H & _). subst.
   inversion H.
 Qed.
 
