@@ -2012,7 +2012,7 @@ Proof.
 Qed.
 
 (* OLD VERSIONS OF THE RESULTS, REMOVE LATER *)
-
+(* 
 Lemma pi_redd Γ l l1 l2 A B T U :
   Γ ⊢< l > Pi l1 l2 A B ⟹* T : U ->
   exists A' B',
@@ -2234,5 +2234,5 @@ Proof.
   apply sort_redd in sort_redd_t.
   apply Lift_redd in Lift_redd_t as (A0' & eq & _). subst.
   inversion eq.
-Qed.
+Qed. *)
 

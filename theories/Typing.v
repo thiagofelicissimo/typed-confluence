@@ -174,10 +174,10 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< Ax l > lift l A a : Lift l A
 
 | type_lower : 
-    ∀ Γ l A a,
+    ∀ Γ l A t,
       Γ ⊢< Ax l > A : Sort l ->
-      Γ ⊢< Ax l > a : Lift l A ->
-      Γ ⊢< l > lower l A a : A
+      Γ ⊢< Ax l > t : Lift l A ->
+      Γ ⊢< l > lower l A t : A
 
 | type_conv :
     ∀ Γ l A B t,
