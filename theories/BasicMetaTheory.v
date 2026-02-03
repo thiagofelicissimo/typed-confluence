@@ -221,6 +221,11 @@ Proof.
 Qed.
 
 
+Ltac unfold_all_local :=
+  repeat match goal with
+  | H := ?rhs : ?ty |- _ => unfold H in *; clear H
+  end.
+
 Lemma typing_conversion_ren :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -242,23 +247,32 @@ Proof.
   all: try solve [ intros ; try econstructor ; eauto using WellRen_up, ctx_cons, varty_ren ].
 
   (* solves remaining goals involving typing rules or congruence rules *)
-  1-10 : solve [intros; cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
+  1-12 : solve [intros; cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
             [ (econstructor ; eauto ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ;
               [ eauto 11 using WellRen_up, WellRen_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | ssimpl; reflexivity]].
 
   (* solves all goals involving computation rules *)          
-  all:solve [ intros; cbn; eapply meta_conv_conv;
+  1-6: solve [ intros; cbn; eapply meta_conv_conv;
               [ eapply meta_rhs_conv;
                 [ ((  eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ + 
                     eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower + 
-                    eapply conv_pi1pair + eapply conv_pi2pair) ;
+                    eapply conv_pi1pair + eapply conv_pi2pair + 
+                    eapply conv_cast_univ + eapply conv_cast_nat + eapply conv_cast_pi) ;
                   eauto using ctx_typing, typing, WellRen_up; try (eapply meta_conv;
                   [ eauto 12 using ctx_typing, typing, WellRen_up
                   | rasimpl; reflexivity]))
                 | ssimpl; reflexivity]
               | ssimpl; reflexivity] ].
+
+  - intros; eapply meta_conv_conv. 
+    + eapply meta_rhs_conv. 
+      * eapply conv_cast_pi; fold ren_term; eapply meta_conv. 
+        1,3,5,7,9,11:eauto 12 using ctx_typing, typing, WellRen_up.
+        all:rasimpl;reflexivity.
+      * fold ren_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal. f_equal; substify; asimpl; reflexivity.
+    + fold ren_term. rasimpl. reflexivity.
 Qed.            
 
 Lemma type_ren Γ l t A Δ ρ A' :
@@ -390,7 +404,7 @@ Proof.
   apply typing_mutind; intros.
 
   (* solves goals involving variables *)
-  1,20: solve [ cbn ; eauto using varty_subst, conv_refl ].
+  1,23: solve [ cbn ; eauto using varty_subst, conv_refl ].
 
   (* solves most goals, which are easy *)
   all: try solve [ try econstructor ; eauto 8 using WellSubst_up, ctx_cons ].
@@ -400,14 +414,14 @@ Proof.
       by eauto 6 using ctx_typing, typing, WellSubst_meta, WellSubst_up.
 
   (* solves remaining goals involving typing rules or congruence rules *)
-  1-10:solve [cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
+  1-12:solve [cbn in *; (eapply meta_conv_conv + eapply meta_conv) ;
             [ (econstructor ; try solve [ (eapply meta_conv_conv + eapply meta_conv) ;
               [ eauto 11 using WellRen_up, WellSubst_up, WellSubst_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | rasimpl; reflexivity]].
 
   (* solves all goals involving computation rules *)
-  all:solve [ intros; cbn; eapply meta_conv_conv;
+  1-6:solve [ intros; cbn; eapply meta_conv_conv;
                 [ eapply meta_rhs_conv;
                   [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ +
                       eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower + 
@@ -417,6 +431,15 @@ Proof.
                     | rasimpl; reflexivity]))
                   | rasimpl; reflexivity]
                 | rasimpl; reflexivity] ].
+
+
+  - intros; eapply meta_conv_conv. 
+    + eapply meta_rhs_conv. 
+      * eapply conv_cast_pi; fold subst_term; eapply meta_conv. 
+        1,3,5,7,9,11:eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta.
+        all:rasimpl;reflexivity.
+      * fold subst_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal.
+    + fold subst_term. rasimpl. reflexivity.                
 Qed.
 
 
@@ -723,6 +746,17 @@ Proof.
   apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, conv_sym, ctx_conv_refl.
 Qed.
 
+Lemma pre_conv_ty_in_ctx_conv Γ l A A' l' t t' B :
+  Γ ,, (l , A) ⊢< l' > t ≡ t' : B ->
+  Γ ⊢< Ax l > A' : Sort l ->
+  Γ ⊢< Ax l > A ≡ A' : Sort l ->
+  Γ ,, (l , A') ⊢< l' > t ≡ t' : B.
+Proof.
+  intros t_eq_u A'Wt A_eq_A'.
+  eapply pre_conv_in_ctx_conv; eauto using ctx_typing, validity_ty_ctx.
+  apply conv_ccons; eauto using ctx_conv_refl, validity_ty_ctx, conv_sym, ctx_conv_refl.
+Qed.
+
 Ltac validitysplit := 
   intros ; split ; [   
     eapply meta_conv ; [ eapply meta_lvl ;  [ econstructor | idtac ] | idtac ] |
@@ -745,12 +779,23 @@ Proof.
   all:try solve [intuition eauto 5 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
   (* cases type_pi1, type_pi2 and conv_lower *)
-  4,8,9: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
+  5,9,10: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
-  (* cases conv_lam, conv_app, conv_sigma and conv_J *)
-  1,2,3,6: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
+
+
+  (* cases conv_lam, conv_app, conv_sigma, conv_J and conv_cast *)
+  2,3,4,7,8: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
+
+
 
   (* the remaining cases are too hard to be solved by automation *)
+
+
+  (* type_cast_pi1 *)
+  - intuition eauto. econstructor; eauto using typing, validity_ty_ctx, subst_ty, subst_one.
+    eapply subst_ty; eauto using validity_ty_ctx.
+    eapply subst_one. econstructor; eauto. econstructor; eauto.
+
 
   (* conv_pi2 *)
   - intuition eauto using typing.
@@ -759,7 +804,7 @@ Proof.
     + eapply pre_subst_conv; eauto using validity_ty_ctx, conversion.
       * eapply subst_one; eauto 7 using typing, conversion, pre_conv_ty_in_ctx_ty.
       * eapply substs_one; eauto 7 using typing, conversion, pre_conv_ty_in_ctx_ty.
-    
+
   (* conv_rec *)
   - intros Γ l P **.
     split.
@@ -811,6 +856,31 @@ Proof.
           reflexivity.
       }
 
+  (* conv_injpi1 *)
+  - intuition eauto. 1:econstructor;eauto.
+    eapply type_conv.
+    1:econstructor; eauto using pre_conv_ty_in_ctx_ty.
+    1:eapply type_conv; eauto.
+    all:econstructor; eauto using conv_sym, conversion, validity_ty_ctx.
+
+  (* conv_injpi2 *)
+  - intuition eauto. split. 1:econstructor;eauto.
+    eapply type_conv.
+    1:econstructor; eauto using pre_conv_ty_in_ctx_ty, type_conv.
+    1:eapply type_conv; eauto.
+    all:econstructor; eauto using conv_sym, conversion, validity_ty_ctx.
+    all:eapply pre_subst_conv; eauto using validity_ty_ctx, subst_one, substs_one, conv_sym.
+    + eapply subst_one. eapply type_conv. 1:econstructor; eauto using typing.
+      2:eauto using conv_sym.
+      econstructor; eauto using pre_conv_ty_in_ctx_ty.
+      eapply type_conv; eauto.
+      econstructor; eauto using conversion, validity_ty_ctx.
+    + eapply substs_one. eapply conv_conv. 1:econstructor; eauto using conversion.
+      2:eauto using conv_sym.
+      econstructor; eauto using pre_conv_ty_in_ctx_conv, conv_sym.
+      eapply conv_conv ; eauto using conv_sym.
+      econstructor; eauto using conversion, validity_ty_ctx.
+
   (* conv_pi2pair *)
   - intuition eauto.
     eapply type_conv.
@@ -831,6 +901,43 @@ Proof.
           + econstructor. all: intuition eauto.
       }
       rasimpl. reflexivity.
+
+  (* conv_cast_pi *)
+  - intuition eauto. split.
+    + econstructor; eauto using typing.
+    + econstructor; eauto.
+      assert (Γ ,, (i, A2) ⊢< i > cast i (S ⋅ A2) (S ⋅ A1) (injpi1 i (ty n) (S ⋅ A1) (S ⋅ A2) (up_ren S ⋅ B1) (up_ren S ⋅ B2) (S ⋅ e)) (var 0) : S ⋅ A1).
+      { econstructor. 
+        ** eapply type_ren; eauto using WellRen_S.
+           econstructor; eauto using validity_ty_ctx. 
+        ** eapply type_ren; eauto using WellRen_S.
+           econstructor; eauto using validity_ty_ctx.
+        ** econstructor.
+           1-4:eapply type_ren; eauto using WellRen_S.
+           1,2,4,5:econstructor; eauto using validity_ty_ctx.
+           1,2:eapply type_ren; eauto using WellRen_S.
+           1,2:econstructor; eauto using validity_ty_ctx.
+           1,2:eapply WellRen_up; eauto using WellRen_S.
+           eapply type_ren; eauto using WellRen_S.
+           econstructor; eauto using validity_ty_ctx.
+        ** eapply meta_conv. 1:econstructor. 2:econstructor.           
+           1:econstructor; eauto using validity_ty_ctx. reflexivity. }
+      econstructor; eauto.
+      * eapply subst_ty; eauto using validity_ty_ctx, ctx_typing.
+        econstructor.
+        ** ssimpl. change (S >> var) with (var >> ren_term S). eapply WellSubst_weak; eauto using subst_id, validity_ty_ctx.
+        ** ssimpl. rasimpl. eassumption.
+      * eapply meta_conv.
+        1:econstructor; eauto 7 using type_ren, WellRen_S, validity_ty_ctx, WellRen_up, type_ren, ctx_typing.
+        1:econstructor; eauto using ctx_typing, validity_ty_ctx, varty.
+        rasimpl; f_equal. replace B2 with (B2 <[var]) at 2. 2:rasimpl;reflexivity.
+        eapply subst_term_morphism; eauto.
+        unfold pointwise_relation. intro a;destruct a; reflexivity.
+
+      * eapply meta_conv.
+        1:econstructor; eauto. 
+        1-3:eapply type_ren; eauto using WellRen_S, ctx_typing, validity_ty_ctx, WellRen_up, type_ren.
+        rasimpl; reflexivity.
 Qed.
 
 Theorem validity_conv_left Γ l t u A :
@@ -1109,7 +1216,48 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (lvl_eq : l = l')
     (conv_ty : Γ ⊢< Ax l' > T ≡ A : Sort l')
     : type_inv_data Γ l (lower l' A a) T
-    .
+
+  | inv_data_cast Γ i A B e a l T
+    (A_Wt : Γ ⊢< Ax i > A : Sort i)
+    (B_Wt : Γ ⊢< Ax i > B : Sort i)
+    (e_Wt : Γ ⊢< prop > e : Eq (Ax i) (Sort i) A B)
+    (a_Wt : Γ ⊢< i > a : A)
+    (lvl_eq : l = i)
+    (conv_ty :
+       Γ ⊢< Ax i > T ≡ B : Sort i)
+    : type_inv_data Γ l (cast i A B e a) T
+
+  | inv_data_injpi1 Γ i n A1 A2 B1 B2 e l T
+    (A1_Wt : Γ ⊢< Ax i > A1 : Sort i)
+    (B1_Wt : Γ ,, (i, A1) ⊢< Ax (ty n) > B1 : Sort (ty n))
+    (A2_Wt : Γ ⊢< Ax i > A2 : Sort i)
+    (B2_Wt : Γ ,, (i, A2) ⊢< Ax (ty n) > B2 : Sort (ty n))
+    (e_Wt :
+       Γ ⊢< prop >
+         e : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n)))
+             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2))
+    (lvl_eq : l = prop)
+    (conv_ty :
+       Γ ⊢< Ax prop > T ≡ Eq (Ax i) (Sort i) A2 A1 : Sort prop)
+    : type_inv_data Γ l (injpi1 i (ty n) A1 A2 B1 B2 e) T
+
+  | inv_data_injpi2 Γ i n A1 A2 B1 B2 e a2 l T
+    (A1_Wt : Γ ⊢< Ax i > A1 : Sort i)
+    (B1_Wt : Γ ,, (i, A1) ⊢< Ax (ty n) > B1 : Sort (ty n))
+    (A2_Wt : Γ ⊢< Ax i > A2 : Sort i)
+    (B2_Wt : Γ ,, (i, A2) ⊢< Ax (ty n) > B2 : Sort (ty n))
+    (e_Wt :
+       Γ ⊢< prop >
+         e : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n)))
+             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2))
+    (a2_Wt : Γ ⊢< i > a2 : A2)
+    (a1 := cast i A2 A1 (injpi1 i (ty n) A1 A2 B1 B2 e) a2)
+    (lvl_eq : l = prop)
+    (conv_ty :
+       Γ ⊢< Ax prop > T ≡
+         Eq (Ax (ty n)) (Sort (ty n))
+           (B1<[ a1 ..]) (B2<[a2..]) : Sort prop)
+    : type_inv_data Γ l (injpi2 i (ty n) A1 A2 B1 B2 e a2) T.    
 
 Derive Signature for type_inv_data.
 
@@ -1119,7 +1267,7 @@ Lemma type_inv Γ l t T :
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  induction H. 1-18:econstructor; eauto using conv_refl.
+  induction H. 1-21:econstructor; eauto using conv_refl.
   eapply validity_conv_left in H0 as AWt.
   eapply IHtyping in AWt as IH.
   depelim IH; econstructor; subst; eauto using conv_sym, conv_trans.
@@ -1152,7 +1300,7 @@ Theorem type_sort_unicity Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  2-18:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
+  2-21:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
   - eapply type_inv in H0. dependent destruction H0.
     eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
