@@ -36,7 +36,11 @@ Inductive cterm : Type :=
 
 | cLift : cterm -> cterm 
 | clift : cterm -> cterm
-| clower : cterm -> cterm.
+| clower : cterm -> cterm
+
+| ccast : cterm -> cterm -> cterm 
+| cinjpi1 : cterm -> cterm 
+| cinjpi2 : cterm -> cterm -> cterm.
 
 Reserved Notation "Γ ⊢< l > M ⇒ T ↣ t" (at level 50, l, M, T, t at next level).
 Reserved Notation "Γ ⊢< l > M ⇐ T ↣ t" (at level 50, l, M, T, t at next level).
@@ -77,6 +81,12 @@ Definition lower_box i a :=
     match i with 
     | prop => box 
     | _ => lower prop box a 
+    end.
+
+Definition cast_box i A B a := 
+    match i with 
+    | prop => box
+    | _ => cast i A B box a 
     end.
 
 Definition pi1_box t := pi1 prop prop box box t.
@@ -186,6 +196,26 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< i > Ma ⇒ A ↣ a ->
     Γ ⊢< Ax i > clift Ma ⇒ Lift i A ↣ lift prop box a
 
+| infer_cast Γ Me T e i A B Ma a :
+    Γ ⊢< prop > Me ⇒ T ↣ e ->
+    T -->> Eq (Ax i) (Sort i) A B ->
+    Γ ⊢< i > Ma ⇐ A ↣ a ->
+    Γ ⊢< i > ccast Me Ma ⇒ B ↣ cast_box i A B a
+
+| infer_injpi1 Γ Me T e i n A1 B1 A2 B2 :
+    Γ ⊢< prop > Me ⇒ T ↣ e ->
+    T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) 
+            (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
+    Γ ⊢< prop > cinjpi1 Me ⇒ Eq (Ax i) (Sort i) A2 A1 ↣ box
+
+| infer_injpi2 Γ Me T e i n A1 B1 A2 B2 Ma a2 :
+    Γ ⊢< prop > Me ⇒ T ↣ e ->
+    T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) 
+            (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
+    Γ ⊢< i > Ma ⇐ A2 ↣ a2 ->
+    let a1 := cast_box i A2 A1 a2 in
+    Γ ⊢< prop > cinjpi2 Me Ma ⇒ Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..]) ↣ box
+
 | infer_ann Γ MA Mt t l A T i :
     Γ ⊢< l > MA ⇒ T ↣ A ->
     T -->> Sort i ->
@@ -287,6 +317,13 @@ Lemma reduce_to Γ l T U :
         A = erasure (Ax i) A' /\ 
         Γ ⊢< Ax (Ax i) > T ≡ Lift i A' : Sort (Ax i) /\ 
         l = Ax i
+    | Eq i A a b =>
+        exists A' a' b',
+        A = erasure (Ax i) A' /\
+        a = erasure i a' /\
+        b = erasure i b' /\
+        Γ ⊢< Ax prop > T ≡ Eq i A' a' b' : Sort prop /\
+        l = prop
     | _ => True
     end.
 Proof.
@@ -301,25 +338,31 @@ Proof.
 Qed.
 
 
-Lemma app_box_erasure Γ l T i j A B t u :
-    Γ ⊢< l > t : T ->
+Lemma app_box_erasure Γ T i j A B t u :
+    Γ ⊢< Ru i j > t : T ->
     erasure j (app i j A B t u) = app_box (erasure (Ru i j) t) (erasure i u).
 Proof.
     intro H.
     destruct j.
-    - simpl. destruct t; auto. apply type_inv in H. inversion H.
+    - simpl. destruct t; auto; apply type_inv in H; dependent destruction H; dependent destruction lvl_eq.
     - repeat rewrite erasure_prop. auto.
 Qed.
 
-Lemma lam_box_erasure Γ l T i j A B t :
-    Γ ⊢< l > t : T ->
+Lemma lam_box_erasure Γ T i j A B t :
+    Γ ⊢< j > t : T ->
     erasure (Ru i j) (lam i j A B t) = lam_box (erasure j t).
 Proof.
     intro H.
     destruct j.
-    - simpl. destruct t; auto. apply type_inv in H. inversion H.
+    - simpl. destruct t; auto; apply type_inv in H; dependent destruction H; dependent destruction lvl_eq.
     - repeat rewrite erasure_prop. auto.
 Qed.
+
+(* Lemma cast_box_erasure i A B e t :
+    erasure i (cast i A B e t) = cast_box i (erasure (Ax i) A) (erasure (Ax i) B) (erasure i t).
+Proof.
+    reflexivity.
+Qed. *)
 
 Lemma J_box_erasure l i A a P p b e :
     erasure i (J l i A a P p b e) = J_box l i (erasure (Ax l) A) (erasure l a) (erasure (Ax i) P) (erasure i p) (erasure l b) box.
@@ -584,6 +627,66 @@ Proof.
       exists (Lift i T). exists (lift i T t').
       split; eauto using type_lift, validity_ty_ty.
 
+    (* case cast *)
+    - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto.
+      subst.
+      eapply validity_ty_ty in e'_Wt as U_Wt. 
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto. subst. destruct V; dependent destruction sort_eq.
+      
+      eapply validity_conv_right in U_conv_eq as temp.
+      eapply type_inv in temp. dependent destruction temp.
+      clear A_Wt lvl_eq conv_ty. rename a_Wt into A'_Wt. rename b_Wt into B'_Wt.
+
+      edestruct H0 as (a' & a'_Wt & erased_a'_eq); eauto. subst.
+      exists B'. exists (cast i A' B' e' a'). 
+      intuition eauto using typing.
+
+    (* case injpi1 *)
+    - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto.
+      subst.
+      eapply validity_ty_ty in e'_Wt as U_Wt. 
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto.
+      destruct V; dependent elimination sort_eq.
+      destruct A'; dependent destruction A_eq. destruct B'; dependent destruction B_eq.
+
+      eapply validity_conv_right in U_conv_eq as temp.
+      eapply type_inv in temp. dependent destruction temp. clear lvl_eq conv_ty.
+      eapply type_inv in a_Wt. dependent destruction a_Wt. clear lvl_eq conv_ty.
+      eapply type_inv in b_Wt. dependent destruction b_Wt. clear lvl_eq conv_ty.
+
+      eapply type_conv in e'_Wt; eauto.
+
+      exists (Eq (Ax i) (Sort i) B'1 A'1).
+      exists (injpi1 i (ty n) A'1 B'1 A'2 B'2 e').
+      intuition eauto using typing.
+
+
+    (* case injpi2 *)
+    - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto. clear H.
+      subst.
+      eapply validity_ty_ty in e'_Wt as U_Wt. 
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto.
+      destruct V; dependent elimination sort_eq.
+      destruct A'; dependent destruction A_eq. destruct B'; dependent destruction B_eq.
+
+      eapply validity_conv_right in U_conv_eq as temp.
+      eapply type_inv in temp. dependent destruction temp. clear lvl_eq conv_ty.
+      eapply type_inv in a_Wt. dependent destruction a_Wt. clear lvl_eq conv_ty.
+      eapply type_inv in b_Wt. dependent destruction b_Wt. clear lvl_eq conv_ty.
+
+      eapply type_conv in e'_Wt; eauto.
+
+      edestruct H0 as (a2' & a2'_Wt & erased_a2'_eq); eauto. subst. clear H0.
+
+      eexists.
+      exists (injpi2 i (ty n) A'1 B'1 A'2 B'2 e' a2').
+      intuition eauto using typing. 
+      simpl. f_equal.
+      + unfold a1. etransitivity. 
+        1:eapply erasure_subst_1_commutes; eauto.
+        rasimpl. destruct i; simpl; reflexivity.
+      + eapply erasure_subst_1_commutes; eauto.
+
     (* case annotation *)
     - (* applying the ih to T *)
       edestruct H as (_sort & T' & T'_Wt & erasure_T'_eq & erasure_sort_eq); eauto. subst.
@@ -692,6 +795,12 @@ Lemma gen_red Γ T l U :
         exists A',
         Γ ⊢< Ax i > A ≡ A' : Sort i /\
         erasure (Ax (Ax i)) U -->> Lift i (erasure (Ax i) A')
+    | Eq i A a b => 
+        exists A' a' b',
+        Γ ⊢< Ax i > A ≡ A' : Sort i /\
+        Γ ⊢< i > a ≡ a' : A /\
+        Γ ⊢< i > b ≡ b' : A /\
+        erasure (Ax prop) U -->> Eq i (erasure (Ax i) A') (erasure i a') (erasure i b')
     | _ => True 
     end.
 Proof.
@@ -717,80 +826,6 @@ Proof.
         rewrite V_red_W in erasure_U_red; clear V_red_W;
         repeat eexists; eauto using redd_to_conv.
 Qed.
-(* 
-
-Lemma gen_red_to_sort Γ i A :
-    wt_is_wn ->
-    Γ ⊢< Ax (Ax i) > Sort i ≡ A : Sort (Ax i) ->
-    erasure (Ax (Ax i)) A -->> Sort i.
-Proof.
-    intros wt_is_wn sort_eq_A.
-    apply validity_conv_right in sort_eq_A as A_Wt.
-    pose proof A_Wt as A_Wt'.
-    apply wt_is_wn in A_Wt as (B' & erasure_A_red & B'_nf).
-    eapply subject_reduction_redd in A_Wt' as (B & A_eq_B & erasure_B); eauto.
-    dependent destruction erasure_B.
-    assert (Γ ⊢< Ax (Ax i) > Sort i ≡ B : Sort (Ax i)) as sort_eq_B by eauto using conv_trans.
-    apply CR in sort_eq_B as (_sort & sort_red_sort & B_red_sort).
-    eapply type_former_redd in sort_red_sort; eauto.
-    dependent destruction sort_red_sort.
-    eapply ortho_redd_to_eq in B_red_sort; eauto.
-    rewrite B_red_sort in erasure_A_red.
-    auto.
-Qed.
-
-
-Lemma gen_red_to_pi Γ i j A B T :
-    wt_is_wn ->
-    Γ ⊢< Ax (Ru i j) > Pi i j A B ≡ T : Sort (Ru i j) ->
-    exists A' B',
-    Γ ⊢< Ax i > A ≡ A' : Sort i /\
-    Γ ,, (i, A) ⊢< Ax j > B ≡ B' : Sort j /\
-    erasure (Ax (Ru i j)) T -->> Pi i j (erasure (Ax i) A') (erasure (Ax j) B').
-Proof.
-    intros wt_is_wn pi_eq_T.
-    apply validity_conv_right in pi_eq_T as T_Wt.
-    pose proof T_Wt as T_Wt'.
-    apply wt_is_wn in T_Wt as (U' & erasure_T_red & U'_nf).
-    eapply subject_reduction_redd in T_Wt' as (U & T_eq_U & erasure_U); eauto.
-    dependent destruction erasure_U.
-    assert (Γ ⊢< Ax (Ru i j) > Pi i j A B ≡ U : Sort (Ru i j)) as pi_eq_U by eauto using conv_trans.
-    apply CR in pi_eq_U as (_pi & pi_red_pi & U_red_pi).
-    eapply type_former_redd in pi_red_pi as (A' & B' & pi_eq & A_red_A' & B_red_B'); eauto.
-    dependent destruction pi_eq.
-    apply redd_to_conv in A_red_A' as A_eq_A'.
-    apply redd_to_conv in B_red_B' as B_eq_B'.
-    eapply ortho_redd_to_eq in U_red_pi; eauto.
-    rewrite U_red_pi in erasure_T_red.
-    exists A'. exists B'. split; eauto.
-Qed.
-
-
-Lemma gen_red_to_Lift Γ i A T :
-    wt_is_wn ->
-    Γ ⊢< Ax (Ax i) > Lift i A ≡ T : Sort (Ax i) ->
-    exists A',
-    Γ ⊢< Ax i > A ≡ A' : Sort i /\
-    erasure (Ax (Ax i)) T -->> Lift i (erasure (Ax i) A').
-Proof.
-    intros wt_is_wn Lift_eq_T.
-    apply validity_conv_right in Lift_eq_T as T_Wt.
-    pose proof T_Wt as T_Wt'.
-    apply wt_is_wn in T_Wt as (U' & erasure_T_red & U'_nf).
-    eapply subject_reduction_redd in T_Wt' as (U & T_eq_U & erasure_U); eauto.
-    dependent destruction erasure_U.
-    assert (Γ ⊢< Ax (Ax i) > Lift i A ≡ U : Sort (Ax i)) as Lift_eq_U by eauto using conv_trans.
-    apply CR in Lift_eq_U as (_Lift & Lift_red_Lift & U_red_Lift).
-    eapply Lift_redd in Lift_red_Lift as (A' & Lift_eq & A_red_A').
-    dependent destruction Lift_eq.
-    apply redd_to_conv in A_red_A' as A_eq_A'.
-    eapply ortho_redd_to_eq in U_red_Lift; eauto.
-    rewrite U_red_Lift in erasure_T_red.
-    exists A'. split; eauto.
-Qed. *)
-
-
-
 
 Inductive label : Type := | agda | rocq.
 
@@ -823,8 +858,52 @@ Inductive CTerm : label -> cterm -> Prop :=
     CTerm h Mp -> CTerm h Mb -> CTerm h Me -> CTerm h (cJ MA Ma MP Mp Me Mb)
 | cLift_ h MA : CTerm h MA -> CTerm h (cLift MA)
 | clift_ h Ma : CTerm h Ma -> CTerm h (clift Ma)
-| clower_ h Ma : CTerm h Ma -> CTerm h (clower Ma).
+| clower_ h Ma : CTerm h Ma -> CTerm h (clower Ma)
+| ccast_ h Me Ma : CTerm h Me -> CTerm h Ma -> CTerm h (ccast Me Ma)
+| cinjpi1_ h Me : CTerm h Me -> CTerm h (cinjpi1 Me)
+| cinjpi2_ h Me Ma : CTerm h Me -> CTerm h Ma -> CTerm h (cinjpi2 Me Ma).
 
+
+Fixpoint remove_cast_ann t :=
+  match t with 
+  | var _ => t
+  | Sort _ => t
+  | Pi i j A B => Pi i j (remove_cast_ann A) (remove_cast_ann B)
+  | lam i j A B t => lam i j (remove_cast_ann A) (remove_cast_ann B) (remove_cast_ann t)
+  | app i j A B t u => 
+    app i j (remove_cast_ann A) (remove_cast_ann B) 
+    (remove_cast_ann t) (remove_cast_ann u)
+  | Sigma i j A B => Sigma i j (remove_cast_ann A) (remove_cast_ann B)
+  | pair i j A B a b => 
+    pair i j (remove_cast_ann A) (remove_cast_ann B)
+    (remove_cast_ann a) (remove_cast_ann b)
+  | pi1 i j A B t => 
+    pi1 i j (remove_cast_ann A) (remove_cast_ann B) (remove_cast_ann t) 
+  | pi2 i j A B t => 
+    pi2 i j (remove_cast_ann A) (remove_cast_ann B) (remove_cast_ann t) 
+  | Nat => t
+  | zero => t
+  | succ t => succ (remove_cast_ann t)
+  | rec l P p0 ps t => 
+    rec l (remove_cast_ann P) (remove_cast_ann p0) 
+    (remove_cast_ann ps) (remove_cast_ann t)
+  | Eq i A a b => Eq i (remove_cast_ann A) (remove_cast_ann a) (remove_cast_ann b) 
+  | J l i A a P p b e => 
+    J l i (remove_cast_ann A) (remove_cast_ann a) (remove_cast_ann P) 
+    (remove_cast_ann p) (remove_cast_ann b) (remove_cast_ann e) 
+  | Lift i A => Lift i (remove_cast_ann A)
+  | lift i A a => lift i (remove_cast_ann A) (remove_cast_ann a)
+  | lower i A a => lower i (remove_cast_ann A) (remove_cast_ann a)
+  | cast i A B e a => 
+    cast i box box (remove_cast_ann e) (remove_cast_ann a)
+  | injpi1 i j A1 A2 B1 B2 e => 
+    injpi1 i j (remove_cast_ann A1) (remove_cast_ann A2) 
+    (remove_cast_ann B1) (remove_cast_ann B2) (remove_cast_ann e)
+  | injpi2 i j A1 A2 B1 B2 e a => 
+    injpi2 i j (remove_cast_ann A1) (remove_cast_ann A2) 
+    (remove_cast_ann B1) (remove_cast_ann B2) (remove_cast_ann e) (remove_cast_ann a)
+  | box => t
+  end.
 
 
 (* auxiliary lemma that only requires us to show the inferring case, 
@@ -1215,6 +1294,22 @@ Proof.
       eapply infer_lower; eauto.
 
     
+    - eapply completeness_aux_infer; eauto.  clear IHWt1 IHWt2.
+      edestruct IHWt3 as (_ & Me & UA & Me_infer & Eq_eq_UA & Ce); eauto. clear IHWt3.
+      eapply gen_red in Eq_eq_UA as (_sort & A' & B' & sort_conv_sort & A_conv_A' & B_conv_B' & erasure_UA_red); eauto.
+      eapply gen_red in sort_conv_sort; eauto.
+      
+      assert (erasure (Ax prop) UA -->> Eq (Ax i) (Sort i) (erasure (Ax i) A')
+(erasure (Ax i) B')) by admit.
+
+      edestruct IHWt4 as ((Ma & Ma_check & Ca) & _); eauto. clear IHWt4.
+      exists (ccast Me Ma). exists B.
+      repeat split; eauto using CTerm.
+      eapply infer_cast; eauto; fold erasure.
+
+      
+
+
     (* case conv *)
     - eapply IHWt in H0 as (IH_check & IH_infer); eauto. split; intros.
       + assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
