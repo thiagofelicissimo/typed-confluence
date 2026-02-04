@@ -1421,3 +1421,28 @@ Proof.
     eauto using conv_sym.
   + eapply conv_lift_lower; eauto using validity_conv_left, validity_conv_right.
 Qed.
+
+Lemma conv_injpi1' Γ i n A1 A1' A2 A2' B1 B1' B2 B2' e e' :
+    Γ ⊢< Ax i > A1 ≡ A1' : Sort i ->
+    Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ≡ B1' : Sort (ty n) ->
+    Γ ⊢< Ax i > A2 ≡ A2' : Sort i ->
+    Γ ,, (i, A2) ⊢< Ax (ty n) > B2 ≡ B2' : Sort (ty n) ->
+    Γ ⊢< prop > e ≡ e' : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
+    Γ ⊢< prop > injpi1 i (ty n) A1 A2 B1 B2 e ≡ injpi1 i (ty n) A1' A2' B1' B2' e' : Eq (Ax i) (Sort i) A2 A1.
+Proof.
+  intros; econstructor; eauto using validity_conv_left.
+Qed.
+
+Lemma conv_injpi2' Γ i n A1 A1' A2 A2' B1 B1' B2 B2' e e' a2 a2' :
+    Γ ⊢< Ax i > A1 ≡ A1' : Sort i ->
+    Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ≡ B1' : Sort (ty n) ->
+    Γ ⊢< Ax i > A2 ≡ A2' : Sort i ->
+    Γ ,, (i, A2) ⊢< Ax (ty n) > B2 ≡ B2' : Sort (ty n) ->
+    Γ ⊢< prop > e ≡ e' : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
+    Γ ⊢< i > a2 ≡ a2' : A2 ->
+    let a1 := cast i A2 A1 (injpi1 i (ty n) A1 A2 B1 B2 e) a2 in
+    Γ ⊢< prop > injpi2 i (ty n) A1 A2 B1 B2 e a2 ≡ injpi2 i (ty n) A1' A2' B1' B2' e' a2' : Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..]).
+Proof.
+  intros; econstructor; eauto using validity_conv_left.
+Qed.
+    
