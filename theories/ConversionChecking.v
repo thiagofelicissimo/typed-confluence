@@ -35,6 +35,8 @@ Fixpoint erasure l t : term :=
   | ty _, Lift i A => Lift i (erasure (Ax i) A)
   | ty _, lift i A a => lift prop box (erasure i a)
   | ty _, lower i A a => lower prop box (erasure (Ax i) a)
+  | ty _, cast i A B e a => cast i (erasure (Ax i) A) (erasure (Ax i) B) box (erasure i a)
+  | _, _ => box (* junk branch *)
 end.
 
 Lemma erasure_prop t : erasure prop t = box.
@@ -69,7 +71,18 @@ with Ne : term -> Prop :=
 | ne_pi2 t : Ne t -> Ne (pi2 prop prop box box t)
 | ne_rec l P p_zero p_succ t : Nf P -> Nf p_zero -> Nf p_succ -> Ne t -> Ne (rec l P p_zero p_succ t)
 | ne_J l i A a P p b : Nf A -> Nf a -> Nf P -> Nf p -> Nf b -> Ne (J l i A a P p b box)
-| ne_lower t : Ne t -> Ne (lower prop box t).
+| ne_lower t : Ne t -> Ne (lower prop box t)
+| ne_cast1 i A B t : Ne A -> Nf B -> Nf t -> Ne (cast i A B box t)
+| ne_cast2 i A B t : Nf A -> Ne B -> Nf t -> Ne (cast i A B box t)
+| ne_cast3 i A B t : Nf A -> Nf B -> 
+    (* if both A, B are in nf, then they should not have 
+      the same relevant head in order for the result to be a neutral *)
+    not (match A, B with 
+    | Pi i (ty n) _ _, Pi i' (ty n') _ _ => i = i' /\ n = n'
+    | Sort i, Sort i' => i = i'
+    | Nat , Nat => True 
+    | _, _ => False
+    end) -> Nf t -> Ne (cast i A B box t).
 
 Scheme Nf_mut := Induction for Nf Sort Prop
 with Ne_mut := Induction for Ne Sort Prop.
@@ -189,6 +202,18 @@ Inductive red : term -> term -> Prop :=
     b ---> b' ->
     J l i A a P p b box ---> J l i A a P p b' box
 
+| red_cast_1 i A B t A' :
+    A ---> A' ->
+    cast i A B box t ---> cast i A' B box t
+
+| red_cast_2 i A B t B' :
+    B ---> B' ->
+    cast i A B box t ---> cast i A B' box t
+
+| red_cast_3 i A B t t' :
+    t ---> t' ->
+    cast i A B box t ---> cast i A B box t'
+
 | red_J_refl l i A a P p :
     Nf a ->
     J l i A a P p a box ---> p
@@ -210,6 +235,21 @@ Inductive red : term -> term -> Prop :=
 
 | red_lower_lift a :
     lower prop box (lift prop box a) ---> a
+
+| red_cast_nat t :
+    cast (ty 0) Nat Nat box t ---> t 
+
+| red_cast_univ i A :
+    cast (Ax i) (Sort i) (Sort i) box A ---> A 
+
+| red_cast_pi i n A1 B1 A2 B2 f :
+    let A1' := S ⋅ A1 in
+    let A2' := S ⋅ A2 in
+    let t1 := match i with | ty _ => cast i A2' A1' box (var 0) | prop => box end in
+    let t2 := app prop prop box box (S ⋅ f) t1 in
+    let t3 := cast (ty n) (B1 <[t1.: S >> var]) B2 box t2 in
+    let t4 := lam prop prop box box t3 in
+    cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) box f ---> t4
 
 where "t ---> u" := (red t u).
 
@@ -293,6 +333,18 @@ Proof.
   intros.
   destruct x.
   - eexists. simpl. eauto.
+  - simpl in H. apply ref in H as (j & eq).
+    eexists. simpl. eauto.
+Qed.
+
+Lemma refines_cons' f g l :
+  refines f g -> refines (f ;; l) (g ;; l).
+Proof.
+  intro ref.
+  unfold refines.
+  intros.
+  destruct x.
+  - simpl in H. eexists.  eauto.
   - simpl in H. apply ref in H as (j & eq).
     eexists. simpl. eauto.
 Qed.
@@ -512,6 +564,9 @@ Proof.
     current type and the principal type of each symbol *)
   all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
 
+  (* solves symbols in sprop *)
+  all: try solve [inversion lvl_eq].
+
   (* leave only elimination forms *)
   all: try solve [eapply type_formers_inj in conv_ty; intuition eauto].
 
@@ -523,14 +578,21 @@ Qed.
 
 Definition nf t := forall u, t ---> u -> False.
 
+
+
 Hint Unfold ConversionChecking.nf : core.
+
+Scheme Equality for level.
 
 Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
 Proof.
   intros t_Wt nf. induction t_Wt.
 
-  (* solves l = prop case, so in the following we have l = ty ? *)
+  (* solves symbols in sprop *)
+  all:try solve [rewrite erasure_prop; eauto using Nf].
+
+  (* destructs l and solves l = prop case, so in the following we have l = ty ? *)
   all: (match goal with 
           | |- Nf (erasure ?l _) => pose (K := case_lvl l) 
         end; destruct K as [l_eq_prop | (n' & l_eq_n)];
@@ -546,12 +608,39 @@ Proof.
       unfold ConversionChecking.nf in *. intros. eapply nf. 
       simpl. rewrite l_eq_n. eauto using red. }
 
-  (* handles eliminator forms *)
-  all : solve 
+  (* handles eliminator forms, except cast *)
+  all : try solve 
     [ ty_inj_tac ; subst ; apply nf_ne ; 
       econstructor ; eauto using red ; fold erasure ;
       eapply nf_is_ne ; eauto using red ; destruct t ; 
       eauto ; exfalso ; eapply nf ; simpl ; eauto using red].
+
+  (* case cast *)
+  - subst. eapply nf_ne.
+    assert (Nf (erasure (Ax (ty n')) A)) as Nf_A by eauto using red.
+    assert (Nf (erasure (Ax (ty n')) B)) as Nf_B by eauto using red.
+    assert (Nf (erasure (ty n') a)) as Nf_a by eauto using red.
+    clear IHt_Wt1 IHt_Wt2 IHt_Wt3 IHt_Wt4.
+
+    destruct A; destruct B; eauto using Ne.
+    2-23:destruct l0; eauto using Ne.
+    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. 
+      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n'.
+      pose (K := level_eq_dec l l0). destruct K.
+      * subst. exfalso. eapply nf; simpl; eauto using red.
+      * eapply ne_cast3; eauto.
+    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. 
+      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n'.
+      destruct l2. 2:simpl;eauto using Ne.
+      clear A_Wt B_Wt conv_ty. 
+      pose (K := level_eq_dec l l1). pose (K' := level_eq_dec (ty n) (ty n0)).
+      destruct K; destruct K'.
+      * ty_inj_tac. subst. exfalso. eapply nf; simpl; eauto using red.
+      * subst. simpl. eapply ne_cast3; intuition eauto.
+      * ty_inj_tac. subst. eapply ne_cast3; intuition eauto. fold erasure in *. simpl in H. intuition eauto.
+      * simpl. eapply ne_cast3; intuition eauto.
+    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. dependent destruction lvl_eq.
+      exfalso. eapply nf; eauto using red.
 Qed.
 
 
@@ -592,6 +681,9 @@ Proof.
     destruct u0; dependent destruction erased_t0_eq_erased_u0;
     eapply type_inv in t0_Wt as temp; dependent destruction temp;
     eapply type_inv in u0_Wt as temp; dependent destruction temp; subst).
+
+  (* solves cases in sprop *)
+  all:try solve [dependent destruction lvl_eq].
 
   (* solves cases Nat, zero, Sort, var *)
   all: try solve [ eauto using conv_refl ].
@@ -693,6 +785,32 @@ Proof.
     eapply conv_conv.
     eapply conv_lower; eauto.
     eauto using conv_sym.
+
+  (* the following three cases for cast are basically the same *)
+  - rename t0_1 into A. rename t0_2 into B. rename t0_3 into e. rename t0_4 into a.
+    rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into e'. rename u0_4 into a'.
+    eapply H in H2 as A'_conv_A; eauto. clear H.
+    eapply H0' in H3 as B'_conv_B; eauto. clear H0'.
+    eapply H1' in H4 as a'_conv_a; eauto using type_conv, conv_sym. clear H1'.
+    eapply conv_sym, conv_conv.
+    econstructor; eauto 8 using conv_sym, conv_irrel, type_conv, conv_Eq, conv_sort, validity_ty_ctx.
+    eauto using conv_sym, conv_trans.
+  - rename t0_1 into A. rename t0_2 into B. rename t0_3 into e. rename t0_4 into a.
+    rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into e'. rename u0_4 into a'.
+    eapply H' in H2 as A'_conv_A; eauto. clear H'.
+    eapply H0 in H3 as B'_conv_B; eauto. clear H0.
+    eapply H1' in H4 as a'_conv_a; eauto using type_conv, conv_sym. clear H1'.
+    eapply conv_sym, conv_conv.
+    econstructor; eauto 8 using conv_sym, conv_irrel, type_conv, conv_Eq, conv_sort, validity_ty_ctx.
+    eauto using conv_sym, conv_trans.
+  - rename t0_1 into A. rename t0_2 into B. rename t0_3 into e. rename t0_4 into a.
+    rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into e'. rename u0_4 into a'.
+    eapply H' in H2 as A'_conv_A; eauto. clear H'.
+    eapply H0' in H3 as B'_conv_B; eauto. clear H0'.
+    eapply H1' in H4 as a'_conv_a; eauto using type_conv, conv_sym. clear H1'.
+    eapply conv_sym, conv_conv.
+    econstructor; eauto 8 using conv_sym, conv_irrel, type_conv, conv_Eq, conv_sort, validity_ty_ctx.
+    eauto using conv_sym, conv_trans.
 Qed.
 
 
@@ -718,6 +836,9 @@ Proof.
   intros tWt. generalize u. clear u.
   induction tWt; intros u_ erased_t_red_u; intros.
 
+  (* solves cases in sprop *)
+  all: try solve[rewrite erasure_prop in erased_t_red_u; dependent destruction erased_t_red_u].
+
 
   all: (match goal with 
           | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ /\ _ => pose (K := case_lvl l) 
@@ -730,7 +851,7 @@ Proof.
   all: try solve [ inversion erased_t_red_u ].
 
   (* solves last case, the conversion rule *)
-  15 : solve [ subst; edestruct IHtWt; intuition eauto; repeat eexists; eauto using conv_conv ].
+  16 : solve [ subst; edestruct IHtWt; intuition eauto; repeat eexists; eauto using conv_conv ].
 
   (* for each case, we consider all the possible ways in which the rewrite step could have happened *)
   all:dependent destruction erased_t_red_u.
@@ -821,6 +942,32 @@ Proof.
     eexists. split.
     + eapply conv_lower_lift'; eauto using type_conv, conv_sym.
     + reflexivity.
+
+  (* case cast_nat *)
+  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
+    eexists; eauto using conversion.
+
+  (* case cast_univ *)
+  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
+    eexists; eauto using conversion.
+
+  (* case cast_pi *)
+  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
+    clear l_eq_n n'. unfold_all_local.
+    eapply type_inv in tWt1. dependent destruction tWt1.
+    eapply type_inv in tWt2. dependent destruction tWt2. 
+    eexists. split.
+    + eapply conv_cast_pi; eauto.
+    + simpl. f_equal. rasimpl. f_equal.
+      * erewrite erasure_subst_commutes; eauto.
+        2:{ setoid_rewrite cons_ctx_commute.
+            eapply refines_cons'; eauto. eapply refines_all. }
+        eapply subst_term_morphism; eauto.
+        unfold pointwise_relation. intros a0; destruct a0; unfold erasure_subst; simpl.
+        ++ rewrite erasure_rename_commute. rewrite erasure_rename_commute. destruct i0; reflexivity.
+        ++  reflexivity.
+      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute. 
+        f_equal. destruct i0; reflexivity.
 Qed.
 
 
