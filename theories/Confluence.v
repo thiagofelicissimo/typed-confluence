@@ -1101,38 +1101,8 @@ Proof.
 Qed.
 
 
-(* the diamond property at sort prop is trivial *)
-Theorem ortho_diamond_prop Γ t t' t'' A :
-    Γ ⊢< prop > t ⟹ t' : A ->
-    Γ ⊢< prop > t ⟹ t'' : A ->
-    exists t''', (Γ ⊢< prop > t' ⟹ t''' : A) /\ (Γ ⊢< prop > t'' ⟹ t''' : A).
-Proof.
-  intros.
-  exists t.
-  split; apply ortho_irrel; eauto using ortho_validity_left, ortho_validity_right.
-Qed.
-
-
-(* when applied to the ih, allows to also consider the more general case in which l can be prop.
-   this allows us to avoid doing a case analysis on l in the middle of the proof. *)
-Lemma ortho_diamond_helper2 u :
-  (forall t, size t < size u -> forall Γ i t' t'' A , Γ ⊢< ty i > t ⟹ t' : A ->
-  Γ ⊢< ty i > t ⟹ t'' : A ->
-  exists t''', (Γ ⊢< ty i > t' ⟹ t''' : A) /\ (Γ ⊢< ty i > t'' ⟹ t''' : A))
-  -> forall t, size t < size u -> forall Γ l t' t'' A,
-  Γ ⊢< l > t ⟹ t' : A ->
-  Γ ⊢< l > t ⟹ t'' : A ->
-  exists t''', (Γ ⊢< l > t' ⟹ t''' : A) /\ (Γ ⊢< l > t'' ⟹ t''' : A).
-Proof.
-  intros.
-  destruct l.
-  - apply (H _ H0); auto.
-  - apply (ortho_diamond_prop _ _ _ _ _ H1 H2).
-Qed.
-
-
 (* the main proof *)
-Theorem ortho_diamond_ty :
+Theorem diamond :
   forall Γ l t t' t'' T,
     Γ ⊢< l > t ⟹ t' : T ->
     Γ ⊢< l > t ⟹ t'' : T ->
@@ -1963,17 +1933,6 @@ Proof.
           *** rasimpl. reflexivity.      
 Qed.
 
-Corollary diamond :
-  forall Γ l t t' t'' T,
-    Γ ⊢< l > t ⟹ t' : T ->
-    Γ ⊢< l > t ⟹ t'' : T ->
-    exists t''', (Γ ⊢< l > t' ⟹ t''' : T) /\ (Γ ⊢< l > t'' ⟹ t''' : T).
-Proof.
-  intros Γ l t t' t'' T t_red_t' t_red_t''.
-  destruct l.
-  - apply (ortho_diamond_ty _ _ t t' t''); auto.
-  - apply (ortho_diamond_prop _ t t' t''); auto.
-Qed.
 
 (* --- Proof of confluence --- *)
 
