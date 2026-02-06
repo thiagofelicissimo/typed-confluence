@@ -2024,6 +2024,21 @@ Qed.
     f t := match t with | zero => v | _ => w end
   which do not respect conversion.
   *)
+
+
+(* 
+Lemma test Δ σ τ Γ l t A :
+  Γ ⊢s σ ⟹ τ : Δ -> 
+  ⊢ Δ ->
+  Γ ⊢< l > t<[σ] : A ->
+  Γ ⊢< l > t<[σ] ⟹ t<[τ] : A.
+Proof.
+  intros.
+  dependent induction t. 
+  - eapply ortho_meta_conv. eapply subst_ortho; eauto using validity_ty_ctx, ortho_red.
+  -   *)
+  
+
 Lemma equiv_red_ind {Γ Δ l A i} P f :
     (forall t u, Δ ⊢< i > t ≡ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f u : P u) ->
     (forall t u, Δ ⊢< i > t ⟹ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ≈ f u : P t) ->
