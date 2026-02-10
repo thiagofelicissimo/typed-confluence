@@ -16,9 +16,9 @@ pair : level -> level -> term -> (bind term in term) -> term -> term -> term
 pi1 : level -> level -> term -> (bind term in term) -> term -> term
 pi2 : level -> level -> term -> (bind term in term) -> term -> term
 
-Nat : term 
-zero : term 
-succ : term -> term 
+Nat : term
+zero : term
+succ : term -> term
 rec : level -> (bind term in term) -> term -> (bind term , term in term) -> term -> term
 
 box : term
@@ -26,7 +26,7 @@ box : term
 Eq : level -> term -> term -> term -> term
 J : level -> level -> term -> term -> (bind term in term) -> term -> term -> term -> term
 
-Lift : level -> term -> term 
+Lift : level -> term -> term
 lift : level -> term -> term -> term
 lower : level -> term -> term -> term
 
@@ -34,3 +34,8 @@ lower : level -> term -> term -> term
 cast    : level -> term -> term -> term -> term -> term
 injpi1  : level -> level -> term -> term -> (bind term in term) -> (bind term in term) -> term -> term
 injpi2  : level -> level -> term -> term -> (bind term in term) -> (bind term in term) -> term -> term -> term
+
+tysum : level -> level -> term -> term -> term
+inl : level -> level -> term -> term -> term -> term
+inr : level -> level -> term -> term -> term -> term
+sum_rec : level -> level -> level -> term -> term -> (bind term in term) -> (bind term in term) -> (bind term in term) -> term -> term

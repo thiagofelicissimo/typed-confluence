@@ -81,8 +81,8 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< j > app i j A B t u : B <[ u .. ]
 
 (* Dependent pairs *)
-(* Only for relevant types, because we already have all inductive types in Prop 
-  using the impredicative encoding. Moreover, sigmas with mixed relevance can be 
+(* Only for relevant types, because we already have all inductive types in Prop
+  using the impredicative encoding. Moreover, sigmas with mixed relevance can be
   constructed by boxing irrelevant types *)
 
 | type_sigma :
@@ -157,12 +157,12 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< prop > e : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e : P <[b..]
 
-(* Cumulativity using a one-field record with beta/eta, so that Lift l A is 
-  in definitional isomorphism with A. This is the approach taken in the Agda stdlib: 
-  https://github.com/agda/agda-stdlib/blob/master/src/Level.agda 
+(* Cumulativity using a one-field record with beta/eta, so that Lift l A is
+  in definitional isomorphism with A. This is the approach taken in the Agda stdlib:
+  https://github.com/agda/agda-stdlib/blob/master/src/Level.agda
   Note that, for l = prop, we get a boxing operation for irrelevant types. *)
 
-| type_Lift : 
+| type_Lift :
     ∀ Γ l A,
       Γ ⊢< Ax l > A : Sort l ->
       Γ ⊢< Ax (Ax l) > Lift l A : Sort (Ax l)
@@ -173,7 +173,7 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< l > a : A ->
       Γ ⊢< Ax l > lift l A a : Lift l A
 
-| type_lower : 
+| type_lower :
     ∀ Γ l A t,
       Γ ⊢< Ax l > A : Sort l ->
       Γ ⊢< Ax l > t : Lift l A ->
@@ -219,6 +219,32 @@ Inductive typing : ctx -> level -> term → term → Prop :=
     Γ ⊢< i > a2 : A2 ->
     let a1 := cast i A2 A1 (injpi1 i (ty n) A1 A2 B1 B2 e) a2 in
     Γ ⊢< prop > injpi2 i (ty n) A1 A2 B1 B2 e a2 : Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..])
+
+| type_sum Γ i j A B :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< Ax (ty (max i j)) > tysum (ty i) (ty j) A B : Sort (ty (max i j))
+
+| type_inl Γ i j A B a :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< ty i > a : A →
+    Γ ⊢< ty (max i j) > inl (ty i) (ty j) A B a : tysum (ty i) (ty j) A B
+
+| type_inr Γ i j A B b :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< ty j > b : B →
+    Γ ⊢< ty (max i j) > inr (ty i) (ty j) A B b : tysum (ty i) (ty j) A B
+
+| type_sum_rec Γ i j l A B P pl pr t :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty (max i j) > t : tysum (ty i) (ty j) A B →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t : P <[ t .. ]
 
 | type_conv :
     ∀ Γ l A B t,
@@ -386,7 +412,33 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
     Γ ⊢< prop > e ≡ e' : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
     Γ ⊢< i > a2 ≡ a2' : A2 ->
     let a1 := cast i A2 A1 (injpi1 i (ty n) A1 A2 B1 B2 e) a2 in
-    Γ ⊢< prop > injpi2 i (ty n) A1 A2 B1 B2 e a2 ≡ injpi2 i (ty n) A1' A2' B1' B2' e' a2' : Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..])      
+    Γ ⊢< prop > injpi2 i (ty n) A1 A2 B1 B2 e a2 ≡ injpi2 i (ty n) A1' A2' B1' B2' e' a2' : Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..])
+
+| conv_sum Γ i j A A' B B' :
+    Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+    Γ ⊢< Ax (ty (max i j)) > tysum (ty i) (ty j) A B ≡ tysum (ty i) (ty j) A' B' : Sort (ty (max i j))
+
+| conv_inl Γ i j A A' B B' a a' :
+    Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+    Γ ⊢< ty i > a ≡ a' : A →
+    Γ ⊢< ty (max i j) > inl (ty i) (ty j) A B a ≡ inl (ty i) (ty j) A' B' a' : tysum (ty i) (ty j) A B
+
+| conv_inr Γ i j A A' B B' b b' :
+    Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+    Γ ⊢< ty j > b ≡ b' : B →
+    Γ ⊢< ty (max i j) > inr (ty i) (ty j) A B b ≡ inr (ty i) (ty j) A' B' b' : tysum (ty i) (ty j) A B
+
+| conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+    Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P ≡ P' : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl ≡ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr ≡ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty (max i j) > t ≡ t' : tysum (ty i) (ty j) A B →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t ≡ sum_rec (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ]
 
 | conv_conv :
     ∀ Γ l A B t t',
@@ -408,7 +460,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< i > u : A →
       Γ ⊢< j > app i j A B (lam i j A B t) u ≡ t <[ u .. ] : B <[ u .. ]
 
-    
+
 | conv_pi1pair :
     ∀ Γ n m A B a b,
       Γ ⊢< Ax (ty n) > A : Sort (ty n) →
@@ -510,6 +562,24 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
     let t3 := cast (ty n) (B1 <[t1.: S >> var]) B2 (injpi2 i (ty n) A1' A2' B1' B2' (S ⋅ e) (var 0)) t2 in
     let t4 := lam i (ty n) A2 B2 t3 in
     Γ ⊢< Ru i (ty n) > cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) e f ≡ t4 : Pi i (ty n) A2 B2
+
+| conv_sum_rec_inl Γ i j l A B P pl pr a :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty i > a : A →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inl (ty i) (ty j) A B a) ≡ pl <[ a .. ] : P <[ (inl (ty i) (ty j) A B a) .. ]
+
+| conv_sum_rec_inr Γ i j l A B P pl pr b :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty j > b : B →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inr (ty i) (ty j) A B b) ≡ pr <[ b .. ] : P <[ (inr (ty i) (ty j) A B b) .. ]
 
 | conv_sym :
     ∀ Γ l t u A,
