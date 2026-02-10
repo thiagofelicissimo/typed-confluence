@@ -555,29 +555,26 @@ Lemma nf_is_ne Γ l T t :
   Ne (erasure (ty l) t).
 Proof.
   intros t_Wt is_tf nf_et t_neq.
-  destruct T; inversion_clear is_tf; unfold can in *; destruct t.
+  dependent destruction nf_et.
 
-  (* solves variable cases *)
-  all: try solve [ econstructor ].
+  (* solves Ne case *)
+  all:try solve [eauto].
 
-  (* we use type inversion to get the equation conv_ty between the 
-    current type and the principal type of each symbol *)
-  all: (eapply type_inv in t_Wt as temp; dependent destruction temp).
+  (* solves box case *)
+  all:try solve [ destruct t; dependent destruction H;
+    eapply type_inv in t_Wt;dependent destruction t_Wt; 
+    dependent destruction lvl_eq ].
 
-  (* solves symbols in sprop *)
-  all: try solve [inversion lvl_eq].
-
-  (* leave only elimination forms *)
-  all: try solve [eapply type_formers_inj in conv_ty; intuition eauto].
-
-  (* solves elimination forms *)
-  all: try solve [ inversion nf_et; eauto ].
+  (* solves remaining cases *)
+  all:try solve [ destruct t; dependent destruction H; 
+  destruct T; dependent destruction is_tf;
+  eapply type_inv in t_Wt as temp; dependent destruction temp;
+  eapply type_formers_inj in conv_ty; 
+  unfold can in *; intuition eauto].
 Qed.
 
 
-
 Definition nf t := forall u, t ---> u -> False.
-
 
 
 Hint Unfold ConversionChecking.nf : core.
@@ -587,62 +584,58 @@ Scheme Equality for level.
 Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
 Proof.
-  intros t_Wt nf. induction t_Wt.
+  generalize Γ l A. clear Γ l A. induction t; intros Γ l' A t_Wt is_nf.
 
-  (* solves symbols in sprop *)
-  all:try solve [rewrite erasure_prop; eauto using Nf].
+  all:destruct l'; [idtac | rewrite erasure_prop; eapply nf_box].
 
-  (* destructs l and solves l = prop case, so in the following we have l = ty ? *)
-  all: (match goal with 
-          | |- Nf (erasure ?l _) => pose (K := case_lvl l) 
-        end; destruct K as [l_eq_prop | (n' & l_eq_n)];
-        [ rewrite l_eq_prop; rewrite erasure_prop; eauto using nf_box 
-        | try rewrite l_eq_n in *; try clear l ]).
+  (* solves case box and symbols that can only be in sprop *)
+  all:try solve [eapply type_inv in t_Wt; dependent destruction t_Wt; dependent destruction lvl_eq].
 
+  (* solves all constructor cases *)
+  all: try solve [ eapply type_inv in t_Wt; dependent destruction t_Wt; ty_inj_tac ; subst ; eauto 24 using Nf, Ne, red].
 
-  (* solves all constructor cases, except succ *)
-  all: try solve [ eauto 24 using Nf, Ne, red ].
-
-  (* for some strange reason, we need to solve case succ by hand... *)
-  4:{ apply nf_succ. fold erasure. rewrite l_eq_n. apply IHt_Wt. 
-      unfold ConversionChecking.nf in *. intros. eapply nf. 
-      simpl. rewrite l_eq_n. eauto using red. }
-
-  (* handles eliminator forms, except cast *)
-  all : try solve 
-    [ ty_inj_tac ; subst ; apply nf_ne ; 
-      econstructor ; eauto using red ; fold erasure ;
-      eapply nf_is_ne ; eauto using red ; destruct t ; 
-      eauto ; exfalso ; eapply nf ; simpl ; eauto using red].
+  (* solves all elimination cases *)
+  all: try solve [ 
+    eapply type_inv in t_Wt; dependent destruction t_Wt; 
+    ty_inj_tac; subst;
+    eapply nf_ne; simpl;
+    econstructor; eauto using red;
+    eapply nf_is_ne; eauto using red;
+    match goal with 
+      | |-  ¬ (can ?t _) => destruct t 
+    end; intro K; inversion K;
+    eapply is_nf; simpl; eauto using red ].
 
   (* case cast *)
-  - subst. eapply nf_ne.
-    assert (Nf (erasure (Ax (ty n')) A)) as Nf_A by eauto using red.
-    assert (Nf (erasure (Ax (ty n')) B)) as Nf_B by eauto using red.
-    assert (Nf (erasure (ty n') a)) as Nf_a by eauto using red.
-    clear IHt_Wt1 IHt_Wt2 IHt_Wt3 IHt_Wt4.
+  - rename A into T. rename t1 into A. rename t2 into B.
+    rename t3 into e. rename t4 into a.
+    subst. eapply nf_ne.
+    eapply type_inv in t_Wt. dependent destruction t_Wt. subst.
+    eassert (Nf (erasure _ A)) as Nf_A by eauto using red.
+    eassert (Nf (erasure _ B)) as Nf_B by eauto using red.
+    eassert (Nf (erasure _ a)) as Nf_a by eauto using red.
+    clear IHt1 IHt2 IHt3 IHt4.
 
     destruct A; destruct B; eauto using Ne.
     2-23:destruct l0; eauto using Ne.
-    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. 
-      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n'.
+    + eapply type_inv in A_Wt. dependent destruction A_Wt. 
+      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       pose (K := level_eq_dec l l0). destruct K.
-      * subst. exfalso. eapply nf; simpl; eauto using red.
+      * subst. exfalso. eapply is_nf; simpl; eauto using red.
       * eapply ne_cast3; eauto.
-    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. 
-      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n'.
+    + eapply type_inv in A_Wt. dependent destruction A_Wt. 
+      eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       destruct l2. 2:simpl;eauto using Ne.
       clear A_Wt B_Wt conv_ty. 
       pose (K := level_eq_dec l l1). pose (K' := level_eq_dec (ty n) (ty n0)).
       destruct K; destruct K'.
-      * ty_inj_tac. subst. exfalso. eapply nf; simpl; eauto using red.
+      * ty_inj_tac. subst. exfalso. eapply is_nf; simpl; eauto using red.
       * subst. simpl. eapply ne_cast3; intuition eauto.
       * ty_inj_tac. subst. eapply ne_cast3; intuition eauto. fold erasure in *. simpl in H. intuition eauto.
       * simpl. eapply ne_cast3; intuition eauto.
-    + eapply type_inv in t_Wt1. dependent destruction t_Wt1. dependent destruction lvl_eq.
-      exfalso. eapply nf; eauto using red.
+    + eapply type_inv in A_Wt. dependent destruction A_Wt. dependent destruction lvl_eq.
+      exfalso. eapply is_nf; eauto using red.
 Qed.
-
 
 
 Lemma eq_erased_adjust_IH {l' t4} :
