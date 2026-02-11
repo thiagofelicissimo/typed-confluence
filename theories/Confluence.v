@@ -141,6 +141,34 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< i > a ⟹ a' : A ->
       Γ ⊢< i > cast i A B e a ⟹ cast i A' B' e' a' : B
 
+| ortho_sum Γ i j A A' B B' :
+    Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) →
+    Γ ⊢< Ax (ty (max i j)) > tysum (ty i) (ty j) A B ⟹ tysum (ty i) (ty j) A' B' : Sort (ty (max i j))
+
+| ortho_inl Γ i j A A' B B' a a' :
+    Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) →
+    Γ ⊢< ty i > a ⟹ a' : A →
+    Γ ⊢< ty (max i j) > inl (ty i) (ty j) A B a ⟹ inl (ty i) (ty j) A' B' a' : tysum (ty i) (ty j) A B
+
+| ortho_inr Γ i j A A' B B' b b' :
+    Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) →
+    Γ ⊢< ty j > b ⟹ b' : B →
+    Γ ⊢< ty (max i j) > inr (ty i) (ty j) A B b ⟹ inr (ty i) (ty j) A' B' b' : tysum (ty i) (ty j) A B
+
+| ortho_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty (max i j) > t ⟹ t' : tysum (ty i) (ty j) A B →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t ⟹ sum_rec (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ]
+
 | ortho_conv :
     ∀ Γ l A B t t',
       Γ ⊢< l > t ⟹ t' : A ->
@@ -245,6 +273,24 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
     let t4 := lam i (ty n) A2' B2' t3 in
     Γ ⊢< Ru i (ty n) > cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) e f ⟹ t4 : Pi i (ty n) A2 B2
 
+| ortho_sum_rec_inl Γ i j l A B P pl pl' pr a a' :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty i > a ⟹ a' : A →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inl (ty i) (ty j) A B a) ⟹ pl' <[ a' .. ] : P <[ (inl (ty i) (ty j) A B a) .. ]
+
+| ortho_sum_rec_inr Γ i j l A B P pl pr pr' b b' :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty j > b ⟹ b' : B →
+    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inr (ty i) (ty j) A B b) ⟹ pr' <[ b' .. ] : P <[ (inr (ty i) (ty j) A B b) .. ]
+
 where "Γ ⊢< l > t ⟹ u : A" := (ortho_red Γ l t u A).
 
 Derive Signature for ortho_red.
@@ -322,6 +368,16 @@ Proof.
       * eapply type_conv; eauto using validity_conv_right.
         econstructor; eauto using validity_conv_left.
     + eapply conv_sym. econstructor; eauto using validity_conv_left.
+  - eapply conv_trans.
+    1: eapply conv_sum_rec_inl ; eauto using conversion, validity_conv_left.
+    meta_conv.
+    { eapply subst_conv. all: eauto using substs_one with sidecond. }
+    rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+  - eapply conv_trans.
+    1: eapply conv_sum_rec_inr ; eauto using conversion, validity_conv_left.
+    meta_conv.
+    { eapply subst_conv. all: eauto using substs_one with sidecond. }
+    rasimpl. apply ext_term. intro. rasimpl. reflexivity.
 Qed.
 
 
@@ -396,6 +452,21 @@ Proof.
               | ssimpl ; reflexivity]])
             | ssimpl; reflexivity | ssimpl; reflexivity ]].
 
+  (* ortho_sum_rec *)
+  - intros. eapply ortho_meta_conv.
+    { cbn. econstructor. all: eauto using type_ren.
+      - eapply ortho_meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        reflexivity.
+      - eapply ortho_meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - eapply ortho_meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
+
   (* ortho_cast_pi *)
   - intros. eapply ortho_meta_conv2.
     + eapply ortho_cast_pi; fold ren_term; eapply ortho_meta_conv.
@@ -404,6 +475,38 @@ Proof.
     + fold ren_term. rasimpl. reflexivity.
     + fold ren_term. unfold_all_local. simpl.
       f_equal. rasimpl. f_equal. f_equal. f_equal. rasimpl. f_equal. f_equal; substify; asimpl; reflexivity.
+
+  (* ortho_sum_rec_inl *)
+  - intros. eapply ortho_meta_conv2.
+    { cbn. eapply ortho_sum_rec_inl. all: eauto using type_ren.
+      - meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        reflexivity.
+      - eapply ortho_meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    all: rasimpl. 2: reflexivity.
+    apply ext_term. intros. rasimpl. reflexivity.
+
+  (* ortho_sum_rec_inr *)
+  - intros. eapply ortho_meta_conv2.
+    { cbn. eapply ortho_sum_rec_inr. all: eauto using type_ren.
+      - meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        reflexivity.
+      - meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - eapply ortho_meta_conv.
+        { eauto 7 using type_ren, typing with sidecond. }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    all: rasimpl. 2: reflexivity.
+    apply ext_term. intros. rasimpl. reflexivity.
 Qed.
 
 Theorem ortho_subst_refl :
