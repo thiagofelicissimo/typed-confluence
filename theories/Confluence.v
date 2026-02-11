@@ -807,7 +807,7 @@ Lemma ortho_app_inv Γ i l1 l2 A1 B1 t u w T :
       Γ ,, (l1 , A1) ⊢< Ax l2 > B1 ≡ B1' : Sort l2 ∧
       Γ ⊢< Ru l1 l2 > t ⟹ t' : Pi l1 l2 A1 B1  ∧
       Γ ⊢< l1 > u ⟹ u' : A1
-  ) \/ (
+  ) ∨ (
     (* by beta *)
     exists A2 B2 v v' u',
       t = lam l1 l2 A2 B2 v  ∧
@@ -831,8 +831,8 @@ Qed.
 Lemma ortho_sigma_inv Γ l1 l2 l' t' A B T :
   Γ ⊢< l' > Sigma l1 l2 A B ⟹ t' : T →
   exists A' B' n m,
-    l1 = ty n /\
-    l2 = ty m /\
+    l1 = ty n ∧
+    l2 = ty m ∧
     t' = Sigma (ty n) (ty m) A' B'  ∧
     l' =  Ax (ty (max n m)) ∧
     Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
@@ -852,14 +852,14 @@ Qed.
 Lemma ortho_pair_inv Γ l1 l2 l' t' A B a b T :
   Γ ⊢< l' > pair l1 l2 A B a b ⟹ t' : T →
   exists A' B' a' b' n m,
-    l1 = ty n /\
-    l2 = ty m /\
+    l1 = ty n ∧
+    l2 = ty m ∧
     t' = pair (ty n) (ty m) A' B' a' b'  ∧
     l' =  ty (max n m) ∧
     Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
     Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
-    Γ ⊢< ty n > a ⟹ a' : A /\
-    Γ ⊢< ty m > b ⟹ b' : B<[a..] /\
+    Γ ⊢< ty n > a ⟹ a' : A ∧
+    Γ ⊢< ty m > b ⟹ b' : B<[a..] ∧
     Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≡ T : Sort (ty (max n m)).
 Proof.
   intros.
@@ -875,22 +875,22 @@ Qed.
 Lemma ortho_pi1_inv Γ l1 l2 l' t' A B u T :
   Γ ⊢< l' > pi1 l1 l2 A B u ⟹ t' : T →
   exists n m,
-    l1 = ty n /\
-    l2 = ty m /\
-    l' = ty n /\
-    Γ ⊢< Ax (ty n) > A ≡ T : Sort (ty n) /\
+    l1 = ty n ∧
+    l2 = ty m ∧
+    l' = ty n ∧
+    Γ ⊢< Ax (ty n) > A ≡ T : Sort (ty n) ∧
     ((exists A' B' u',
-      t' = pi1 (ty n) (ty m) A' B' u' /\
+      t' = pi1 (ty n) (ty m) A' B' u' ∧
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
       Γ ⊢< ty (max n m) > u ⟹ u' : Sigma (ty n) (ty m) A B
-    ) \/
+    ) ∨
     (exists A' B' a b a',
-      u = pair (ty n) (ty m) A' B' a b /\
+      u = pair (ty n) (ty m) A' B' a b ∧
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
-      Γ ⊢< ty n > a ⟹ a' : A /\
-      Γ ⊢< ty m > b : B<[ a..] /\
+      Γ ⊢< ty n > a ⟹ a' : A ∧
+      Γ ⊢< ty m > b : B<[ a..] ∧
       t' = a')).
 Proof.
   intros.
@@ -907,22 +907,22 @@ Qed.
 Lemma ortho_pi2_inv Γ l1 l2 l' t' A B u T :
   Γ ⊢< l' > pi2 l1 l2 A B u ⟹ t' : T →
   exists n m,
-    l1 = ty n /\
-    l2 = ty m /\
-    l' = ty m /\
-    Γ ⊢< Ax (ty m) > B<[(pi1 (ty n) (ty m) A B u)..] ≡ T : Sort (ty m) /\
+    l1 = ty n ∧
+    l2 = ty m ∧
+    l' = ty m ∧
+    Γ ⊢< Ax (ty m) > B<[(pi1 (ty n) (ty m) A B u)..] ≡ T : Sort (ty m) ∧
     ((exists A' B' u',
-      t' = pi2 (ty n) (ty m) A' B' u' /\
+      t' = pi2 (ty n) (ty m) A' B' u' ∧
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
       Γ ⊢< ty (max n m) > u ⟹ u' : Sigma (ty n) (ty m) A B
-    ) \/
+    ) ∨
     (exists A' B' a b b',
-      u = pair (ty n) (ty m) A' B' a b /\
+      u = pair (ty n) (ty m) A' B' a b ∧
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
-      Γ ⊢< ty n > a : A /\
-      Γ ⊢< ty m > b ⟹ b' : B<[ a..] /\
+      Γ ⊢< ty n > a : A ∧
+      Γ ⊢< ty m > b ⟹ b' : B<[ a..] ∧
       t' = b')).
 Proof.
   intros.
@@ -942,12 +942,12 @@ Qed.
 
 Lemma ortho_Eq_inv Γ l i A a b w T :
   Γ ⊢< l > Eq i A a b ⟹ w : T ->
-  l = Ax prop /\
-  Γ ⊢< Ax (Ax prop) > Sort prop ≡ T : Sort (Ax prop) /\
+  l = Ax prop ∧
+  Γ ⊢< Ax (Ax prop) > Sort prop ≡ T : Sort (Ax prop) ∧
   exists A' a' b',
-  Γ ⊢< Ax i > A ⟹ A' : Sort i /\
-  Γ ⊢< i > a ⟹ a' : A /\
-  Γ ⊢< i > b ⟹ b' : A /\
+  Γ ⊢< Ax i > A ⟹ A' : Sort i ∧
+  Γ ⊢< i > a ⟹ a' : A ∧
+  Γ ⊢< i > b ⟹ b' : A ∧
   w = Eq i A' a' b'.
 Proof.
   intro.
@@ -961,22 +961,22 @@ Qed.
 
 Lemma ortho_J_inv Γ j l i A a P p b e w T :
   Γ ⊢< ty j > J l i A a P p b e ⟹ w : T ->
-  ty j = i /\
-  Γ ⊢< Ax i > P <[b..] ≡ T : Sort i /\
+  ty j = i ∧
+  Γ ⊢< Ax i > P <[b..] ≡ T : Sort i ∧
   ((exists A' a' P' p' b' e',
-      Γ ⊢< Ax l > A ⟹ A' : Sort l /\
-      Γ ⊢< l > a ⟹ a' : A /\
-      Γ ,, (l , A) ⊢< Ax i > P ⟹ P' : Sort i /\
-      Γ ⊢< i > p ⟹ p' : P <[a..] /\
-      Γ ⊢< l > b ⟹ b' : A /\
-      Γ ⊢< prop > e ⟹ e' : Eq l A a b /\
+      Γ ⊢< Ax l > A ⟹ A' : Sort l ∧
+      Γ ⊢< l > a ⟹ a' : A ∧
+      Γ ,, (l , A) ⊢< Ax i > P ⟹ P' : Sort i ∧
+      Γ ⊢< i > p ⟹ p' : P <[a..] ∧
+      Γ ⊢< l > b ⟹ b' : A ∧
+      Γ ⊢< prop > e ⟹ e' : Eq l A a b ∧
       w = J l i A' a' P' p' b' e')
-  \/ (exists p',
-      Γ ⊢< Ax l > A : Sort l /\
-      Γ ⊢< l > a ≡ b : A /\
-      Γ ,, (l , A) ⊢< Ax i > P : Sort i /\
-      Γ ⊢< i > p ⟹ p' : P <[a..] /\
-      Γ ⊢< prop > e : Eq l A a b /\
+  ∨ (exists p',
+      Γ ⊢< Ax l > A : Sort l ∧
+      Γ ⊢< l > a ≡ b : A ∧
+      Γ ,, (l , A) ⊢< Ax i > P : Sort i ∧
+      Γ ⊢< i > p ⟹ p' : P <[a..] ∧
+      Γ ⊢< prop > e : Eq l A a b ∧
       w = p')).
 Proof.
   intro.
@@ -1008,7 +1008,7 @@ Qed.
 Lemma ortho_succ_inv Γ l' t n A :
   Γ ⊢< l' > succ n ⟹ t : A →
   exists n',
-    t = succ n' /\
+    t = succ n' ∧
     Γ ⊢< ty 0 > n ⟹ n' : Nat.
 Proof.
   intros.
@@ -1024,11 +1024,11 @@ Lemma ortho_rec_inv Γ i l P p_zero p_succ u t T :
       Γ ⊢< l > p_zero ⟹ p_zero' : P <[ zero ..] ∧
       Γ ,, (ty 0, Nat) ,, (l, P) ⊢< l > p_succ ⟹ p_succ' : P <[ (succ (var 1)) .: (shift >> (shift >> var)) ]  ∧
       Γ ⊢< ty 0 > u ⟹ u' : Nat
-  ) \/ ( (* by ortho_zero *)
+  ) ∨ ( (* by ortho_zero *)
     exists p_zero',
       t = p_zero' ∧ u = zero ∧
       Γ ⊢< l > p_zero ⟹ p_zero' : P <[ zero ..]
-  ) \/ ( (* by ortho_succ *)
+  ) ∨ ( (* by ortho_succ *)
     exists P' p_zero' p_succ' n n',
       t = p_succ' <[ (rec l P' p_zero' p_succ' n') .: n' ..] ∧ u = succ n ∧
       Γ ,, (ty 0, Nat) ⊢< Ax l > P ⟹ P' : Sort l ∧
@@ -1046,10 +1046,10 @@ Qed.
 
 Lemma ortho_Lift_inv Γ l i A w T :
   Γ ⊢< l > Lift i A ⟹ w : T ->
-  l = Ax (Ax i) /\
-  Γ ⊢< Ax (Ax (Ax i)) > Sort (Ax i) ≡ T : Sort (Ax (Ax i)) /\
+  l = Ax (Ax i) ∧
+  Γ ⊢< Ax (Ax (Ax i)) > Sort (Ax i) ≡ T : Sort (Ax (Ax i)) ∧
   exists A',
-  Γ ⊢< Ax i > A ⟹ A' : Sort i /\
+  Γ ⊢< Ax i > A ⟹ A' : Sort i ∧
   w = Lift i A'.
 Proof.
   intro.
@@ -1062,17 +1062,17 @@ Qed.
 
 Lemma ortho_lift_inv Γ n i A a w T :
   Γ ⊢< ty n > lift i A a ⟹ w : T ->
-  ty n = Ax i /\
-  Γ ⊢< Ax (Ax i) > Lift i A ≡ T : Sort (Ax i) /\
+  ty n = Ax i ∧
+  Γ ⊢< Ax (Ax i) > Lift i A ≡ T : Sort (Ax i) ∧
   ((exists A' a',
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\
-   Γ ⊢< i > a ⟹ a' : A /\
-   w = lift i A' a') \/
+   Γ ⊢< Ax i > A ≡ A' : Sort i ∧
+   Γ ⊢< i > a ⟹ a' : A ∧
+   w = lift i A' a') ∨
   (exists A' b b' n ,
-   i = ty n /\
-   a = lower i A' b /\
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\
-   Γ ⊢< Ax i > b ⟹ b' : Lift i A /\
+   i = ty n ∧
+   a = lower i A' b ∧
+   Γ ⊢< Ax i > A ≡ A' : Sort i ∧
+   Γ ⊢< Ax i > b ⟹ b' : Lift i A ∧
    w = b')).
 Proof.
   intro.
@@ -1087,16 +1087,16 @@ Qed.
 
 Lemma ortho_lower_inv Γ n i A a w T :
   Γ ⊢< ty n > lower i A a ⟹ w : T ->
-  ty n = i /\
-  Γ ⊢< Ax i > A ≡ T : Sort i /\
+  ty n = i ∧
+  Γ ⊢< Ax i > A ≡ T : Sort i ∧
   ((exists A' a',
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\
-   Γ ⊢< Ax i > a ⟹ a' : Lift i A /\
-   w = lower i A' a') \/
+   Γ ⊢< Ax i > A ≡ A' : Sort i ∧
+   Γ ⊢< Ax i > a ⟹ a' : Lift i A ∧
+   w = lower i A' a') ∨
   (exists A' b b',
-   a = lift i A' b /\
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\
-   Γ ⊢< i > b ⟹ b' : A /\
+   a = lift i A' b ∧
+   Γ ⊢< Ax i > A ≡ A' : Sort i ∧
+   Γ ⊢< i > b ⟹ b' : A ∧
    w = b')).
 Proof.
   intro.
@@ -1113,45 +1113,45 @@ Qed.
 
 Lemma ortho_cast_inv Γ m l A B e a w T :
   Γ ⊢< ty m > cast l A B e a ⟹ w : T ->
-  l = ty m /\ (Γ ⊢< Ax l > B ≡ T : Sort l) /\
+  l = ty m ∧ (Γ ⊢< Ax l > B ≡ T : Sort l) ∧
   (* case ortho_cast *)
   ((exists A' B' e' a',
-    Γ ⊢< Ax l > A ⟹ A' : Sort l /\
-    Γ ⊢< Ax l > B ⟹ B' : Sort l /\
-    Γ ⊢< prop > e ⟹ e' : Eq (Ax l) (Sort l) A B /\
-    Γ ⊢< l > a ⟹ a' : A /\
+    Γ ⊢< Ax l > A ⟹ A' : Sort l ∧
+    Γ ⊢< Ax l > B ⟹ B' : Sort l ∧
+    Γ ⊢< prop > e ⟹ e' : Eq (Ax l) (Sort l) A B ∧
+    Γ ⊢< l > a ⟹ a' : A ∧
     w = cast l A' B' e' a')
-  \/
+  ∨
   (* case ortho_cast_nat *)
   (exists a',
-      l = ty 0 /\
-      A = Nat /\
-      B = Nat /\
-      Γ ⊢< prop > e : Eq (Ax (ty 0)) (Sort (ty 0)) Nat Nat /\
-      Γ ⊢< ty 0 > a ⟹ a' : Nat /\
+      l = ty 0 ∧
+      A = Nat ∧
+      B = Nat ∧
+      Γ ⊢< prop > e : Eq (Ax (ty 0)) (Sort (ty 0)) Nat Nat ∧
+      Γ ⊢< ty 0 > a ⟹ a' : Nat ∧
       w = a')
-  \/
+  ∨
   (* case ortho_cast_univ *)
   (exists a' i,
-    l = Ax i /\
-    A = Sort i /\
-    B = Sort i /\
-    Γ ⊢< prop > e : Eq (Ax (Ax i)) (Sort (Ax i)) (Sort i) (Sort i) /\
-    Γ ⊢< Ax i > a ⟹ a' : Sort i /\
+    l = Ax i ∧
+    A = Sort i ∧
+    B = Sort i ∧
+    Γ ⊢< prop > e : Eq (Ax (Ax i)) (Sort (Ax i)) (Sort i) (Sort i) ∧
+    Γ ⊢< Ax i > a ⟹ a' : Sort i ∧
     w = a')
-  \/
+  ∨
   (* case ortho_cast_pi *)
   (exists i n A1 A1' A2 A2' B1 B1' B2 B2' e' f f',
-    l = Ru i (ty n) /\
-    A = Pi i (ty n) A1 B1 /\
-    B = Pi i (ty n) A2 B2 /\
-    a = f /\
-    Γ ⊢< Ax i > A1 ⟹ A1' : Sort i /\
-    Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ⟹ B1' : Sort (ty n) /\
-    Γ ⊢< Ax i > A2 ⟹ A2' : Sort i /\
-    Γ ,, (i, A2) ⊢< Ax (ty n) > B2 ⟹ B2' : Sort (ty n) /\
-    Γ ⊢< prop > e ⟹ e' : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) /\
-    Γ ⊢< Ru i (ty n) > f ⟹ f' : Pi i (ty n) A1 B1 /\
+    l = Ru i (ty n) ∧
+    A = Pi i (ty n) A1 B1 ∧
+    B = Pi i (ty n) A2 B2 ∧
+    a = f ∧
+    Γ ⊢< Ax i > A1 ⟹ A1' : Sort i ∧
+    Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ⟹ B1' : Sort (ty n) ∧
+    Γ ⊢< Ax i > A2 ⟹ A2' : Sort i ∧
+    Γ ,, (i, A2) ⊢< Ax (ty n) > B2 ⟹ B2' : Sort (ty n) ∧
+    Γ ⊢< prop > e ⟹ e' : Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ∧
+    Γ ⊢< Ru i (ty n) > f ⟹ f' : Pi i (ty n) A1 B1 ∧
     let A1_ := S ⋅ A1' in
     let A2_ := S ⋅ A2' in
     let B1_ := (up_ren S) ⋅ B1' in
@@ -1172,6 +1172,118 @@ Proof.
     intuition eauto 7 using conversion, ortho_validity_left, conv_refl.
     intuition eauto 30.
 Qed.
+
+Lemma ortho_sum_inv Γ l1 l2 l' t' A B T :
+  Γ ⊢< l' > tysum l1 l2 A B ⟹ t' : T →
+  ∃ A' B' n m,
+    l1 = ty n ∧
+    l2 = ty m ∧
+    t' = tysum (ty n) (ty m) A' B' ∧
+    l' = Ax (ty (max n m)) ∧
+    Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
+    Γ ⊢< Ax (ty m) > B ⟹ B' : Sort (ty m) ∧
+    Γ ⊢< Ax (Ax (ty (max n m))) > Sort (ty (max n m)) ≡ T : Sort (Ax (ty (max n m))).
+Proof.
+  intros H.
+  dependent induction H.
+  all:assert (⊢ Γ) by eauto using ortho_to_conv, validity_conv_ctx, validity_ty_ctx.
+  - eauto 12 using conv_sort.
+  - repeat destruct IHortho_red as (? & IHortho_red). subst.
+    eauto 12 using conv_sym, conv_trans.
+  - eapply type_inv in H. dependent destruction H.
+    discriminate.
+Qed.
+
+Lemma ortho_inl_inv Γ l1 l2 l' t' A B a T :
+  Γ ⊢< l' > inl l1 l2 A B a ⟹ t' : T →
+  ∃ A' B' a' n m,
+    l1 = ty n ∧
+    l2 = ty m ∧
+    t' = inl (ty n) (ty m) A' B' a' ∧
+    l' = ty (max n m) ∧
+    Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
+    Γ ⊢< Ax (ty m) > B ⟹ B' : Sort (ty m) ∧
+    Γ ⊢< ty n > a ⟹ a' : A ∧
+    Γ ⊢< Ax (ty (max n m)) > tysum l1 l2 A B ≡ T : Sort (ty (max n m)).
+Proof.
+  intros H.
+  dependent induction H.
+  all:assert (⊢ Γ) by eauto using ortho_to_conv, validity_conv_ctx, validity_ty_ctx.
+  - do 5 eexists. intuition eauto.
+    apply conv_refl. econstructor.
+    all: eauto using ortho_to_conv, validity_conv_left.
+  - repeat destruct IHortho_red as (? & IHortho_red). subst.
+    eauto 18 using conv_sym, conv_trans.
+  - eapply type_inv in H. dependent destruction H.
+    discriminate.
+Qed.
+
+Lemma ortho_inr_inv Γ l1 l2 l' t' A B b T :
+  Γ ⊢< l' > inr l1 l2 A B b ⟹ t' : T →
+  ∃ A' B' b' n m,
+    l1 = ty n ∧
+    l2 = ty m ∧
+    t' = inr (ty n) (ty m) A' B' b' ∧
+    l' = ty (max n m) ∧
+    Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
+    Γ ⊢< Ax (ty m) > B ⟹ B' : Sort (ty m) ∧
+    Γ ⊢< ty m > b ⟹ b' : B ∧
+    Γ ⊢< Ax (ty (max n m)) > tysum l1 l2 A B ≡ T : Sort (ty (max n m)).
+Proof.
+  intros H.
+  dependent induction H.
+  all:assert (⊢ Γ) by eauto using ortho_to_conv, validity_conv_ctx, validity_ty_ctx.
+  - do 5 eexists. intuition eauto.
+    apply conv_refl. econstructor.
+    all: eauto using ortho_to_conv, validity_conv_left.
+  - repeat destruct IHortho_red as (? & IHortho_red). subst.
+    eauto 18 using conv_sym, conv_trans.
+  - eapply type_inv in H. dependent destruction H.
+    discriminate.
+Qed.
+
+Lemma ortho_sum_rec_inv Γ l1 l2 l A B P pl pr u t T l' :
+  Γ ⊢< l' > sum_rec l1 l2 l A B P pl pr u ⟹ t : T →
+  ( (* by sum_rec cong *)
+    ∃ i j A' B' P' pl' pr' u',
+      t = sum_rec (ty i) (ty j) l A' B' P' pl' pr' u' ∧
+      l1 = ty i ∧
+      l2 = ty j ∧
+      l' = l ∧
+      Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
+      Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
+      Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
+      Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+      Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+      Γ ⊢< ty (max i j) > u ⟹ u' : tysum (ty i) (ty j) A B
+  ) ∨ ( (* by ortho_sum_rec_inl *)
+    ∃ i j pl' a a',
+      t = pl' <[ a' .. ] ∧
+      l1 = ty i ∧
+      l2 = ty j ∧
+      l' = l ∧
+      u = inl (ty i) (ty j) A B a ∧
+      Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+      Γ ⊢< ty i > a ⟹ a' : A
+  ) ∨ ( (* by ortho_sum_rec_inr *)
+    ∃ i j pr' b b',
+      t = pr' <[ b' .. ] ∧
+      l1 = ty i ∧
+      l2 = ty j ∧
+      l' = l ∧
+      u = inr (ty i) (ty j) A B b ∧
+      Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+      Γ ⊢< ty j > b ⟹ b' : B
+  ).
+Proof.
+  intros H.
+  dependent induction H.
+  - left. do 8 eexists. intuition eauto.
+  - eapply IHortho_red.
+  - (* eapply ortho_irrel. *) admit.
+  - right. left. do 5 eexists. intuition eauto.
+  - right. right. do 5 eexists. intuition eauto.
+Admitted.
 
 
 Lemma ortho_box_inv Γ l' t A :
@@ -1205,6 +1317,10 @@ Ltac ttinv h :=
     | lift _ _ _ => eapply ortho_lift_inv in h
     | lower _ _ _ => eapply ortho_lower_inv in h
     | cast _ _ _ _ _ => eapply ortho_cast_inv in h
+    | tysum _ _ _ _ => eapply ortho_sum_inv in h
+    | inl _ _ _ _ _ => eapply ortho_inl_inv in h
+    | inr _ _ _ _ _ => eapply ortho_inr_inv in h
+    | sum_rec _ _ _ _ _ _ _ _ _ => eapply ortho_sum_rec_inv in h
     | _ => idtac
     end
   end.
@@ -1279,8 +1395,8 @@ end.
 Lemma ortho_diamond_helper Γ l t t' t'' A :
   Γ ⊢< l > t ⟹ t' : A ->
   Γ ⊢< l > t ⟹ t'' : A ->
-    (exists B C l' l'' t''', (Γ ⊢< l' > t' ⟹ t''' : B) /\ (Γ ⊢< l'' > t'' ⟹ t''' : C)) ->
-    exists t''', (Γ ⊢< l > t' ⟹ t''' : A) /\ (Γ ⊢< l > t'' ⟹ t''' : A).
+    (exists B C l' l'' t''', (Γ ⊢< l' > t' ⟹ t''' : B) ∧ (Γ ⊢< l'' > t'' ⟹ t''' : C)) ->
+    exists t''', (Γ ⊢< l > t' ⟹ t''' : A) ∧ (Γ ⊢< l > t'' ⟹ t''' : A).
 Proof.
   intros t_red_t' t_red_t'' [B [C [l' [l'' [t''' [t'_red_t''' t''_red_t''']]]]]].
   apply ortho_validity_right in t_red_t' as t'_A.
@@ -1299,7 +1415,7 @@ Theorem diamond :
   forall Γ l t t' t'' T,
     Γ ⊢< l > t ⟹ t' : T ->
     Γ ⊢< l > t ⟹ t'' : T ->
-    exists t''', (Γ ⊢< l > t' ⟹ t''' : T) /\ (Γ ⊢< l > t'' ⟹ t''' : T).
+    exists t''', (Γ ⊢< l > t' ⟹ t''' : T) ∧ (Γ ⊢< l > t'' ⟹ t''' : T).
 Proof.
   intros Γ l t. generalize t Γ l. clear Γ l t.
 
@@ -2124,6 +2240,17 @@ Proof.
                eapply conv_sym.
                econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left.
           *** rasimpl. reflexivity.
+
+  (* tysum *)
+  - rename t1 into A. rename t2 into B.
+    ttinv t_red_t'. destruct t_red_t' as (A' & B' & n & m & eq1 & eq2 & t'_eq_sig & _ & A_red_A' & B_red_B' & _).
+    ttinv t_red_t''. destruct t_red_t'' as (A'' & B''  & n' & m' & eq1' & eq2' & t''_eq_sig & _ & A_red_A'' & B_red_B'' & _).
+    subst. ty_inj_tac. subst.
+
+    destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
+    destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
+    do 4 eexists. eexists (Sigma _ _ A''' B''').
+    split; apply ortho_sigma; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, conv_refl, validity_ty_ty, validity_conv_left.
 Qed.
 
 
@@ -2141,7 +2268,7 @@ Notation "Γ ⊢< l > t ⟹* t' : A" := (ortho_redd Γ l A t t') (at level 50, l
 Lemma confluence_aux Γ l t t' t'' A :
   Γ ⊢< l > t ⟹ t' : A ->
   Γ ⊢< l > t ⟹* t'' : A ->
-  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹ t''' : A.
+  exists t''', Γ ⊢< l > t' ⟹* t''' : A ∧ Γ ⊢< l > t'' ⟹ t''' : A.
 Proof.
   intros t_red_t' t_redd_t''. generalize t' t_red_t'. clear t' t_red_t'.
   induction t_redd_t''; intros.
@@ -2155,7 +2282,7 @@ Qed.
 Lemma confluence Γ l t t' t'' A :
   Γ ⊢< l > t ⟹* t' : A ->
   Γ ⊢< l > t ⟹* t'' : A ->
-  exists t''', Γ ⊢< l > t' ⟹* t''' : A /\ Γ ⊢< l > t'' ⟹* t''' : A.
+  exists t''', Γ ⊢< l > t' ⟹* t''' : A ∧ Γ ⊢< l > t'' ⟹* t''' : A.
 Proof.
   intro t_red_t'. generalize t''. clear t''.
   induction t_red_t'; intros.
@@ -2542,7 +2669,7 @@ Qed.
 
 Corollary CR Γ l t u A :
   Γ ⊢< l > t ≡ u : A ->
-  exists v, Γ ⊢< l > t ⟹* v : A /\ Γ ⊢< l > u ⟹* v : A.
+  exists v, Γ ⊢< l > t ⟹* v : A ∧ Γ ⊢< l > u ⟹* v : A.
 Proof.
   intro H. apply conv_to_equiv in H. induction H.
   - exists u. split; apply redd_step; eauto using ortho_refl, ortho_validity_right.
@@ -2604,13 +2731,13 @@ Proposition type_former_redd Γ l U T T' :
   match T with
   | Pi l1 l2 A B =>
     exists A' B',
-    T' = Pi l1 l2 A' B' /\
-    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
+    T' = Pi l1 l2 A' B' ∧
+    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 ∧
     Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
   | Sigma l1 l2 A B =>
     exists A' B',
-    T' = Sigma l1 l2 A' B' /\
-    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
+    T' = Sigma l1 l2 A' B' ∧
+    Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 ∧
     Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
   | Sort i =>
     T' = Sort i
@@ -2618,13 +2745,13 @@ Proposition type_former_redd Γ l U T T' :
     T' = Nat
   | Eq l A a b =>
     exists A' a' b',
-    T' = Eq l A' a' b' /\
-    Γ ⊢< Ax l > A ⟹* A' : Sort l /\
-    Γ ⊢< l > a ⟹* a' : A /\
+    T' = Eq l A' a' b' ∧
+    Γ ⊢< Ax l > A ⟹* A' : Sort l ∧
+    Γ ⊢< l > a ⟹* a' : A ∧
     Γ ⊢< l > b ⟹* b' : A
   | Lift l A =>
     exists A',
-    T' = Lift l A' /\
+    T' = Lift l A' ∧
     Γ ⊢< Ax l > A ⟹* A' : Sort l
   | _ => False
   end.
@@ -2646,15 +2773,15 @@ Proposition type_formers_inj Γ l T T1 T2 :
   is_type_former T2 ->
   match T1, T2 with
   | Pi l0 l1 A B, Pi l2 l3 A' B' =>
-    l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
+    l0 = l2 ∧ l1 = l3 ∧ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 ∧ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
   | Sigma l0 l1 A B, Sigma l2 l3 A' B' =>
-    l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
+    l0 = l2 ∧ l1 = l3 ∧ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 ∧ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
   | Lift i A, Lift i' A' =>
-    i = i' /\ Γ ⊢< Ax i > A ≡ A' : Sort i
+    i = i' ∧ Γ ⊢< Ax i > A ≡ A' : Sort i
   | Nat, Nat => True
   | Sort l, Sort l0 => l = l0
   | Eq l A a b, Eq l' A' a' b' =>
-    l = l' /\ Γ ⊢< Ax l > A ≡ A' : Sort l /\ Γ ⊢< l > a ≡ a' : A /\ Γ ⊢< l > b ≡ b' : A
+    l = l' ∧ Γ ⊢< Ax l > A ≡ A' : Sort l ∧ Γ ⊢< l > a ≡ a' : A ∧ Γ ⊢< l > b ≡ b' : A
   | _, _ => False
   end.
 Proof.
