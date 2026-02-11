@@ -116,18 +116,18 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< prop > e ⟹ e' : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e ⟹ J l i A' a' P' p' b' e' : P <[b..]
 
-| ortho_Lift : 
+| ortho_Lift :
     ∀ Γ l A A',
       Γ ⊢< Ax l > A ⟹ A' : Sort l ->
       Γ ⊢< Ax (Ax l) > Lift l A ⟹ Lift l A' : Sort (Ax l)
 
-| ortho_lift : 
+| ortho_lift :
     ∀ Γ l A A' a a',
       Γ ⊢< Ax l > A ≡ A' : Sort l ->
       Γ ⊢< l > a ⟹ a' : A ->
       Γ ⊢< Ax l > lift l A a ⟹ lift l A' a' : Lift l A
 
-| ortho_lower : 
+| ortho_lower :
     ∀ Γ l A A' a a',
       Γ ⊢< Ax l > A ≡ A' : Sort l ->
       Γ ⊢< Ax l > a ⟹ a' : Lift l A ->
@@ -139,8 +139,8 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< Ax i > B ⟹ B' : Sort i ->
       Γ ⊢< prop > e ⟹ e' : Eq (Ax i) (Sort i) A B ->
       Γ ⊢< i > a ⟹ a' : A ->
-      Γ ⊢< i > cast i A B e a ⟹ cast i A' B' e' a' : B      
-        
+      Γ ⊢< i > cast i A B e a ⟹ cast i A' B' e' a' : B
+
 | ortho_conv :
     ∀ Γ l A B t t',
       Γ ⊢< l > t ⟹ t' : A ->
@@ -161,7 +161,7 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< i > u ⟹ u' : A1 →
       Γ ⊢< j > app i j A1 B1 (lam i j A2 B2 t) u ⟹ t' <[ u' .. ] : B1 <[ u .. ]
 
-| ortho_pi1pair : 
+| ortho_pi1pair :
     ∀ Γ n m A B A' B' a b a',
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
       Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
@@ -202,13 +202,13 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< prop > e : Eq l A a b ->
       Γ ⊢< i > J l i A a P p b e ⟹ p' : P <[b..]
 
-| ortho_lower_lift : 
+| ortho_lower_lift :
     ∀ Γ n A1 A2 a a',
       Γ ⊢< Ax (ty n) > A1 ≡ A2 : Sort (ty n) ->
       Γ ⊢< ty n > a ⟹ a' : A1 ->
       Γ ⊢< ty n > lower (ty n) A1 (lift (ty n) A2 a) ⟹ a' : A1
 
-| ortho_lift_lower : 
+| ortho_lift_lower :
     ∀ Γ n A1 A2 a a',
       Γ ⊢< Ax (ty n) > A1 ≡ A2 : Sort (ty n) ->
       Γ ⊢< Ax (ty n) > a ⟹ a' : Lift (ty n) A1 ->
@@ -243,7 +243,7 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
     let t2 := app i (ty n) A1_ B1_ (S ⋅ f') t1 in
     let t3 := cast (ty n) (B1' <[t1.: S >> var]) B2' (injpi2 i (ty n) A1_ A2_ B1_ B2_ (S ⋅ e') (var 0)) t2 in
     let t4 := lam i (ty n) A2' B2' t3 in
-    Γ ⊢< Ru i (ty n) > cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) e f ⟹ t4 : Pi i (ty n) A2 B2      
+    Γ ⊢< Ru i (ty n) > cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) e f ⟹ t4 : Pi i (ty n) A2 B2
 
 where "Γ ⊢< l > t ⟹ u : A" := (ortho_red Γ l t u A).
 
@@ -316,7 +316,7 @@ Proof.
   - eapply conv_trans.
     1:econstructor; eauto using conversion, validity_conv_left.
     eapply conv_conv.
-    + eapply conv_cast_pi; eauto using validity_conv_right, conv_ty_in_ctx_ty. 
+    + eapply conv_cast_pi; eauto using validity_conv_right, conv_ty_in_ctx_ty.
       * eapply type_conv; eauto using validity_conv_right.
         econstructor; eauto using conversion, validity_conv_left, validity_ty_ctx.
       * eapply type_conv; eauto using validity_conv_right.
@@ -387,14 +387,14 @@ Proof.
               | rasimpl ; reflexivity]])
             | ssimpl; reflexivity]].
 
-  (* solves all goals involving computation rules, except ortho_cast_pi *)          
+  (* solves all goals involving computation rules, except ortho_cast_pi *)
   all:try solve [intros; cbn in *; eapply ortho_meta_conv2 ;
-            [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl + 
+            [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl +
                 eapply ortho_lower_lift + eapply ortho_lift_lower + eapply ortho_pi1pair + eapply ortho_pi2pair) ;
               try solve [ (eapply meta_conv_conv + eapply meta_conv + eapply ortho_meta_conv) ;
               [ eauto 12 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv
               | ssimpl ; reflexivity]])
-            | ssimpl; reflexivity | ssimpl; reflexivity ]].            
+            | ssimpl; reflexivity | ssimpl; reflexivity ]].
 
   (* ortho_cast_pi *)
   - intros. eapply ortho_meta_conv2.
@@ -492,10 +492,10 @@ Proof.
               [ eauto 20 using ctx_cons, ortho_validity_left, validity_conv_left, type_nat, ortho_subst_up, subst_conv, ortho_subst_to_conv
               | rasimpl ; reflexivity]])
             | ssimpl; reflexivity]].
-            
-  (* solves most goals involving computaiton rules *)            
+
+  (* solves most goals involving computaiton rules *)
   all:try solve [intros; cbn in *; eapply ortho_meta_conv2 ;
-            [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl + 
+            [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl +
                 eapply ortho_lower_lift + eapply ortho_lift_lower + eapply ortho_pi1pair + eapply ortho_pi2pair +
                 eapply ortho_cast_nat + eapply ortho_cast_univ) ;
               try solve [ (eapply meta_conv_conv + eapply meta_conv + eapply ortho_meta_conv) ;
@@ -512,7 +512,7 @@ Proof.
     all:rasimpl; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
   - cbn. eapply ortho_meta_conv2. eapply ortho_rec_succ; eauto.
     1-3:eapply ortho_meta_conv; eauto 8 using ctx_cons, type_nat, ortho_subst_up;  rasimpl; reflexivity.
-    all:rasimpl;reflexivity.      
+    all:rasimpl;reflexivity.
   - eapply ortho_meta_conv2.
     + eapply ortho_cast_pi; fold subst_term; eapply ortho_meta_conv.
       1,3,5,7,9,11:eauto 13 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv, ortho_subst_to_conv, validity_subst_conv_left, ortho_subst_up, subst_conv, refl_subst, subst_ty, WellSubst_up.
@@ -559,7 +559,7 @@ Proof.
   intros.
   dependent induction H; eauto.
   assert (Γ ⊢< Ax (Ax l) > Sort l : Sort (Ax l)) by eauto using type_sort,validity_ty_ctx.
-  eapply sort_unicity in H; eauto. destruct l; inversion H.
+  eapply sort_unique in H; eauto. destruct l; inversion H.
 Qed.
 
 
@@ -647,7 +647,7 @@ Lemma ortho_sigma_inv Γ l1 l2 l' t' A B T :
     Γ ⊢< Ax (Ax (ty (max n m))) > Sort (ty (max n m)) ≡ T : Sort (Ax (ty (max n m))).
 Proof.
   intros.
-  dependent induction H; eauto. 
+  dependent induction H; eauto.
   all:assert (⊢ Γ) by eauto using ortho_to_conv, validity_conv_ctx, validity_ty_ctx.
   - eauto 12 using  conv_sort.
   - repeat destruct IHortho_red as (? & IHortho_red). subst.
@@ -670,7 +670,7 @@ Lemma ortho_pair_inv Γ l1 l2 l' t' A B a b T :
     Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≡ T : Sort (ty (max n m)).
 Proof.
   intros.
-  dependent induction H; eauto. 
+  dependent induction H; eauto.
   all:assert (⊢ Γ) by eauto using ortho_to_conv, validity_conv_ctx, validity_ty_ctx.
   - eauto 19 using conv_refl, validity_conv_left, typing.
   - repeat destruct IHortho_red as (? & IHortho_red). subst.
@@ -681,18 +681,18 @@ Qed.
 
 Lemma ortho_pi1_inv Γ l1 l2 l' t' A B u T :
   Γ ⊢< l' > pi1 l1 l2 A B u ⟹ t' : T →
-  exists n m, 
+  exists n m,
     l1 = ty n /\
     l2 = ty m /\
-    l' = ty n /\ 
+    l' = ty n /\
     Γ ⊢< Ax (ty n) > A ≡ T : Sort (ty n) /\
-    ((exists A' B' u', 
+    ((exists A' B' u',
       t' = pi1 (ty n) (ty m) A' B' u' /\
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
       Γ ⊢< ty (max n m) > u ⟹ u' : Sigma (ty n) (ty m) A B
-    ) \/   
-    (exists A' B' a b a', 
+    ) \/
+    (exists A' B' a b a',
       u = pair (ty n) (ty m) A' B' a b /\
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
@@ -704,7 +704,7 @@ Proof.
   dependent induction H.
   - eexists. eexists. intuition eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
   - repeat destruct IHortho_red as (? & IHortho_red). subst.
-    eauto 18 using conv_sym, conv_trans. 
+    eauto 18 using conv_sym, conv_trans.
   - eapply type_inv in H. dependent destruction H.
     destruct l2; inversion lvl_eq.
   - eexists. eexists. intuition eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
@@ -713,18 +713,18 @@ Qed.
 
 Lemma ortho_pi2_inv Γ l1 l2 l' t' A B u T :
   Γ ⊢< l' > pi2 l1 l2 A B u ⟹ t' : T →
-  exists n m, 
+  exists n m,
     l1 = ty n /\
     l2 = ty m /\
-    l' = ty m /\ 
+    l' = ty m /\
     Γ ⊢< Ax (ty m) > B<[(pi1 (ty n) (ty m) A B u)..] ≡ T : Sort (ty m) /\
-    ((exists A' B' u', 
+    ((exists A' B' u',
       t' = pi2 (ty n) (ty m) A' B' u' /\
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
       Γ ⊢< ty (max n m) > u ⟹ u' : Sigma (ty n) (ty m) A B
-    ) \/   
-    (exists A' B' a b b', 
+    ) \/
+    (exists A' B' a b b',
       u = pair (ty n) (ty m) A' B' a b /\
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
       Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
@@ -738,7 +738,7 @@ Proof.
   - eexists. eexists. intuition eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
     eapply conv_refl, subst_ty; eauto 7 using validity_conv_left, subst_one, ortho_to_conv, typing.
   - repeat destruct IHortho_red as (? & IHortho_red). subst.
-    eauto 18 using conv_sym, conv_trans. 
+    eauto 18 using conv_sym, conv_trans.
   - eapply type_inv in H. dependent destruction H.
     destruct l2; inversion lvl_eq.
   - eexists. eexists. intuition eauto 8 using validity_conv_left, ortho_validity_left, subst_conv, substs_one, validity_conv_ctx, conv_refl.
@@ -874,18 +874,18 @@ Lemma ortho_lift_inv Γ n i A a w T :
   ((exists A' a',
    Γ ⊢< Ax i > A ≡ A' : Sort i /\
    Γ ⊢< i > a ⟹ a' : A /\
-   w = lift i A' a') \/ 
+   w = lift i A' a') \/
   (exists A' b b' n ,
-   i = ty n /\ 
+   i = ty n /\
    a = lower i A' b /\
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\ 
-   Γ ⊢< Ax i > b ⟹ b' : Lift i A /\ 
+   Γ ⊢< Ax i > A ≡ A' : Sort i /\
+   Γ ⊢< Ax i > b ⟹ b' : Lift i A /\
    w = b')).
 Proof.
   intro.
   dependent induction H; eauto.
   - split; eauto. split; eauto using conv_refl, type_Lift, validity_conv_left.
-    left. eauto. 
+    left. eauto.
   - repeat destruct IHortho_red as (? & IHortho_red).
     dependent destruction H1. split; eauto. split; eauto 9 using conv_sym, conv_trans.
   - split; eauto. split; eauto using conv_refl, type_Lift, validity_conv_left.
@@ -899,11 +899,11 @@ Lemma ortho_lower_inv Γ n i A a w T :
   ((exists A' a',
    Γ ⊢< Ax i > A ≡ A' : Sort i /\
    Γ ⊢< Ax i > a ⟹ a' : Lift i A /\
-   w = lower i A' a') \/ 
-  (exists A' b b', 
+   w = lower i A' a') \/
+  (exists A' b b',
    a = lift i A' b /\
-   Γ ⊢< Ax i > A ≡ A' : Sort i /\ 
-   Γ ⊢< i > b ⟹ b' : A /\ 
+   Γ ⊢< Ax i > A ≡ A' : Sort i /\
+   Γ ⊢< i > b ⟹ b' : A /\
    w = b')).
 Proof.
   intro.
@@ -927,12 +927,12 @@ Lemma ortho_cast_inv Γ m l A B e a w T :
     Γ ⊢< Ax l > B ⟹ B' : Sort l /\
     Γ ⊢< prop > e ⟹ e' : Eq (Ax l) (Sort l) A B /\
     Γ ⊢< l > a ⟹ a' : A /\
-    w = cast l A' B' e' a') 
+    w = cast l A' B' e' a')
   \/
   (* case ortho_cast_nat *)
   (exists a',
       l = ty 0 /\
-      A = Nat /\ 
+      A = Nat /\
       B = Nat /\
       Γ ⊢< prop > e : Eq (Ax (ty 0)) (Sort (ty 0)) Nat Nat /\
       Γ ⊢< ty 0 > a ⟹ a' : Nat /\
@@ -966,16 +966,16 @@ Lemma ortho_cast_inv Γ m l A B e a w T :
     let t1 := cast i A2_ A1_ (injpi1 i (ty n) A1_ A2_ B1_ B2_ (S ⋅ e')) (var 0) in
     let t2 := app i (ty n) A1_ B1_ (S ⋅ f') t1 in
     let t3 := cast (ty n) (B1' <[t1.: S >> var]) B2' (injpi2 i (ty n) A1_ A2_ B1_ B2_ (S ⋅ e') (var 0)) t2 in
-    let t4 := lam i (ty n) A2' B2' t3 in    
+    let t4 := lam i (ty n) A2' B2' t3 in
     w = t4)).
 Proof.
   intros.
   dependent induction H; eauto.
   2:solve [ repeat destruct IHortho_red as (? & IHortho_red);
-  destruct IHortho_red as [k | [k | [k | k]]]; repeat destruct k as (? & k); 
+  destruct IHortho_red as [k | [k | [k | k]]]; repeat destruct k as (? & k);
   subst;intuition eauto 30 using conv_sym, conv_trans ].
   1-3:solve [intuition eauto 10 using conv_refl, ortho_validity_left, validity_ty_ctx, conversion].
-  - clear IHortho_red1 IHortho_red2 IHortho_red3 IHortho_red4 IHortho_red5 IHortho_red6. unfold_all_local. 
+  - clear IHortho_red1 IHortho_red2 IHortho_red3 IHortho_red4 IHortho_red5 IHortho_red6. unfold_all_local.
     intuition eauto 7 using conversion, ortho_validity_left, conv_refl.
     intuition eauto 30.
 Qed.
@@ -1071,11 +1071,11 @@ Fixpoint size (t : term) : nat :=
   | box => 0
   | Eq _ A a b =>  1 + size A + size a + size b
   | J _ _ A a P p b e => 1 + size A + size a + size P + size p + size b + size e
-  | Lift i A => 1 + size A 
-  | lift i A a => 1 + size A + size a 
+  | Lift i A => 1 + size A
+  | lift i A a => 1 + size A + size a
   | lower i A a => 1 + size A + size a
-  | Sigma i j A B => 1 + size A + size B 
-  | pair i j A B a b => 1 + size A + size B + size a + size b 
+  | Sigma i j A B => 1 + size A + size B
+  | pair i j A B a b => 1 + size A + size B + size a + size b
   | pi1 i j A B t => 1 + size A + size B + size t
   | pi2 i j A B t => 1 + size A + size B + size t
   | cast i A B e t => 1 + size A + size B + size e + size t
@@ -1094,10 +1094,10 @@ Proof.
   apply ortho_validity_right in t_red_t'' as t''_A.
   apply ortho_validity_left in t'_red_t''' as t'_B.
   apply ortho_validity_left in t''_red_t''' as t''_C.
-  rewrite <- (sort_unicity _ _ _ _ _ _ t'_A t'_B) in *.
-  rewrite <- (sort_unicity _ _ _ _ _ _ t''_A t''_C) in *.
+  rewrite <- (sort_unique _ _ _ _ _ _ t'_A t'_B) in *.
+  rewrite <- (sort_unique _ _ _ _ _ _ t''_A t''_C) in *.
   exists t'''.
-  split; eauto using ortho_conv, type_unicity, conv_sym.
+  split; eauto using ortho_conv, type_unique, conv_sym.
 Qed.
 
 
@@ -1119,12 +1119,12 @@ Proof.
   rename n into i.
 
   eapply (ortho_diamond_helper _ _ _ _ _ _ t_red_t' t_red_t'').
-  assert (⊢ Γ) as ΓWf by (eauto using ortho_validity_left, validity_ty_ctx). 
+  assert (⊢ Γ) as ΓWf by (eauto using ortho_validity_left, validity_ty_ctx).
 
   destruct t.
 
   (* eliminates cases in sprop *)
-  all: try solve 
+  all: try solve
     [eapply ortho_validity_left in t_red_t'; eapply type_inv in t_red_t'; dependent destruction t_red_t'; inversion lvl_eq].
 
   (* var *)
@@ -1262,7 +1262,7 @@ Proof.
     + rename a_ into a. rename b_ into b. rename A0_ into A0. rename B0_ into B0.
       ttinv u_red_u'. destruct u_red_u' as (A'' & B'' & a' & b' & n & m & eq1 & eq2 & u'_eq & eq3 & A0_conv_A'' & B0_conv_B'' & a_red_a' & b_red_b' & _).
       ty_inj_tac. subst. clear eq3.
-  
+
       assert (Γ ⊢< ty n > a ⟹ a' : A)  as temp by eauto using ortho_conv, conv_sym, conv_trans. clear a_red_a'. rename temp into a_red_a'.
 
       destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
@@ -1272,14 +1272,14 @@ Proof.
 
     + ttinv u_red_u''. destruct u_red_u'' as (A' & B' & a'' & b'' & n & m & eq1 & eq2 & u''_eq & eq3 & A0_conv_A' & B0_conv_B' & a_red_a'' & b_red_b'' & _).
       ty_inj_tac. subst. clear eq3.
-  
+
       assert (Γ ⊢< ty n > a ⟹ a'' : A)  as temp by eauto using ortho_conv, conv_sym, conv_trans. clear a_red_a''. rename temp into a_red_a''.
 
       destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
 
       do 4 eexists. exists a'''. split; eauto.
       eapply ortho_pi1pair; eauto 8 using conv_sym, conv_trans, conv_ty_in_ctx_conv, ortho_conv, type_conv, ortho_validity_right, subst_conv, substs_one, ortho_to_conv.
-      
+
     + dependent destruction u_eq_.
       destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
       do 4 eexists. exists a'''. split; eassumption.
@@ -1303,7 +1303,7 @@ Proof.
     + rename a_ into a. rename b_ into b. rename A0_ into A0. rename B0_ into B0.
       ttinv u_red_u'. destruct u_red_u' as (A'' & B'' & a' & b' & n & m & eq1 & eq2 & u'_eq & eq3 & A0_conv_A'' & B0_conv_B'' & a_red_a' & b_red_b' & _).
       ty_inj_tac. subst. clear eq3.
-  
+
       assert (Γ ⊢< ty m > b ⟹ b' : B <[ a..]) as temp by eauto 7 using ortho_conv, subst_conv, conv_sym, substs_one, conv_refl.
       clear b_red_b'. rename temp into b_red_b'.
 
@@ -1314,7 +1314,7 @@ Proof.
 
     + ttinv u_red_u''. destruct u_red_u'' as (A' & B' & a'' & b'' & n & m & eq1 & eq2 & u''_eq & eq3 & A0_conv_A' & B0_conv_B' & a_red_a'' & b_red_b'' & _).
       ty_inj_tac. subst. clear eq3.
-  
+
       assert (Γ ⊢< ty m > b ⟹ b'' : B <[ a..]) as temp by eauto 7 using ortho_conv, subst_conv, conv_sym, substs_one, conv_refl.
       clear b_red_b''. rename temp into b_red_b''.
 
@@ -1501,16 +1501,16 @@ Proof.
 
     destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
     do 5 eexists. split; eauto using ortho_Lift.
-  
+
   - rename t1 into A. rename t2 into a.
-    ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj). 
+    ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj).
     ttinv t_red_t''. destruct t_red_t'' as (_ & _ & disj').
     dependent destruction l_eq.
     destruct disj as [ (A' & a' & A_eq_A' & a_red_a' & t'_eq) | (A' & b & b' & n & l_eq & a_eq & A_eq_A' & b_red_b' & t'_eq)];
     destruct disj' as [ (A'' & a'' & A_eq_A'' & a_red_a'' & t''_eq) | (A'' & b_ & b'' & n_ & l_eq_ & a_eq_ & A_eq_A'' & b_red_b'' & t''_eq_)]; subst.
-    
+
     + destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
-      do 5 eexists. split; eapply ortho_lift; eauto using conv_sym, ortho_conv. 
+      do 5 eexists. split; eapply ortho_lift; eauto using conv_sym, ortho_conv.
 
     + rename n_ into n. rename b_ into b. ttinv a_red_a'. destruct a_red_a' as (_ & _ & disj).
       destruct disj as [ (A0 & b' & A''_eq_A0 & b_red_b' & a'_eq) | (A0 & d & d' & b_eq & A''_eq_A0 & d_red_d' & a'_eq) ]; subst.
@@ -1520,14 +1520,14 @@ Proof.
         do 5 eexists.
         split; eauto.
         eapply ortho_lift_lower; eauto using conv_sym, conv_trans, conv_Lift, ortho_conv.
-        
-      
+
+
       * assert (Γ ⊢< Ax (ty n) > lift (ty n) A0 d ⟹ lift (ty n) A' d' : Lift (ty n) A) as b_red_b'.
         { eapply ortho_conv. eapply ortho_lift; eauto using ortho_conv, conv_sym , conv_trans. eauto using conv_Lift, conv_sym, conv_trans. }
-      
+
         destruct (IH (lift (ty n) A0 d) ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
         do 5 eexists. split; eauto.
-    
+
     + ttinv a_red_a''. destruct a_red_a'' as (_ & _ & disj).
       destruct disj as [ (A0 & b'' & A'_eq_A0 & b_red_b'' & a'_eq) | (A0 & d & d'' & b_eq & A'_eq_A0 & d_red_d'' & a''_eq) ]; subst.
 
@@ -1536,11 +1536,11 @@ Proof.
         do 5 eexists.
         split; eauto.
         eapply ortho_lift_lower; eauto using conv_sym, conv_trans, conv_Lift, ortho_conv.
-        
-      
+
+
       * assert (Γ ⊢< Ax (ty n) > lift (ty n) A0 d ⟹ lift (ty n) A'' d'' : Lift (ty n) A) as b_red_b''.
         { eapply ortho_conv. eapply ortho_lift; eauto using ortho_conv, conv_sym , conv_trans. eauto using conv_Lift, conv_sym, conv_trans. }
-      
+
         destruct (IH (lift (ty n) A0 d) ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
         do 5 eexists. split; eauto.
 
@@ -1549,18 +1549,18 @@ Proof.
       do 5 eexists. split; eauto.
 
   - rename t1 into A. rename t2 into a.
-    ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj). 
+    ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj).
     ttinv t_red_t''. destruct t_red_t'' as (_ & _ & disj'). subst.
     destruct disj as [ (A' & a' & A_eq_A' & a_red_a' & t'_eq) | (A' & b & b' & a_eq & A_eq_A' & b_red_b' & t'_eq)];
     destruct disj' as [ (A'' & a'' & A_eq_A'' & a_red_a'' & t''_eq) | (A'' & b_ & b'' & a_eq_ & A_eq_A'' & b_red_b'' & t''_eq_)]; subst.
 
     + destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
       do 5 eexists. split; eapply ortho_lower; eauto using conv_sym, ortho_conv, conv_Lift.
-    
+
     + rename b_ into b. ttinv a_red_a'. destruct a_red_a' as (_ & _ & disj).
       destruct disj as [ (A0 & b' & A''_eq_A0 & b_red_b' & a'_eq) | (A0 & d & d' & n & lvl_eq & b_eq & A''_eq_A0 & d_red_d' & a'_eq)]; subst.
 
-      * eapply ortho_conv in b_red_b'. 2:eapply conv_sym, A_eq_A''. 
+      * eapply ortho_conv in b_red_b'. 2:eapply conv_sym, A_eq_A''.
         destruct (IH b ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
         do 5 eexists.
         split; eauto.
@@ -1571,11 +1571,11 @@ Proof.
 
         destruct (IH (lower (ty i) A0 d) ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
         do 5 eexists. split; eauto.
-      
+
     + ttinv a_red_a''. destruct a_red_a'' as (_ & _ & disj).
       destruct disj as [ (A0 & b'' & A'_eq_A0 & b_red_b'' & a''_eq) | (A0 & d & d'' & n & lvl_eq & b_eq & A'_eq_A0 & d_red_d'' & a''_eq)]; subst.
 
-      * eapply ortho_conv in b_red_b''. 2:eapply conv_sym, A_eq_A'. 
+      * eapply ortho_conv in b_red_b''. 2:eapply conv_sym, A_eq_A'.
         destruct (IH b ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
         do 5 eexists.
         split; eauto.
@@ -1591,38 +1591,38 @@ Proof.
       destruct (IH b ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
       do 5 eexists. split; eauto.
 
-  (* case cast *)      
+  (* case cast *)
   - rename t1 into A. rename t2 into B. rename t3 into e. rename t4 into u.
     ttinv t_red_t'. destruct t_red_t' as (lvl_eq & B_conv_T & disj).
     ttinv t_red_t''. destruct t_red_t'' as (_ & _ & disj').
     subst.
-    destruct disj as 
-      [ (A' & B' & e' & u' & A_red_A' & B_red_B' & e_red_e' & u_red_u' & t'_eq) 
+    destruct disj as
+      [ (A' & B' & e' & u' & A_red_A' & B_red_B' & e_red_e' & u_red_u' & t'_eq)
       |[ (u' & lvl_eq & A_eq & B_eq & eWt & u_red_u' & t'_eq)
       |[ (u' & i0 & lvl_eq & A_eq & B_eq & eWt & u_red_u' & t'_eq)
-      | (i0 & n & A1 & A1' & A2 & A2' & B1 & B1' & B2 & B2' & e' & f & f' & 
+      | (i0 & n & A1 & A1' & A2 & A2' & B1 & B1' & B2 & B2' & e' & f & f' &
         lvl_eq & A_eq & B_eq & u_eq & A1_red_A1' & B1_red_B1' & A2_red_A2' & B2_red_B2' & e_red_e' &
         f_red_f' & t'_eq)]]];
-    destruct disj' as 
-      [ (A'' & B'' & e'' & u'' & A_red_A'' & B_red_B'' & e_red_e'' & u_red_u'' & t''_eq) 
+    destruct disj' as
+      [ (A'' & B'' & e'' & u'' & A_red_A'' & B_red_B'' & e_red_e'' & u_red_u'' & t''_eq)
       |[ (u'' & lvl_eq' & A_eq' & B_eq' & eWt' & u_red_u'' & t''_eq)
       |[ (u'' & i0' & lvl_eq' & A_eq' & B_eq' & eWt' & u_red_u'' & t''_eq)
-      | (i0'_ & n_ & A1_ & A1'' & A2_ & A2'' & B1_ & B1'' & B2_ & B2'' & e'' & f_ & f'' & 
+      | (i0'_ & n_ & A1_ & A1'' & A2_ & A2'' & B1_ & B1'' & B2_ & B2'' & e'' & f_ & f'' &
         lvl_eq' & A_eq' & B_eq' & u_eq_ & A1_red_A1'' & B1_red_B1'' & A2_red_A2'' & B2_red_B2'' & e_red_e'' &
         f_red_f'' & t''_eq)]]].
 
     all:try solve [rewrite A_eq' in A_eq ; dependent destruction A_eq].
 
 
-    Ltac aux_SA_red := 
+    Ltac aux_SA_red :=
       eauto 6 using ortho_meta_conv, ortho_ren, ctx_typing, ortho_validity_left, WellRen_S.
-    Ltac aux_SB_red := 
-      eapply conv_ty_in_ctx_ortho; 
-      [ eapply ortho_meta_conv; eauto 10 using ortho_ren, WellRen_S, WellRen_up, ctx_typing, type_ren, ortho_validity_left 
+    Ltac aux_SB_red :=
+      eapply conv_ty_in_ctx_ortho;
+      [ eapply ortho_meta_conv; eauto 10 using ortho_ren, WellRen_S, WellRen_up, ctx_typing, type_ren, ortho_validity_left
       |  eauto 7 using ortho_to_conv, ortho_meta_conv, ortho_ren, ctx_typing, ortho_validity_left, WellRen_S].
 
     (* ortho_cast x ortho_cast *)
-    + subst. 
+    + subst.
       destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
       destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
       destruct (IH e ltac:(simpl; lia) _ _ _ _ _ e_red_e' e_red_e'') as (e''' & e'_red_e''' & e''_red_e''').
@@ -1646,7 +1646,7 @@ Proof.
       eapply ortho_cast_univ; eauto using ortho_validity_right.
 
     (* ortho_cast x ortho_cast_pi *)
-    + subst. rename A1_ into A1. rename A2_ into A2. rename i0'_ into i0. rename n_ into n. 
+    + subst. rename A1_ into A1. rename A2_ into A2. rename i0'_ into i0. rename n_ into n.
       rename B1_ into B1. rename B2_ into B2. rename f_ into f. rename u' into f'. rename u_red_u' into f_red_f'.
       rewrite lvl_eq' in *. clear lvl_eq'. clear i. clear B_conv_T.
       ttinv A_red_A'. destruct A_red_A' as (A1' & B1' & A'_eq & _ & A1_red_A1' & B1_red_B1' & _). subst.
@@ -1661,22 +1661,22 @@ Proof.
       clear IH.
 
 
-      assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1 ⟹ S ⋅ A1'' : Sort i0) as SA1_red_SA1'' by aux_SA_red.    
+      assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1 ⟹ S ⋅ A1'' : Sort i0) as SA1_red_SA1'' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A2 ⟹ S ⋅ A2'' : Sort i0) as SA2_red_SA2'' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1'' ⟹ S ⋅ A1''' : Sort i0) as SA1''_red_SA1''' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A2'' ⟹ S ⋅ A2''' : Sort i0) as SA2''_red_SA2''' by aux_SA_red.
 
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1'' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1'' : Sort (ty n))
         as upSB1_red_upSB1'' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2'' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2'' : Sort (ty n))
         as upSB2_red_upSB2'' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1'' ⟹ up_ren S ⋅ B1''' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1'' ⟹ up_ren S ⋅ B1''' : Sort (ty n))
         as upSB1''_red_upSB1''' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2'' ⟹ up_ren S ⋅ B2''' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2'' ⟹ up_ren S ⋅ B2''' : Sort (ty n))
         as upSB2''_red_upSB2''' by aux_SB_red.
 
       eassert
-          (Γ ,, (i0, A2'') 
+          (Γ ,, (i0, A2'')
             ⊢< _ > cast i0 (S ⋅ A2'') (S ⋅ A1'') (injpi1 i0 (ty n) (S ⋅ A1'') (S ⋅ A2'') (up_ren S ⋅ B1'') (up_ren S ⋅ B2'') (S ⋅ e'')) (var 0)
             ⟹ cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0)
             : _) as cast_red_cast.
@@ -1691,28 +1691,28 @@ Proof.
       * eapply ortho_cast_pi; eauto 12 using conv_ty_in_ctx_ortho, ortho_to_conv, ortho_conv, conv_pi, conv_Eq, conv_sort, ortho_validity_left.
       * econstructor; eauto using ortho_to_conv, conv_ty_in_ctx_conv.
         econstructor; eauto using conv_ty_in_ctx_ortho, ortho_to_conv.
-        ** eapply ortho_meta_conv. 
+        ** eapply ortho_meta_conv.
           *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left.
             econstructor; ssimpl.
-            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S). 
-               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.            
+            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S).
+               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.
             ++ eapply ortho_conv.
                eapply cast_red_cast.
                renamify. eauto using ortho_to_conv, conv_sym.
           *** rasimpl. reflexivity.
-        ** eapply conv_to_ortho_prop. eapply meta_conv_conv. 
+        ** eapply conv_to_ortho_prop. eapply meta_conv_conv.
           *** eapply conv_injpi2'; eauto using ortho_to_conv.
             ++ eapply conv_conv. 1:eapply conv_ren; eauto using ortho_to_conv, WellRen_S, ctx_typing, ortho_validity_left.
                 econstructor; fold ren_term; eauto using ctx_typing, conversion, ortho_validity_left.
-                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left. 
-            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.        
+                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left.
+            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.
           *** rasimpl. f_equal. replace B2'' with (B2''<[var]) at 2 by (rasimpl;reflexivity).
               eapply subst_term_morphism; eauto. unfold pointwise_relation. intros a; destruct a; reflexivity.
         ** eapply ortho_meta_conv.
           *** econstructor; eauto using ortho_to_conv.
             ++ eapply ortho_conv. eapply ortho_ren; eauto using ctx_typing, ortho_validity_left, WellRen_S.
-               eapply conv_sym. 
-               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left. 
+               eapply conv_sym.
+               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left.
           *** rasimpl. reflexivity.
 
 
@@ -1724,7 +1724,7 @@ Proof.
       eapply ortho_cast_nat; eauto using ortho_validity_right.
 
     (* ortho_cast_nat x ortho_cast_nat *)
-    + subst. dependent destruction lvl_eq. 
+    + subst. dependent destruction lvl_eq.
       destruct (IH u ltac:(simpl; lia) _ _ _ _ _ u_red_u' u_red_u'') as (u''' & u'_red_u''' & u''_red_u''').
       do 5 eexists. split; eauto.
 
@@ -1760,17 +1760,17 @@ Proof.
       assert (Γ,, (i0, A2') ⊢< Ax i0 > S ⋅ A1' ⟹ S ⋅ A1''' : Sort i0) as SA1'_red_SA1''' by aux_SA_red.
       assert (Γ,, (i0, A2') ⊢< Ax i0 > S ⋅ A2' ⟹ S ⋅ A2''' : Sort i0) as SA2'_red_SA2''' by aux_SA_red.
 
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1' : Sort (ty n)) 
-        as upSB1_red_upSB1' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2' : Sort (ty n)) 
-        as upSB2_red_upSB2' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1' ⟹ up_ren S ⋅ B1''' : Sort (ty n)) 
-        as upSB1'_red_upSB1''' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2' ⟹ up_ren S ⋅ B2''' : Sort (ty n)) 
-        as upSB2'_red_upSB2''' by aux_SB_red.        
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1' : Sort (ty n))
+        as upSB1_red_upSB1' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2' : Sort (ty n))
+        as upSB2_red_upSB2' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1' ⟹ up_ren S ⋅ B1''' : Sort (ty n))
+        as upSB1'_red_upSB1''' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2' ⟹ up_ren S ⋅ B2''' : Sort (ty n))
+        as upSB2'_red_upSB2''' by aux_SB_red.
 
       eassert
-          (Γ ,, (i0, A2') 
+          (Γ ,, (i0, A2')
             ⊢< _ > cast i0 (S ⋅ A2') (S ⋅ A1') (injpi1 i0 (ty n) (S ⋅ A1') (S ⋅ A2') (up_ren S ⋅ B1') (up_ren S ⋅ B2') (S ⋅ e')) (var 0)
             ⟹ cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0)
             : _) as cast_red_cast.
@@ -1785,28 +1785,28 @@ Proof.
       2: eapply ortho_cast_pi; eauto 12 using conv_ty_in_ctx_ortho, ortho_to_conv, ortho_conv, conv_pi, conv_Eq, conv_sort, ortho_validity_left.
       * econstructor; eauto using ortho_to_conv, conv_ty_in_ctx_conv.
         econstructor; eauto using conv_ty_in_ctx_ortho, ortho_to_conv.
-        ** eapply ortho_meta_conv. 
+        ** eapply ortho_meta_conv.
           *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left.
             econstructor; ssimpl.
-            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S). 
-               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.            
+            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S).
+               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.
             ++ eapply ortho_conv.
                eapply cast_red_cast.
                renamify. eauto using ortho_to_conv, conv_sym.
           *** rasimpl. reflexivity.
-        ** eapply conv_to_ortho_prop. eapply meta_conv_conv. 
+        ** eapply conv_to_ortho_prop. eapply meta_conv_conv.
           *** eapply conv_injpi2'; eauto using ortho_to_conv.
             ++ eapply conv_conv. 1:eapply conv_ren; eauto using ortho_to_conv, WellRen_S, ctx_typing, ortho_validity_left.
                 econstructor; fold ren_term; eauto using ctx_typing, conversion, ortho_validity_left.
-                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left. 
-            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.        
+                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left.
+            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.
           *** rasimpl. f_equal. replace B2' with (B2'<[var]) at 2 by (rasimpl;reflexivity).
               eapply subst_term_morphism; eauto. unfold pointwise_relation. intros a; destruct a; reflexivity.
         ** eapply ortho_meta_conv.
           *** econstructor; eauto using ortho_to_conv.
             ++ eapply ortho_conv. eapply ortho_ren; eauto using ctx_typing, ortho_validity_left, WellRen_S.
-               eapply conv_sym. 
-               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left. 
+               eapply conv_sym.
+               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left.
           *** rasimpl. reflexivity.
 
     (* ortho_cast_pi x ortho_cast_pi *)
@@ -1821,22 +1821,22 @@ Proof.
       destruct (IH B2 ltac:(simpl; lia) _ _ _ _ _ B2_red_B2' B2_red_B2'') as (B2''' & B2'_red_B2''' & B2''_red_B2''').
       clear IH.
 
-      assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1 ⟹ S ⋅ A1'' : Sort i0) as SA1_red_SA1'' by aux_SA_red.    
+      assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1 ⟹ S ⋅ A1'' : Sort i0) as SA1_red_SA1'' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A2 ⟹ S ⋅ A2'' : Sort i0) as SA2_red_SA2'' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A1'' ⟹ S ⋅ A1''' : Sort i0) as SA1''_red_SA1''' by aux_SA_red.
       assert (Γ,, (i0, A2'') ⊢< Ax i0 > S ⋅ A2'' ⟹ S ⋅ A2''' : Sort i0) as SA2''_red_SA2''' by aux_SA_red.
 
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1'' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1'' : Sort (ty n))
         as upSB1_red_upSB1'' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2'' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2'' : Sort (ty n))
         as upSB2_red_upSB2'' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1'' ⟹ up_ren S ⋅ B1''' : Sort (ty n)) 
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A1'') ⊢< Ax (ty n) > up_ren S ⋅ B1'' ⟹ up_ren S ⋅ B1''' : Sort (ty n))
         as upSB1''_red_upSB1''' by aux_SB_red.
-      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2'' ⟹ up_ren S ⋅ B2''' : Sort (ty n)) 
-        as upSB2''_red_upSB2''' by aux_SB_red.      
+      assert ((Γ,, (i0, A2'')),, (i0, S ⋅ A2'') ⊢< Ax (ty n) > up_ren S ⋅ B2'' ⟹ up_ren S ⋅ B2''' : Sort (ty n))
+        as upSB2''_red_upSB2''' by aux_SB_red.
 
       eassert
-          (Γ ,, (i0, A2'') 
+          (Γ ,, (i0, A2'')
             ⊢< _ > cast i0 (S ⋅ A2'') (S ⋅ A1'') (injpi1 i0 (ty n) (S ⋅ A1'') (S ⋅ A2'') (up_ren S ⋅ B1'') (up_ren S ⋅ B2'') (S ⋅ e'')) (var 0)
             ⟹ cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0)
             : _) as cast_red_cast.
@@ -1852,17 +1852,17 @@ Proof.
       assert (Γ,, (i0, A2') ⊢< Ax i0 > S ⋅ A1' ⟹ S ⋅ A1''' : Sort i0) as SA1'_red_SA1''' by aux_SA_red.
       assert (Γ,, (i0, A2') ⊢< Ax i0 > S ⋅ A2' ⟹ S ⋅ A2''' : Sort i0) as SA2'_red_SA2''' by aux_SA_red.
 
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1' : Sort (ty n)) 
-        as upSB1_red_upSB1' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2' : Sort (ty n)) 
-        as upSB2_red_upSB2' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1' ⟹ up_ren S ⋅ B1''' : Sort (ty n)) 
-        as upSB1'_red_upSB1''' by aux_SB_red.  
-      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2' ⟹ up_ren S ⋅ B2''' : Sort (ty n)) 
-        as upSB2'_red_upSB2''' by aux_SB_red.         
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1 ⟹ up_ren S ⋅ B1' : Sort (ty n))
+        as upSB1_red_upSB1' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2 ⟹ up_ren S ⋅ B2' : Sort (ty n))
+        as upSB2_red_upSB2' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A1') ⊢< Ax (ty n) > up_ren S ⋅ B1' ⟹ up_ren S ⋅ B1''' : Sort (ty n))
+        as upSB1'_red_upSB1''' by aux_SB_red.
+      assert ((Γ,, (i0, A2')),, (i0, S ⋅ A2') ⊢< Ax (ty n) > up_ren S ⋅ B2' ⟹ up_ren S ⋅ B2''' : Sort (ty n))
+        as upSB2'_red_upSB2''' by aux_SB_red.
 
       eassert
-          (Γ ,, (i0, A2') 
+          (Γ ,, (i0, A2')
             ⊢< _ > cast i0 (S ⋅ A2') (S ⋅ A1') (injpi1 i0 (ty n) (S ⋅ A1') (S ⋅ A2') (up_ren S ⋅ B1') (up_ren S ⋅ B2') (S ⋅ e')) (var 0)
             ⟹ cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0)
             : _) as cast_red_cast'.
@@ -1872,65 +1872,65 @@ Proof.
           eapply conv_conv; eauto using conv_ren, ortho_to_conv, ctx_typing, ortho_validity_left, WellRen_S.
                 econstructor; fold ren_term; eauto using ctx_typing, conversion, ortho_validity_left.
                 all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left. }
-                
-      cbn in t'_eq. cbn in t''_eq. subst. 
+
+      cbn in t'_eq. cbn in t''_eq. subst.
       do 5 eexists. split.
       * econstructor; eauto using ortho_to_conv, conv_ty_in_ctx_conv.
         econstructor; eauto using conv_ty_in_ctx_ortho, ortho_to_conv.
-        ** eapply ortho_meta_conv. 
-          *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left. 
+        ** eapply ortho_meta_conv.
+          *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left.
           (* hacky way of setting the value of the metavariable, so we can use ssimpl later *)
-          eassert (_ ⊢s _ ⟹ (cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0) .: S >> var) : _) as temp. 
+          eassert (_ ⊢s _ ⟹ (cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0) .: S >> var) : _) as temp.
           2:eapply temp.
             econstructor; ssimpl.
-            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S). 
-               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.            
+            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S).
+               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.
             ++ eapply ortho_conv.
                eapply cast_red_cast'.
                renamify. eauto using ortho_to_conv, conv_sym.
           *** rasimpl. reflexivity.
-        ** eapply conv_to_ortho_prop. eapply meta_conv_conv. 
+        ** eapply conv_to_ortho_prop. eapply meta_conv_conv.
           *** eapply conv_injpi2'; eauto using ortho_to_conv.
             ++ eapply conv_conv. 1:eapply conv_ren; eauto using ortho_to_conv, WellRen_S, ctx_typing, ortho_validity_left.
                 econstructor; fold ren_term; eauto using ctx_typing, conversion, ortho_validity_left.
-                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left. 
-            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.        
+                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left.
+            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.
           *** rasimpl. f_equal. replace B2' with (B2'<[var]) at 2 by (rasimpl;reflexivity).
               eapply subst_term_morphism; eauto. unfold pointwise_relation. intros a; destruct a; reflexivity.
         ** eapply ortho_meta_conv.
           *** econstructor; eauto using ortho_to_conv.
             ++ eapply ortho_conv. eapply ortho_ren; eauto using ctx_typing, ortho_validity_left, WellRen_S.
-               eapply conv_sym. 
-               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left. 
+               eapply conv_sym.
+               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left.
           *** rasimpl. reflexivity.
       * econstructor; eauto using ortho_to_conv, conv_ty_in_ctx_conv.
         econstructor; eauto using conv_ty_in_ctx_ortho, ortho_to_conv.
-        ** eapply ortho_meta_conv. 
-          *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left. 
+        ** eapply ortho_meta_conv.
+          *** eapply subst_ortho; eauto using ctx_typing, ortho_validity_left.
           (* hacky way of setting the value of the metavariable, so we can use ssimpl later *)
-          eassert (_ ⊢s _ ⟹ (cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0) .: S >> var) : _) as temp. 
+          eassert (_ ⊢s _ ⟹ (cast i0 (S ⋅ A2''') (S ⋅ A1''') (injpi1 i0 (ty n) (S ⋅ A1''') (S ⋅ A2''') (up_ren S ⋅ B1''') (up_ren S ⋅ B2''') (S ⋅ e''')) (var 0) .: S >> var) : _) as temp.
           2:eapply temp.
             econstructor; ssimpl.
-            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S). 
-               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.            
+            ++ eapply ortho_subst_refl. change (S >> var) with (var >> ren_term S).
+               eapply WellSubst_weak; eauto using subst_id, ortho_validity_left.
             ++ eapply ortho_conv.
                eapply cast_red_cast.
                renamify. eauto using ortho_to_conv, conv_sym.
           *** rasimpl. reflexivity.
-        ** eapply conv_to_ortho_prop. eapply meta_conv_conv. 
+        ** eapply conv_to_ortho_prop. eapply meta_conv_conv.
           *** eapply conv_injpi2'; eauto using ortho_to_conv.
             ++ eapply conv_conv. 1:eapply conv_ren; eauto using ortho_to_conv, WellRen_S, ctx_typing, ortho_validity_left.
                 econstructor; fold ren_term; eauto using ctx_typing, conversion, ortho_validity_left.
-                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left. 
-            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.        
+                all:eapply conv_sym; econstructor; try eapply conv_sym; unfold upRen_term_term; eauto using ortho_to_conv, validity_conv_left.
+            ++ econstructor; eauto using varty, ctx_typing, ortho_validity_left.
           *** rasimpl. f_equal. replace B2'' with (B2''<[var]) at 2 by (rasimpl;reflexivity).
               eapply subst_term_morphism; eauto. unfold pointwise_relation. intros a; destruct a; reflexivity.
         ** eapply ortho_meta_conv.
           *** econstructor; eauto using ortho_to_conv.
             ++ eapply ortho_conv. eapply ortho_ren; eauto using ctx_typing, ortho_validity_left, WellRen_S.
-               eapply conv_sym. 
-               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left. 
-          *** rasimpl. reflexivity.      
+               eapply conv_sym.
+               econstructor; fold ren_term; eauto using ortho_to_conv, conv_sym, validity_conv_left.
+          *** rasimpl. reflexivity.
 Qed.
 
 
@@ -2014,30 +2014,30 @@ Qed.
 
 (* The typed version of lemma equiv_red_ind from Theo's local_comp.
   Going from the original untyped version to this typed one took me a lot of trial and error.
-  
+
   Important: We cannot ask that Δ ⊢< i > t : A -> Γ ⊢< l > f t : P t, because the contexts f, P
   might constraint t to be of a certain form, like
     f t := refl t
     P t := Eq Nat 0 t
-  But we need at least to ensure that, for t and u convertible, f and P are defined for t iff 
-  f and P are defined for u. Indeed, we need to avoid evil contexts like 
+  But we need at least to ensure that, for t and u convertible, f and P are defined for t iff
+  f and P are defined for u. Indeed, we need to avoid evil contexts like
     f t := match t with | zero => v | _ => w end
   which do not respect conversion.
   *)
 
 
-(* 
+(*
 Lemma test Δ σ τ Γ l t A :
-  Γ ⊢s σ ⟹ τ : Δ -> 
+  Γ ⊢s σ ⟹ τ : Δ ->
   ⊢ Δ ->
   Γ ⊢< l > t<[σ] : A ->
   Γ ⊢< l > t<[σ] ⟹ t<[τ] : A.
 Proof.
   intros.
-  dependent induction t. 
+  dependent induction t.
   - eapply ortho_meta_conv. eapply subst_ortho; eauto using validity_ty_ctx, ortho_red.
   -   *)
-  
+
 
 Lemma equiv_red_ind {Γ Δ l A i} P f :
     (forall t u, Δ ⊢< i > t ≡ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f u : P u) ->
@@ -2046,53 +2046,53 @@ Lemma equiv_red_ind {Γ Δ l A i} P f :
 Proof.
   intros. induction H1.
   - eapply H0; eauto.
-  - eapply equiv_to_conv in H1_ as H1'. 
+  - eapply equiv_to_conv in H1_ as H1'.
     eapply H in H1'; eauto.
     eapply IHortho_equiv1 in H2.
     eapply IHortho_equiv2 in H1'.
     eapply equiv_trans. 1:eassumption.
     eapply equiv_conv. 1:eassumption.
     eapply equiv_to_conv in H2, H1'.
-    eauto using type_unicity, validity_conv_left, validity_conv_right.
+    eauto using type_unique, validity_conv_left, validity_conv_right.
   - eapply equiv_to_conv in H1 as H1'.
     eapply conv_sym in H1'.
     eapply H in H1'; eauto.
     eapply IHortho_equiv in H1'.
-    eapply equiv_sym. 
+    eapply equiv_sym.
     eapply equiv_conv; eauto.
     eapply equiv_to_conv, validity_conv_right in H1'.
-    eauto using type_unicity.
+    eauto using type_unique.
 Qed.
 
-Ltac equiv_red_ind_aux0 := 
+Ltac equiv_red_ind_aux0 :=
   ty_inj_tac ; subst ;
   try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_sort,
       validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
-  try solve [ eapply type_conv ; 
+  try solve [ eapply type_conv ;
     [ econstructor ; eauto 13 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty, conv_sort,
-        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym 
+        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
     | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl]].
 
-Ltac equiv_red_ind_aux1 := 
-  intros _t _u _t_conv_u _deriv ; 
-  eapply type_inv in _deriv ; 
+Ltac equiv_red_ind_aux1 :=
+  intros _t _u _t_conv_u _deriv ;
+  eapply type_inv in _deriv ;
   dependent destruction _deriv ;
   equiv_red_ind_aux0.
 
-Ltac equiv_red_ind_aux2 := 
-  intros _t _u _t_red_u _deriv ; 
-  eapply type_inv in _deriv ; 
+Ltac equiv_red_ind_aux2 :=
+  intros _t _u _t_red_u _deriv ;
+  eapply type_inv in _deriv ;
   dependent destruction _deriv ;
   ty_inj_tac ; subst ;
   eapply equiv_step ;
   try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, ortho_refl, ortho_conv, ortho_to_conv,
       validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
-  try solve [ eapply ortho_conv ; 
+  try solve [ eapply ortho_conv ;
     [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty, ortho_refl, ortho_conv, conv_ty_in_ctx_ortho,
-        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym 
+        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
     | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl, ortho_to_conv]].
 
-Ltac equiv_red_ind_aux := 
+Ltac equiv_red_ind_aux :=
   try solve [ equiv_red_ind_aux1 ];
   try solve [ equiv_red_ind_aux2 ];
   try solve [ equiv_red_ind_aux0 ].
@@ -2136,10 +2136,10 @@ Proof.
     + equiv_red_ind_aux1.
     + equiv_red_ind_aux2.
     + eapply type_conv.
-      * econstructor; 
+      * econstructor;
         eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
       * econstructor; eauto using equiv_to_conv, validity_conv_left, conv_refl.
-  - eapply equiv_step; econstructor; 
+  - eapply equiv_step; econstructor;
     eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
 Qed.
 
@@ -2154,7 +2154,7 @@ Proof.
   - refine (equiv_red_ind (fun _ => _) (fun t => pi1 _ _ _ _ t) _ _ t_equiv_t' _); equiv_red_ind_aux.
   - eapply equiv_step. econstructor; eauto using equiv_to_conv, validity_conv_right, ortho_refl.
 Qed.
-  
+
 Lemma equiv_pi2 Γ n m A B t A' B' t' :
       Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
       Γ ,, (ty n , A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
@@ -2219,7 +2219,7 @@ Proof.
   - eapply (equiv_conv _ _ (P <[ t'..])).
     2: eapply subst_conv; eauto using substs_one, equiv_to_conv, validity_conv_ctx, validity_conv_left, conv_refl, conv_sym.
     refine (equiv_red_ind (fun P => P <[ t'.. ]) (fun P => rec l P p_zero' p_succ' t') _ _ P_equiv_P' _).
-    + (* adding all the required lemmas to the eauto database of equiv_red_ind_aux1 would make 
+    + (* adding all the required lemmas to the eauto database of equiv_red_ind_aux1 would make
         other cases too slow, so we handle this case manually *)
       intros; apply type_inv in H0; dependent destruction H0.
       apply type_rec; eauto 9 using equiv_to_conv, subst_conv, type_conv, type_zero,
@@ -2286,14 +2286,14 @@ Proof.
     + equiv_red_ind_aux2.
 Qed.
 
-Lemma equiv_Lift Γ l A A' : 
+Lemma equiv_Lift Γ l A A' :
   Γ ⊢< Ax l > A ≈ A' : Sort l ->
   Γ ⊢< Ax (Ax l) > Lift l A ≈ Lift l A' : Sort (Ax l).
 Proof.
   intros A_equiv_A'. refine (equiv_red_ind _ (fun A => Lift l A) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
 
-Lemma equiv_lift Γ l A A' a a' : 
+Lemma equiv_lift Γ l A A' a a' :
   Γ ⊢< Ax l > A ≈ A' : Sort l ->
   Γ ⊢< l > a ≈ a' : A ->
   Γ ⊢< Ax l > lift l A a ≈ lift l A' a' : Lift l A.
@@ -2302,9 +2302,9 @@ Proof.
   - refine (equiv_red_ind _ (fun a => lift l A a) _ _ a_equiv_a' _); equiv_red_ind_aux.
   - refine (equiv_red_ind (fun A => Lift _ A) (fun A => lift l A _) _ _ A_equiv_A' _); equiv_red_ind_aux.
 Qed.
-  
 
-Lemma equiv_lower Γ l A A' a a' : 
+
+Lemma equiv_lower Γ l A A' a a' :
   Γ ⊢< Ax l > A ≈ A' : Sort l ->
   Γ ⊢< Ax l > a ≈ a' : Lift l A ->
   Γ ⊢< l > lower l A a ≈ lower l A' a' : A.
@@ -2336,13 +2336,13 @@ Proof.
 
   (* solves sprop goals*)
   all: try solve [eapply equiv_step, conv_to_ortho_prop; eauto using conversion].
-  
+
   (* solves easy goals, involving variables, constant symbols, sym, trans, conv *)
   all : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
 
   all : solve [eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
     equiv_rec, equiv_conv, equiv_sym, equiv_trans, equiv_Eq, equiv_J, equiv_Lift, equiv_lower, equiv_lift,
-    equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2, equiv_cast]. 
+    equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2, equiv_cast].
 Qed.
 
 (* --- Proof of CR --- *)
@@ -2374,7 +2374,7 @@ Qed.
 
 
 Lemma redd_conv_ty_in_ctx Γ B B' i l t u A :
-  Γ ,, (i, B) ⊢< l > t ⟹* u : A -> 
+  Γ ,, (i, B) ⊢< l > t ⟹* u : A ->
   Γ ⊢< Ax i > B ≡ B' : Sort i ->
   Γ ,, (i, B') ⊢< l > t ⟹* u : A.
 Proof.
@@ -2395,42 +2395,42 @@ Qed.
 
 
 Definition is_type_former T :=
-  match T with 
+  match T with
   | Sort i => True
-  | Pi i j A B => True 
-  | Sigma i j A B => True 
-  | Nat => True 
-  | Lift i A => True 
-  | Eq i A a b => True 
-  | _ => False 
+  | Pi i j A B => True
+  | Sigma i j A B => True
+  | Nat => True
+  | Lift i A => True
+  | Eq i A a b => True
+  | _ => False
   end.
 
-Proposition type_former_redd Γ l U T T' : 
+Proposition type_former_redd Γ l U T T' :
   is_type_former T ->
   Γ ⊢< l > T ⟹* T' : U ->
-  match T with 
-  | Pi l1 l2 A B => 
+  match T with
+  | Pi l1 l2 A B =>
     exists A' B',
     T' = Pi l1 l2 A' B' /\
     Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
     Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
-  | Sigma l1 l2 A B => 
+  | Sigma l1 l2 A B =>
     exists A' B',
     T' = Sigma l1 l2 A' B' /\
     Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 /\
     Γ ,, (l1, A) ⊢< Ax l2 > B ⟹* B' : Sort l2
   | Sort i =>
-    T' = Sort i 
-  | Nat => 
-    T' = Nat 
-  | Eq l A a b => 
-    exists A' a' b', 
-    T' = Eq l A' a' b' /\ 
-    Γ ⊢< Ax l > A ⟹* A' : Sort l /\ 
-    Γ ⊢< l > a ⟹* a' : A /\ 
+    T' = Sort i
+  | Nat =>
+    T' = Nat
+  | Eq l A a b =>
+    exists A' a' b',
+    T' = Eq l A' a' b' /\
+    Γ ⊢< Ax l > A ⟹* A' : Sort l /\
+    Γ ⊢< l > a ⟹* a' : A /\
     Γ ⊢< l > b ⟹* b' : A
   | Lift l A =>
-    exists A', 
+    exists A',
     T' = Lift l A' /\
     Γ ⊢< Ax l > A ⟹* A' : Sort l
   | _ => False
@@ -2441,7 +2441,7 @@ Proof.
 
   all : try solve [ ttinv H ; repeat destruct H as (? & H) ; subst; repeat eexists ; intuition eauto using redd_step ].
 
-  all : repeat destruct IHT_redd_T'1 as (? & IHT_redd_T'1); subst; 
+  all : repeat destruct IHT_redd_T'1 as (? & IHT_redd_T'1); subst;
         try edestruct IHT_redd_T'2 as (? & h); eauto; repeat destruct h as (? & h); subst ; eauto; clear IHT_redd_T'2.
 
   all: repeat eexists; eauto using redd_trans, redd_conv_ty_in_ctx, redd_to_conv, conv_sym, conv_trans, redd_conv.
@@ -2449,20 +2449,20 @@ Qed.
 
 Proposition type_formers_inj Γ l T T1 T2 :
   Γ ⊢< l > T1 ≡ T2 : T ->
-  is_type_former T1 -> 
+  is_type_former T1 ->
   is_type_former T2 ->
-  match T1, T2 with 
+  match T1, T2 with
   | Pi l0 l1 A B, Pi l2 l3 A' B' =>
     l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
   | Sigma l0 l1 A B, Sigma l2 l3 A' B' =>
     l0 = l2 /\ l1 = l3 /\ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 /\ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
   | Lift i A, Lift i' A' =>
     i = i' /\ Γ ⊢< Ax i > A ≡ A' : Sort i
-  | Nat, Nat => True 
-  | Sort l, Sort l0 => l = l0 
-  | Eq l A a b, Eq l' A' a' b' => 
+  | Nat, Nat => True
+  | Sort l, Sort l0 => l = l0
+  | Eq l A a b, Eq l' A' a' b' =>
     l = l' /\ Γ ⊢< Ax l > A ≡ A' : Sort l /\ Γ ⊢< l > a ≡ a' : A /\ Γ ⊢< l > b ≡ b' : A
-  | _, _ => False 
+  | _, _ => False
   end.
 Proof.
   intros.
@@ -2476,7 +2476,7 @@ Proof.
   - intuition trivial.
     eauto using conv_sym, conv_trans, redd_to_conv.
     eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_ty_in_ctx_conv.
-   
+
   - intuition trivial.
     eauto using conv_sym, conv_trans, redd_to_conv.
     eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_ty_in_ctx_conv.

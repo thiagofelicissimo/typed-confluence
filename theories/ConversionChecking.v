@@ -23,8 +23,8 @@ Fixpoint erasure l t : term :=
   | ty _, app i j A B t u => app prop prop box box (erasure (Ru i j) t) (erasure i u)
   | ty _, Sigma i j A B => Sigma i j (erasure (Ax i) A) (erasure (Ax j) B)
   | ty _, pair i j A B a b => pair prop prop box box (erasure i a) (erasure j b)
-  | ty _, pi1 i j A B t => pi1 prop prop box box (erasure (Ru i j) t) 
-  | ty _, pi2 i j A B t => pi2 prop prop box box (erasure (Ru i j) t) 
+  | ty _, pi1 i j A B t => pi1 prop prop box box (erasure (Ru i j) t)
+  | ty _, pi2 i j A B t => pi2 prop prop box box (erasure (Ru i j) t)
   | ty _, Nat => t
   | ty _, zero => t
   | ty _, succ t => succ (erasure (ty 0) t)
@@ -74,13 +74,13 @@ with Ne : term -> Prop :=
 | ne_lower t : Ne t -> Ne (lower prop box t)
 | ne_cast1 i A B t : Ne A -> Nf B -> Nf t -> Ne (cast i A B box t)
 | ne_cast2 i A B t : Nf A -> Ne B -> Nf t -> Ne (cast i A B box t)
-| ne_cast3 i A B t : Nf A -> Nf B -> 
-    (* if both A, B are in nf, then they should not have 
+| ne_cast3 i A B t : Nf A -> Nf B ->
+    (* if both A, B are in nf, then they should not have
       the same relevant head in order for the result to be a neutral *)
-    not (match A, B with 
+    not (match A, B with
     | Pi i (ty n) _ _, Pi i' (ty n') _ _ => i = i' /\ n = n'
     | Sort i, Sort i' => i = i'
-    | Nat , Nat => True 
+    | Nat , Nat => True
     | _, _ => False
     end) -> Nf t -> Ne (cast i A B box t).
 
@@ -118,14 +118,14 @@ Inductive red : term -> term -> Prop :=
 | red_sigma_2 i j A B B' :
     B ---> B' ->
     Sigma i j A B ---> Sigma i j A B'
-    
+
 | red_pair_1 t t' u :
     t ---> t' ->
     pair prop prop box box t u ---> pair prop prop box box t' u
 
 | red_pair_2 t u u' :
     u ---> u' ->
-    pair prop prop box box t u ---> pair prop prop box box t u'    
+    pair prop prop box box t u ---> pair prop prop box box t u'
 
 | red_pi1 t t' :
     t ---> t' ->
@@ -219,16 +219,16 @@ Inductive red : term -> term -> Prop :=
     J l i A a P p a box ---> p
 
 | red_Lift A A' i :
-    A ---> A' -> 
+    A ---> A' ->
     Lift i A ---> Lift i A'
 
 | red_lift a a' :
-    a ---> a' -> 
-    lift prop box a ---> lift prop box a' 
+    a ---> a' ->
+    lift prop box a ---> lift prop box a'
 
 | red_lower a a' :
-    a ---> a' -> 
-    lower prop box a ---> lower prop box a' 
+    a ---> a' ->
+    lower prop box a ---> lower prop box a'
 
 | red_lift_lower a :
     lift prop box (lower prop box a) ---> a
@@ -237,10 +237,10 @@ Inductive red : term -> term -> Prop :=
     lower prop box (lift prop box a) ---> a
 
 | red_cast_nat t :
-    cast (ty 0) Nat Nat box t ---> t 
+    cast (ty 0) Nat Nat box t ---> t
 
 | red_cast_univ i A :
-    cast (Ax i) (Sort i) (Sort i) box A ---> A 
+    cast (Ax i) (Sort i) (Sort i) box A ---> A
 
 | red_cast_pi i n A1 B1 A2 B2 f :
     let A1' := S ⋅ A1 in
@@ -424,7 +424,7 @@ Proof.
     eapply varty_fun_of_ctx in var_in_ctx.
     eapply ref in var_in_ctx as (j & eq).
     rewrite eq.
-    apply erasure_irrel.  
+    apply erasure_irrel.
   (* case pi *)
   - f_equal. eauto using IHt1.  ssimpl.
     transitivity ((erasure (Ax l0) t2) <[ (erasure (ty 0) (var 0)) .: erasure_subst Δ σ >> ren_term ↑]); eauto.
@@ -529,17 +529,17 @@ Qed.
 
 
 Definition can t T :=
-  match T , t with 
+  match T , t with
   | Pi _ _ _ _, lam _ _ _ _ _
   | Sigma _ _ _ _, pair _ _ _ _ _ _
   | Nat, zero
   | Nat, succ _
   | Lift _ _, lift _ _ _
-  | Sort _, Pi _ _ _ _ 
+  | Sort _, Pi _ _ _ _
   | Sort _, Sigma _ _ _ _
-  | Sort _, Sort _ 
-  | Sort _, Nat 
-  | Sort _, Lift _ _ 
+  | Sort _, Sort _
+  | Sort _, Nat
+  | Sort _, Lift _ _
   | Sort _, Eq _ _ _ _ => True
   | _, _ => False
 end.
@@ -562,14 +562,14 @@ Proof.
 
   (* solves box case *)
   all:try solve [ destruct t; dependent destruction H;
-    eapply type_inv in t_Wt;dependent destruction t_Wt; 
+    eapply type_inv in t_Wt;dependent destruction t_Wt;
     dependent destruction lvl_eq ].
 
   (* solves remaining cases *)
-  all:try solve [ destruct t; dependent destruction H; 
+  all:try solve [ destruct t; dependent destruction H;
   destruct T; dependent destruction is_tf;
   eapply type_inv in t_Wt as temp; dependent destruction temp;
-  eapply type_formers_inj in conv_ty; 
+  eapply type_formers_inj in conv_ty;
   unfold can in *; intuition eauto].
 Qed.
 
@@ -595,14 +595,14 @@ Proof.
   all: try solve [ eapply type_inv in t_Wt; dependent destruction t_Wt; ty_inj_tac ; subst ; eauto 24 using Nf, Ne, red].
 
   (* solves all elimination cases *)
-  all: try solve [ 
-    eapply type_inv in t_Wt; dependent destruction t_Wt; 
+  all: try solve [
+    eapply type_inv in t_Wt; dependent destruction t_Wt;
     ty_inj_tac; subst;
     eapply nf_ne; simpl;
     econstructor; eauto using red;
     eapply nf_is_ne; eauto using red;
-    match goal with 
-      | |-  ¬ (can ?t _) => destruct t 
+    match goal with
+      | |-  ¬ (can ?t _) => destruct t
     end; intro K; inversion K;
     eapply is_nf; simpl; eauto using red ].
 
@@ -618,15 +618,15 @@ Proof.
 
     destruct A; destruct B; eauto using Ne.
     2-23:destruct l0; eauto using Ne.
-    + eapply type_inv in A_Wt. dependent destruction A_Wt. 
+    + eapply type_inv in A_Wt. dependent destruction A_Wt.
       eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       pose (K := level_eq_dec l l0). destruct K.
       * subst. exfalso. eapply is_nf; simpl; eauto using red.
       * eapply ne_cast3; eauto.
-    + eapply type_inv in A_Wt. dependent destruction A_Wt. 
+    + eapply type_inv in A_Wt. dependent destruction A_Wt.
       eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       destruct l2. 2:simpl;eauto using Ne.
-      clear A_Wt B_Wt conv_ty. 
+      clear A_Wt B_Wt conv_ty.
       pose (K := level_eq_dec l l1). pose (K' := level_eq_dec (ty n) (ty n0)).
       destruct K; destruct K'.
       * ty_inj_tac. subst. exfalso. eapply is_nf; simpl; eauto using red.
@@ -708,7 +708,7 @@ Proof.
     eassert (_ ⊢< _ > Sigma _ _ A B ≡ Sigma _ _ A' B' : _) as sigma_eq_sigma
       by eauto using conv_sym, conv_trans.
     apply type_formers_inj in sigma_eq_sigma as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
-    ty_inj_tac. subst. 
+    ty_inj_tac. subst.
     assert (Γ ⊢< ty n2 > t ≡ t' : A)
       by eauto 9 using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv, subst_conv, substs_one, type_conv.
     econstructor; eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
@@ -718,8 +718,8 @@ Proof.
   - dependent destruction lvl_eq.
     eapply conv_conv; eauto using conv_sym.
     eapply conv_Eq; eauto using conv_conv, conv_sym, type_conv.
-  - dependent destruction lvl_eq. cbn in *. 
-    eapply conv_conv; eauto using conv_sym. 
+  - dependent destruction lvl_eq. cbn in *.
+    eapply conv_conv; eauto using conv_sym.
     eapply conv_Lift; eauto using conv_conv, conv_sym, type_conv.
   - rename t0_1 into A. rename u0_1 into A'.
     rename t0_2 into a. rename u0_2 into a'.
@@ -734,25 +734,25 @@ Proof.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'. rename u0_4 into u'.
     eapply conv_conv; eauto using conv_sym.
     assert (Γ ⊢< Ru l (ty i) > t ≡ t' : Pi l (ty i) A B) as t1_eq_t2 by eauto.
-    eapply validity_conv_right, type_unicity in t1_eq_t2 as pi_eq_pi. 2:exact t_Wt0.
+    eapply validity_conv_right, type_unique in t1_eq_t2 as pi_eq_pi. 2:exact t_Wt0.
     eapply type_formers_inj in pi_eq_pi as (eq1 & eq2 & A_eq & B_eq); eauto.
     ty_inj_tac. subst.
     eapply conv_app; eauto using type_conv, conv_sym, conv_ty_in_ctx_conv.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'.
-    ty_inj_tac. subst. 
+    ty_inj_tac. subst.
     eapply conv_conv; eauto using conv_sym.
     eassert (Γ ⊢< _ > t ≡ t' : Sigma _ _ A B) as t1_eq_t2 by eauto.
-    eapply validity_conv_right, type_unicity in t1_eq_t2 as temp. 2:exact t_Wt0.
+    eapply validity_conv_right, type_unique in t1_eq_t2 as temp. 2:exact t_Wt0.
     eapply type_formers_inj in temp as (eq1 & eq2 & A_eq & B_eq); eauto.
     ty_inj_tac. subst.
     econstructor; eauto using type_conv, conv_sym, conv_ty_in_ctx_conv.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'.
-    ty_inj_tac. subst. 
+    ty_inj_tac. subst.
     eapply conv_conv; eauto using conv_sym.
     eassert (Γ ⊢< _ > t ≡ t' : Sigma _ _ A B) as t1_eq_t2 by eauto.
-    eapply validity_conv_right, type_unicity in t1_eq_t2 as temp. 2:exact t_Wt0.
+    eapply validity_conv_right, type_unique in t1_eq_t2 as temp. 2:exact t_Wt0.
     eapply type_formers_inj in temp as (eq1 & eq2 & A_eq & B_eq); eauto.
     ty_inj_tac. subst.
     econstructor; eauto using type_conv, conv_sym, conv_ty_in_ctx_conv.
@@ -772,7 +772,7 @@ Proof.
   - rename t0_1 into A. rename u0_1 into A'.
     rename t0_2 into a. rename u0_2 into a'.
     eapply H in H0 as a'_conv_a; eauto.
-    eapply validity_conv_right, type_unicity in a'_conv_a as temp. 2:exact a_Wt.
+    eapply validity_conv_right, type_unique in a'_conv_a as temp. 2:exact a_Wt.
     eapply type_formers_inj in temp as (i_eq_i' & A_conv_A'); eauto.
     ty_inj_tac. subst.
     eapply conv_conv.
@@ -833,11 +833,11 @@ Proof.
   all: try solve[rewrite erasure_prop in erased_t_red_u; dependent destruction erased_t_red_u].
 
 
-  all: (match goal with 
-          | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ /\ _ => pose (K := case_lvl l) 
+  all: (match goal with
+          | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ /\ _ => pose (K := case_lvl l)
         end; destruct K as [l_eq_prop | (n' & l_eq_n)];
-    [ rewrite l_eq_prop in erased_t_red_u; 
-      rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u 
+    [ rewrite l_eq_prop in erased_t_red_u;
+      rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u
     | rewrite l_eq_n in erased_t_red_u at 1 ]).
 
   (* solves cases Nat, zero, Sort and var *)
@@ -859,10 +859,10 @@ Proof.
   try destruct (IHtWt4 _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt5 _ erased_t_red_u) as (X & conv & eq);
   try destruct (IHtWt6 _ erased_t_red_u) as (X & conv & eq);
-  eexists; split; 
-    try solve [ econstructor; eauto 6 using conv_refl  
+  eexists; split;
+    try solve [ econstructor; eauto 6 using conv_refl
               | rewrite l_eq_n in * ; clear l_eq_n ; subst ; eauto ];
-    try solve [ econstructor; eauto 6 using conv_refl  
+    try solve [ econstructor; eauto 6 using conv_refl
               | subst ; eauto ]].
 
   all:ty_inj_tac;subst.
@@ -885,14 +885,14 @@ Proof.
     * eapply conv_pi1pair' ; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
       eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
       eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
-    * reflexivity.    
+    * reflexivity.
 
   (* case pi2pair *)
   - destruct t; dependent destruction H.
     eapply type_inv in tWt3 as temp; dependent destruction temp.
     eapply type_formers_inj in conv_ty as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
     eexists. split.
-    * eapply conv_conv. 
+    * eapply conv_conv.
       ** eapply conv_pi2pair'; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
          eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
          eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
@@ -921,7 +921,7 @@ Proof.
 
   (* case lift_lower *)
   - destruct l. 2: rewrite erasure_prop in H; inversion H.
-    destruct a; dependent destruction H. 
+    destruct a; dependent destruction H.
     eapply type_inv in tWt2 as temp. dependent destruction temp. subst.
     eexists. split.
     + eapply conv_lift_lower'; eauto using conv_sym, conv_Lift, type_conv.
@@ -948,7 +948,7 @@ Proof.
   - destruct A; dependent destruction H. destruct B; dependent destruction H0.
     clear l_eq_n n'. unfold_all_local.
     eapply type_inv in tWt1. dependent destruction tWt1.
-    eapply type_inv in tWt2. dependent destruction tWt2. 
+    eapply type_inv in tWt2. dependent destruction tWt2.
     eexists. split.
     + eapply conv_cast_pi; eauto.
     + simpl. f_equal. rasimpl. f_equal.
@@ -959,7 +959,7 @@ Proof.
         unfold pointwise_relation. intros a0; destruct a0; unfold erasure_subst; simpl.
         ++ rewrite erasure_rename_commute. rewrite erasure_rename_commute. destruct i0; reflexivity.
         ++  reflexivity.
-      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute. 
+      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute.
         f_equal. destruct i0; reflexivity.
 Qed.
 

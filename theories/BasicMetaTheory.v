@@ -1680,7 +1680,7 @@ Qed.
 
 (* Type uniqueness *)
 
-Theorem var_unicity Γ l x A l' A' :
+Theorem var_unique Γ l x A l' A' :
   Γ ∋< l > x : A ->
   Γ ∋< l' > x : A' ->
   l = l' /\ A = A'.
@@ -1697,7 +1697,7 @@ Ltac ty_inj_tac :=
   | H : ty ?n = ty ?m |- _ => eapply ty_inj in H
   end.
 
-Theorem type_sort_unicity Γ l l' t A B :
+Theorem type_sort_unique Γ l l' t A B :
   Γ ⊢< l > t : A ->
   Γ ⊢< l' > t : B ->
   Γ ⊢< Ax l > A ≡ B : Sort l /\ l = l'.
@@ -1706,25 +1706,25 @@ Proof.
   induction H.
   2-21:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
   - eapply type_inv in H0. dependent destruction H0.
-    eapply var_unicity in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
+    eapply var_unique in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
 Qed.
 
-Corollary type_unicity Γ l l' t A B :
+Corollary type_unique Γ l l' t A B :
   Γ ⊢< l > t : A ->
   Γ ⊢< l' > t : B ->
   Γ ⊢< Ax l > A ≡ B : Sort l.
 Proof.
-  intros. eapply type_sort_unicity in H as (HA & HB); eauto. subst.
+  intros. eapply type_sort_unique in H as (HA & HB); eauto. subst.
   eauto using conv_sym.
 Qed.
 
-Corollary sort_unicity Γ l l' t A B :
+Corollary sort_unique Γ l l' t A B :
   Γ ⊢< l > t : A ->
   Γ ⊢< l' > t : B ->
   l = l'.
 Proof.
-  intros. eapply type_sort_unicity in H as (HA & HB); eauto.
+  intros. eapply type_sort_unique in H as (HA & HB); eauto.
 Qed.
 
 (* Linerized versions of computation rules *)
