@@ -929,7 +929,7 @@ Lemma wf_conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
   Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
   Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
   (Γ ⊢< Ax (ty (max i j)) > tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
-  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢⊢< Ax (ty j) > P ≡ P' : Sort l) →
+  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢⊢< Ax l > P ≡ P' : Sort l) →
   (Γ ⊢< Ax (ty i) > A : Sort (ty i) →
   Γ ,, (ty i, A) ⊢⊢< l > pl ≡ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ]) →
   (Γ ⊢< Ax (ty j) > B : Sort (ty j) →
@@ -1035,6 +1035,10 @@ Ltac validitysplit :=
     eapply type_conv ; [ eapply meta_lvl ; [ econstructor | idtac ] | idtac ]
   ].
 
+Hint Resolve
+  validity_ty_ctx
+  : sidecond.
+
 Lemma validity_gen :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -1048,7 +1052,7 @@ Proof.
 
   (* 6,7,8,9,25,26,27,28,41,42:shelve. *)
 
-  all:try solve [intuition eauto 5 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
+  all:try solve [intuition eauto 5 using conversion, typing, validity_ty_ctx, valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
   (* cases type_pi1, type_pi2 and conv_lower *)
   5,9,10: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
@@ -1056,7 +1060,7 @@ Proof.
 
 
   (* cases conv_lam, conv_app, conv_sigma, conv_J and conv_cast *)
-  2,3,4,7,8: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
+  2-4,7,8: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
 
 
 
@@ -1067,7 +1071,6 @@ Proof.
   - intuition eauto. econstructor; eauto using typing, validity_ty_ctx, subst_ty, subst_one.
     eapply subst_ty; eauto using validity_ty_ctx.
     eapply subst_one. econstructor; eauto. econstructor; eauto.
-
 
   (* conv_pi2 *)
   - intuition eauto using typing.
@@ -1153,6 +1156,87 @@ Proof.
       eapply conv_conv ; eauto using conv_sym.
       econstructor; eauto using conversion, validity_ty_ctx.
 
+  (* conv_inl *)
+  - intuition idtac. 1: econstructor ; eauto.
+    econstructor.
+    { econstructor. all: eauto.
+      econstructor. all: eauto.
+    }
+    apply conv_sym. econstructor. all: eauto.
+
+  (* conv_inr *)
+  - intuition idtac. 1: econstructor ; eauto.
+    econstructor.
+    { econstructor. all: eauto.
+      econstructor. all: eauto.
+    }
+    apply conv_sym. econstructor. all: eauto.
+
+  (* conv_sum_rec *)
+  - intuition idtac. 1: econstructor ; eauto.
+    econstructor.
+    { econstructor. all: eauto using pre_conv_ty_in_ctx_ty, typing, conversion.
+      - eapply pre_conv_ty_in_ctx_ty. all: eauto using typing, conversion.
+        econstructor. 1: eassumption.
+        meta_conv.
+        { eapply pre_subst_conv.
+          all: eauto with sidecond.
+          - apply well_scons_alt.
+            + eauto with sidecond.
+            + rasimpl. econstructor.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * econstructor. all: eauto with sidecond.
+          - apply conv_scons_alt.
+            + apply refl_subst. eauto with sidecond.
+            + rasimpl. econstructor.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * eauto using typing, conversion with sidecond.
+        }
+        reflexivity.
+      - eapply pre_conv_ty_in_ctx_ty. all: eauto using typing, conversion.
+        econstructor. 1: eassumption.
+        meta_conv.
+        { eapply pre_subst_conv.
+          all: eauto with sidecond.
+          - apply well_scons_alt.
+            + eauto with sidecond.
+            + rasimpl. econstructor.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * econstructor. all: eauto with sidecond.
+          - apply conv_scons_alt.
+            + apply refl_subst. eauto with sidecond.
+            + rasimpl. econstructor.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * meta_conv.
+                { eapply typing_conversion_ren. all: eauto with sidecond. }
+                reflexivity.
+              * eauto using typing, conversion with sidecond.
+        }
+        reflexivity.
+    }
+    apply conv_sym. meta_conv.
+    { eapply pre_subst_conv.
+      all: eauto using subst_one, substs_one with sidecond.
+    }
+    reflexivity.
+
   (* conv_pi2pair *)
   - intuition eauto.
     eapply type_conv.
@@ -1210,6 +1294,20 @@ Proof.
         1:econstructor; eauto.
         1-3:eapply type_ren; eauto using WellRen_S, ctx_typing, validity_ty_ctx, WellRen_up, type_ren.
         rasimpl; reflexivity.
+
+  (* conv_sum_rec_inl *)
+  - intuition idtac. 1: eauto using typing with sidecond.
+    meta_conv.
+    { eapply typing_conversion_subst. all: eauto using subst_one with sidecond. }
+    rasimpl. apply ext_term. intros.
+    rasimpl. reflexivity.
+
+  (* conv_sum_rec_inr *)
+  - intuition idtac. 1: eauto using typing with sidecond.
+    meta_conv.
+    { eapply typing_conversion_subst. all: eauto using subst_one with sidecond. }
+    rasimpl. apply ext_term. intros.
+    rasimpl. reflexivity.
 Qed.
 
 Theorem validity_conv_left Γ l t u A :

@@ -240,7 +240,7 @@ Inductive typing : ctx -> level -> term → term → Prop :=
 | type_sum_rec Γ i j l A B P pl pr t :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
-    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty (max i j) > t : tysum (ty i) (ty j) A B →
@@ -436,7 +436,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
-    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P ≡ P' : Sort l →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ≡ P' : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl ≡ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr ≡ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty (max i j) > t ≡ t' : tysum (ty i) (ty j) A B →
@@ -568,7 +568,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 | conv_sum_rec_inl Γ i j l A B P pl pr a :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
-    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty i > a : A →
@@ -577,7 +577,7 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
 | conv_sum_rec_inr Γ i j l A B P pl pr b :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
-    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P : Sort l →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty j > b : B →
