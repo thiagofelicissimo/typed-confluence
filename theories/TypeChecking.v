@@ -103,10 +103,10 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
 | infer_Sort Γ l :
     Γ ⊢< Ax (Ax l) > cSort l ⇒ Sort (Ax l) ↣ Sort l
 
-| infer_pi Γ i j T U MA MB A B :
-    Γ ⊢< Ax i > MA ⇒ T ↣ A ->
+| infer_pi Γ i j i' j' T U MA MB A B :
+    Γ ⊢< i' > MA ⇒ T ↣ A ->
     T -->> Sort i ->
-    Γ ,, (i , A) ⊢< Ax j > MB ⇒ U ↣ B ->
+    Γ ,, (i , A) ⊢< j' > MB ⇒ U ↣ B ->
     U -->> Sort j ->
     Γ ⊢< Ax (Ru i j) > cPi MA MB ⇒ Sort (Ru i j) ↣ Pi i j A B
 
@@ -164,28 +164,28 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< ty 0 > Mk ⇐ Nat ↣ k ->
     Γ ⊢< l > crec MP Mp_zero Mp_succ Mk ⇒ P <[ k ..] ↣ rec_box l P p_zero p_succ k
 
-| infer_eq Γ i MA T A Ma a Mb b : 
-    Γ ⊢< Ax i > MA ⇒ T ↣ A ->
+| infer_eq Γ i' i MA T A Ma a Mb b : 
+    Γ ⊢< i' > MA ⇒ T ↣ A ->
     T -->> Sort i ->
     Γ ⊢< i > Ma ⇐ A ↣ a ->
     Γ ⊢< i > Mb ⇐ A ↣ b ->
     Γ ⊢< Ax prop > cEq MA Ma Mb ⇒ Sort prop ↣ Eq i A a b
 
-| infer_J Γ l T A a i MP U P Mp p b Me e :
+| infer_J Γ l T A a i i' MP U P Mp p b Me e :
     Γ ⊢< prop > Me ⇒ T ↣ e -> 
     T -->> Eq l A a b ->
-    Γ ,, (l, A) ⊢< Ax i > MP ⇒ U ↣ P ->
+    Γ ,, (l, A) ⊢< i' > MP ⇒ U ↣ P ->
     U -->> Sort i ->
     Γ ⊢< i > Mp ⇐ P<[a..] ↣ p ->
     Γ ⊢< i > cJ MP Mp Me ⇒ P <[b..] ↣ J_box l i A a P p b e
 
-| infer_Lift Γ i MA T A :
-    Γ ⊢< Ax i > MA ⇒ T ↣ A ->
+| infer_Lift Γ i' i MA T A :
+    Γ ⊢< i' > MA ⇒ T ↣ A ->
     T -->> Sort i ->
     Γ ⊢< Ax (Ax i) > cLift MA ⇒ Sort (Ax i) ↣ Lift i A
 
-| infer_lower Γ i Ma T a A :
-    Γ ⊢< Ax i > Ma ⇒ T ↣ a ->
+| infer_lower Γ i' i Ma T a A :
+    Γ ⊢< i' > Ma ⇒ T ↣ a ->
     T -->> Lift i A ->
     Γ ⊢< i > clower Ma ⇒ A ↣ lower_box i a
 
@@ -193,20 +193,20 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< i > Ma ⇒ A ↣ a ->
     Γ ⊢< Ax i > clift Ma ⇒ Lift i A ↣ lift prop box a
 
-| infer_cast Γ Me T e i A B Ma a :
-    Γ ⊢< prop > Me ⇒ T ↣ e ->
+| infer_cast Γ Me T e i' i A B Ma a :
+    Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax i) (Sort i) A B ->
     Γ ⊢< i > Ma ⇐ A ↣ a ->
     Γ ⊢< i > ccast Me Ma ⇒ B ↣ cast_box i A B a
 
-| infer_injpi1 Γ Me T e i n A1 B1 A2 B2 :
-    Γ ⊢< prop > Me ⇒ T ↣ e ->
+| infer_injpi1 Γ Me T e i' i n A1 B1 A2 B2 :
+    Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) 
             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
     Γ ⊢< prop > cinjpi1 Me ⇒ Eq (Ax i) (Sort i) A2 A1 ↣ box
 
-| infer_injpi2 Γ Me T e i n A1 B1 A2 B2 Ma a2 :
-    Γ ⊢< prop > Me ⇒ T ↣ e ->
+| infer_injpi2 Γ Me T e i i' n A1 B1 A2 B2 Ma a2 :
+    Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) 
             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
     Γ ⊢< i > Ma ⇐ A2 ↣ a2 ->
@@ -234,11 +234,11 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
     Γ ,, (i, A) ⊢< j > Mt ⇐ B ↣ t ->
     Γ ⊢< l > clam Mt ⇐ T ↣ lam_box t
 
-| check_pair Γ n m Mt A t T B Mu u :
+| check_pair Γ i n m Mt A t T B Mu u :
     T -->> Sigma (ty n) (ty m) A B ->
     Γ ⊢< ty n > Mt ⇐ A ↣ t ->
     Γ ⊢< ty m > Mu ⇐ B <[t..] ↣ u ->
-    Γ ⊢< ty (max n m) > cpair Mt Mu ⇐ T ↣ pair_box t u    
+    Γ ⊢< i > cpair Mt Mu ⇐ T ↣ pair_box t u    
 
 | check_lift Γ l i Ma a T A :
     T -->> Lift i A ->
@@ -413,12 +413,12 @@ Proof.
     (* case Pi *)
     - (* applying the ih to A *)
       edestruct H as (TA & A' & A'_Wt & erased_A'_eq & erased_TA_eq); eauto. subst.
-      eapply reduce_to_sort in A'_Wt as (A'_Wt & _); eauto.
+      eapply reduce_to_sort in A'_Wt as (A'_Wt & eq); eauto. subst.
 
       (* applying the ih to B *)
       edestruct (H0 (Γ' ,, (i, A'))) as (TB & B' & B'_Wt & erased_B'_eq & erased_TB_eq).
       all: (eauto using ctx_cons, conv_sort). subst.
-      eapply reduce_to_sort in B'_Wt as (B'_Wt & _); eauto.
+      eapply reduce_to_sort in B'_Wt as (B'_Wt & eq); eauto. subst.
 
       exists (Sort (Ru i j)). exists (Pi i j A' B').
       repeat split. auto using type_pi.
@@ -565,7 +565,8 @@ Proof.
     
     (* case Eq *)
     - edestruct H as (_sort & A' & _A'_Wt & erased_A'_eq & erased_sort_eq); eauto. subst.
-      eapply reduce_to_sort in r as (A'_Wt & _); eauto. clear _A'_Wt.
+      eapply reduce_to_sort in r as (A'_Wt & eq); eauto.
+      subst. clear _A'_Wt.
 
       edestruct H0 as (a' & a'_Wt & erasure_a'_eq); eauto. subst.
       edestruct H1 as (b' & b'_Wt & erasure_b'_eq); eauto. subst.
@@ -584,7 +585,8 @@ Proof.
 
       edestruct (H0 (Γ' ,, (l, A'))) as (_sort & P' & Wt_P' & erasure_P'_eq & erasure_sort_eq); eauto using ctx_typing. 
       subst. clear H0.
-      subst. eapply reduce_to_sort in Wt_P' as (Wt_P' & _); eauto.
+      subst. eapply reduce_to_sort in Wt_P' as (Wt_P' & eq); eauto.
+      subst.
 
       
       edestruct H1 as (p' & p'_Wt & erasure_p'_eq); eauto. 
@@ -599,7 +601,7 @@ Proof.
     
     (* case Lift *)
     - edestruct H as (_sort & A' & _A'_Wt & erased_A'_eq & erased_sort_eq); eauto. subst.
-      eapply reduce_to_sort in r as (A'_Wt & _); eauto. clear _A'_Wt.
+      eapply reduce_to_sort in r as (A'_Wt & eq); eauto. clear _A'_Wt. subst.
       eexists. exists (Lift i A').
       repeat split; eauto using type_Lift.
 
@@ -628,7 +630,7 @@ Proof.
     - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto.
       subst.
       eapply validity_ty_ty in e'_Wt as U_Wt. 
-      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto. subst. destruct V; dependent destruction sort_eq.
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & eq); eauto. subst. destruct V; dependent destruction sort_eq.
       
       eapply validity_conv_right in U_conv_eq as temp.
       eapply type_inv in temp. dependent destruction temp.
@@ -642,7 +644,7 @@ Proof.
     - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto.
       subst.
       eapply validity_ty_ty in e'_Wt as U_Wt. 
-      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto.
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & eq); eauto. subst.
       destruct V; dependent elimination sort_eq.
       destruct A'; dependent destruction A_eq. destruct B'; dependent destruction B_eq.
 
@@ -662,7 +664,7 @@ Proof.
     - edestruct H as (U & e' & e'_Wt & erasure_e'_eq & erasure_U_eq); eauto. clear H.
       subst.
       eapply validity_ty_ty in e'_Wt as U_Wt. 
-      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & _); eauto.
+      eapply reduce_to in r as (V & A' & B' & sort_eq & A_eq & B_eq & U_conv_eq & eq); eauto. subst.
       destruct V; dependent elimination sort_eq.
       destruct A'; dependent destruction A_eq. destruct B'; dependent destruction B_eq.
 
