@@ -1242,14 +1242,14 @@ Proof.
     discriminate.
 Qed.
 
-Lemma ortho_sum_rec_inv Γ l1 l2 l A B P pl pr u t T l' :
-  Γ ⊢< l' > sum_rec l1 l2 l A B P pl pr u ⟹ t : T →
+Lemma ortho_sum_rec_inv Γ l1 l2 k l A B P pl pr u t T :
+  Γ ⊢< ty k > sum_rec l1 l2 l A B P pl pr u ⟹ t : T →
   ( (* by sum_rec cong *)
     ∃ i j A' B' P' pl' pr' u',
-      t = sum_rec (ty i) (ty j) l A' B' P' pl' pr' u' ∧
+      t = sum_rec (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
       l1 = ty i ∧
       l2 = ty j ∧
-      l' = l ∧
+      l = ty k ∧
       Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
       Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
       Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
@@ -1261,7 +1261,7 @@ Lemma ortho_sum_rec_inv Γ l1 l2 l A B P pl pr u t T l' :
       t = pl' <[ a' .. ] ∧
       l1 = ty i ∧
       l2 = ty j ∧
-      l' = l ∧
+      l = ty k ∧
       u = inl (ty i) (ty j) A B a ∧
       Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
       Γ ⊢< ty i > a ⟹ a' : A
@@ -1270,7 +1270,7 @@ Lemma ortho_sum_rec_inv Γ l1 l2 l A B P pl pr u t T l' :
       t = pr' <[ b' .. ] ∧
       l1 = ty i ∧
       l2 = ty j ∧
-      l' = l ∧
+      l = ty k ∧
       u = inr (ty i) (ty j) A B b ∧
       Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
       Γ ⊢< ty j > b ⟹ b' : B
@@ -1280,10 +1280,9 @@ Proof.
   dependent induction H.
   - left. do 8 eexists. intuition eauto.
   - eapply IHortho_red.
-  - (* eapply ortho_irrel. *) admit.
   - right. left. do 5 eexists. intuition eauto.
   - right. right. do 5 eexists. intuition eauto.
-Admitted.
+Qed.
 
 
 Lemma ortho_box_inv Γ l' t A :
