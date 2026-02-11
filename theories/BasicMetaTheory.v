@@ -913,6 +913,33 @@ Proof.
   intros. subst. assumption.
 Qed.
 
+(* Lemmas to reduce size of proofs *)
+
+Notation "Γ ⊢⊢< l > t : A" :=
+  (⊢ Γ → Γ ⊢< l > t : A)
+  (at level 50, l, t, A at next level).
+
+Notation "Γ ⊢⊢< l > u ≡ v : A" :=
+  (⊢ Γ → Γ ⊢< l > u ≡ v : A)
+  (at level 50, l, u, v, A at next level).
+
+Lemma wf_conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+  Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+  Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+  Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+  Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+  (Γ ⊢< Ax (ty (max i j)) > tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
+  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢⊢< Ax (ty j) > P ≡ P' : Sort l) →
+  (Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+  Γ ,, (ty i, A) ⊢⊢< l > pl ≡ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ]) →
+  (Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+  Γ ,, (ty j, B) ⊢⊢< l > pr ≡ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ]) →
+  Γ ⊢< ty (max i j) > t ≡ t' : tysum (ty i) (ty j) A B →
+  Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t ≡ sum_rec (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ].
+Proof.
+  intros **.
+  econstructor. all: eauto 7 using validity_ty_ctx, ctx_cons, typing.
+Qed.
 
 Lemma conv_substs Γ Δ σ σ' t l A :
   ⊢ Δ ->
@@ -938,6 +965,24 @@ Proof.
           all : try solve [ meta_conv ; [
         eauto 12 using ctx_typing, typing, WellSubst_up, conv_substs_up, subst_conv_meta_conv_ctx, subst_meta_conv_ctx | rasimpl ; reflexivity]].
     + rasimpl; reflexivity.
+  - meta_conv.
+    { eapply wf_conv_sum_rec. all: intros. all: eauto with sidecond.
+      1,2: meta_conv ; [ eapply typing_conversion_subst | ] ; eauto with sidecond.
+      - meta_conv.
+        { eapply IHht3. all: eauto using typing, conv_substs_up with sidecond.
+          eapply conv_substs_up with (A := tysum _ _ _ _). all: eauto.
+        }
+        reflexivity.
+      - meta_conv.
+        { eauto using typing, conv_substs_up with sidecond. }
+        rasimpl. apply ext_term. intros []. 2: reflexivity.
+        rasimpl. reflexivity.
+      - meta_conv.
+        { eauto using typing, conv_substs_up with sidecond. }
+        rasimpl. apply ext_term. intros []. 2: reflexivity.
+        rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
   - eapply conv_conv. 1: eauto.
     eapply meta_conv_conv.
     + eapply typing_conversion_subst; eauto. all: eauto.
