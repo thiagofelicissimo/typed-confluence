@@ -505,6 +505,39 @@ Proof.
   intros ? -> ->. auto.
 Qed.
 
+Lemma WellSubst_ren Γ Δ ρ :
+  Δ ⊢r ρ : Γ →
+  ⊢ Δ →
+  Δ ⊢s (ρ >> var) : Γ.
+Proof.
+  induction 1.
+  - constructor.
+  - constructor.
+    + eauto.
+    + rasimpl. unfold ">>".
+      econstructor. all: eassumption.
+Qed.
+
+Lemma WellSubst_compr Γ Δ Θ σ ρ :
+  Δ ⊢s σ : Θ →
+  Γ ⊢r ρ : Δ →
+  ⊢ Γ →
+  Γ ⊢s (σ >> ren_term ρ) : Θ.
+Proof.
+  intros hσ hρ hΓ.
+  induction hσ as [| σ Θ i B h ih ho] in ρ, Γ, hΓ, hρ |- *.
+  - constructor.
+  - constructor.
+    + eauto.
+    + unfold ">>". meta_conv.
+      { eapply type_ren. all: eauto. }
+      rasimpl. reflexivity.
+Qed.
+
+Hint Resolve
+  WellSubst_up WellSubst_weak well_scons_alt WellSubst_ren WellSubst_compr
+  : sidecond.
+
 Lemma typing_conversion_subst :
   (∀ Γ l t A,
     Γ ⊢< l > t : A →
@@ -524,7 +557,7 @@ Proof.
   apply typing_mutind; intros.
 
   (* solves goals involving variables *)
-  1,23: solve [ cbn ; eauto using varty_subst, conv_refl ].
+  1,27: solve [ cbn ; eauto using varty_subst, conv_refl ].
 
   (* solves most goals, which are easy *)
   all: try solve [ try econstructor ; eauto 8 using WellSubst_up, ctx_cons ].
@@ -534,25 +567,61 @@ Proof.
       by eauto 6 using ctx_typing, typing, WellSubst_meta, WellSubst_up.
 
   (* solves remaining goals involving typing rules or congruence rules *)
-  1-12:solve [cbn in *; meta_conv ;
+  1-6,8-13:solve [cbn in *; meta_conv ;
             [ (econstructor ; try solve [ meta_conv ;
               [ eauto 11 using WellRen_up, WellSubst_up, WellSubst_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | rasimpl; reflexivity]].
 
   (* solves all goals involving computation rules *)
-  1-6:solve [ intros; cbn; eapply meta_conv_conv;
+  3-8:solve [ intros; cbn; eapply meta_conv_conv;
                 [ eapply meta_rhs_conv;
                   [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ +
                       eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower +
-                      eapply conv_pi1pair + eapply conv_pi2pair) ;
+                      eapply conv_pi1pair + eapply conv_pi2pair + eapply conv_sum_rec_inl) ;
                     eauto using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta; try (eapply meta_conv;
                     [ eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta
                     | rasimpl; reflexivity]))
                   | rasimpl; reflexivity]
                 | rasimpl; reflexivity] ].
 
+  (* type_sum_rec *)
+  - cbn in *.
+    meta_conv.
+    { econstructor. all: eauto with sidecond.
+      - eauto 10 using typing with sidecond.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
 
+  (* conv_sum_rec *)
+  - cbn in *.
+    meta_conv.
+    { econstructor. all: eauto with sidecond.
+      - eauto 10 using typing with sidecond.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
+
+  (* conv_cast_pi *)
   - intros; eapply meta_conv_conv.
     + eapply meta_rhs_conv.
       * eapply conv_cast_pi; fold subst_term; eapply meta_conv.
@@ -560,6 +629,44 @@ Proof.
         all:rasimpl;reflexivity.
       * fold subst_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal.
     + fold subst_term. rasimpl. reflexivity.
+
+  (* conv_sum_rec_inl *)
+  - cbn in *.
+    meta_conv. 1: eapply meta_rhs_conv.
+    { eapply conv_sum_rec_inl. all: eauto 10 using typing with sidecond.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+    }
+    all: rasimpl. 1: reflexivity.
+    apply ext_term. intros []. 2: reflexivity.
+    rasimpl. reflexivity.
+
+  (* conv_sum_rec_inr *)
+  - cbn in *.
+    meta_conv. 1: eapply meta_rhs_conv.
+    { eapply conv_sum_rec_inr. all: eauto 10 using typing with sidecond.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+      - meta_conv.
+        { eauto 7 using typing with sidecond. }
+        rasimpl. apply ext_term. intros [].
+        all: cbn. 2: reflexivity.
+        rasimpl. reflexivity.
+    }
+    all: rasimpl. 1: reflexivity.
+    apply ext_term. intros []. 2: reflexivity.
+    rasimpl. reflexivity.
 Qed.
 
 
