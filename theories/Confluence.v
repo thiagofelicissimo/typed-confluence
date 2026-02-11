@@ -575,11 +575,11 @@ Proof.
   1:cbn;eauto using subst_ortho_var.
 
   (* irrelevance case *)
-  20:{ eapply ortho_irrel. 2:eapply type_conv.
+  24:{ eapply ortho_irrel. 2:eapply type_conv.
     1,2:eapply subst_ty ; eauto using validity_subst_conv_left, validity_subst_conv_right, ortho_subst_to_conv, validity_ty_ctx.
     eapply conv_sym, subst_conv; eauto using ortho_subst_to_conv, validity_ty_ty, conv_refl. }
 
-  (* solves most easy, goals *)
+  (* solves most easy goals *)
   all: try solve [ intros ; try econstructor ;
             eauto 11 using ortho_subst_up, ctx_cons, ortho_validity_left, subst_conv,
               validity_conv_left, ortho_subst_to_conv,  refl_subst, validity_subst_conv_left  ].
@@ -596,7 +596,7 @@ Proof.
               | rasimpl ; reflexivity]])
             | ssimpl; reflexivity]].
 
-  (* solves most goals involving computaiton rules *)
+  (* solves most goals involving computation rules *)
   all:try solve [intros; cbn in *; eapply ortho_meta_conv2 ;
             [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl +
                 eapply ortho_lower_lift + eapply ortho_lift_lower + eapply ortho_pi1pair + eapply ortho_pi2pair +
@@ -605,6 +605,38 @@ Proof.
               [ eauto 13 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv, ortho_subst_to_conv, validity_subst_conv_left, ortho_subst_up, subst_conv, refl_subst, subst_ty, WellSubst_up
               | ssimpl ; reflexivity]])
             | ssimpl; reflexivity | ssimpl; reflexivity ]].
+
+  (* ortho_sum_rec *)
+  - eapply ortho_meta_conv.
+    { cbn. econstructor. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+      - eapply ortho_meta_conv.
+        { eapply IHortho_red3.
+          - econstructor. 1: auto.
+            econstructor.
+            all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          - eapply ortho_subst_up. all: eauto.
+            cbn. econstructor.
+            all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        }
+        reflexivity.
+      - eapply ortho_meta_conv.
+        { eapply IHortho_red4.
+          - econstructor. 1: auto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          - eapply ortho_subst_up. all: eauto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - eapply ortho_meta_conv.
+        { eapply IHortho_red5.
+          - econstructor. 1: auto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          - eapply ortho_subst_up. all: eauto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    rasimpl. reflexivity.
 
   (* for some strange reason, the following goals (rec_zero and rec_succ) are not solved by the automation *)
   - cbn. eapply ortho_meta_conv2. eapply ortho_rec_zero; eauto.
@@ -623,6 +655,64 @@ Proof.
     + fold subst_term; rasimpl; reflexivity.
     + fold subst_term. unfold_all_local. simpl.
       f_equal. rasimpl. f_equal. f_equal. f_equal. rasimpl. f_equal.
+
+  (* ortho_sum_rec_inl *)
+  - eapply ortho_meta_conv2.
+    { cbn. eapply ortho_sum_rec_inl. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+      - eapply subst_ty.
+        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + econstructor. 1: auto.
+          econstructor.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + apply WellSubst_up.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          econstructor.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+      - eapply ortho_meta_conv.
+        { eapply IHortho_red1.
+          - econstructor. 1: auto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          - eapply ortho_subst_up. all: eauto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - eapply subst_ty.
+        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + apply WellSubst_up.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    all: rasimpl. 2: reflexivity.
+    apply ext_term. intros. rasimpl. reflexivity.
+
+  (* ortho_sum_rec_inr *)
+  - eapply ortho_meta_conv2.
+    { cbn. eapply ortho_sum_rec_inr. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+      - eapply subst_ty.
+        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + econstructor. 1: auto.
+          econstructor.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + apply WellSubst_up.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          econstructor.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+      - eapply subst_ty.
+        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + apply WellSubst_up.
+          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        + rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+      - eapply ortho_meta_conv.
+        { eapply IHortho_red1.
+          - econstructor. 1: auto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          - eapply ortho_subst_up. all: eauto.
+            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        }
+        rasimpl. apply ext_term. intro. rasimpl. reflexivity.
+    }
+    all: rasimpl. 2: reflexivity.
+    apply ext_term. intros. rasimpl. reflexivity.
 Qed.
 
 Theorem ortho_conv_in_ctx :
