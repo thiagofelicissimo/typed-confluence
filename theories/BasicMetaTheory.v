@@ -1627,7 +1627,41 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
        Γ ⊢< Ax prop > T ≡
          Eq (Ax (ty n)) (Sort (ty n))
            (B1<[ a1 ..]) (B2<[a2..]) : Sort prop)
-    : type_inv_data Γ l (injpi2 i (ty n) A1 A2 B1 B2 e a2) T.
+    : type_inv_data Γ l (injpi2 i (ty n) A1 A2 B1 B2 e a2) T
+
+  | inv_data_sum Γ i j A B l T :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< Ax (Ax (ty (max i j))) > T ≡ Sort (ty (max i j)) : Sort (Ax (ty (max i j))) →
+    l = Ax (ty (max i j)) →
+    type_inv_data Γ l (tysum (ty i) (ty j) A B) T
+
+  | inv_data_inl Γ i j A B a l T :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< ty i > a : A →
+    Γ ⊢< Ax (ty (max i j)) > T ≡ tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
+    l = ty (max i j) →
+    type_inv_data Γ l (inl (ty i) (ty j) A B a) T
+
+  | inv_data_inr Γ i j A B b l T :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ⊢< ty j > b : B →
+    Γ ⊢< Ax (ty (max i j)) > T ≡ tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
+    l = ty (max i j) →
+    type_inv_data Γ l (inr (ty i) (ty j) A B b) T
+
+  | inv_data_sum_rec Γ i j l A B P pl pr t k T :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
+    Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
+    Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+    Γ ⊢< ty (max i j) > t : tysum (ty i) (ty j) A B →
+    Γ ⊢< Ax l > T ≡ P <[ t .. ] : Sort l →
+    k = l →
+    type_inv_data Γ k (sum_rec (ty i) (ty j) l A B P pl pr t) T.
 
 Derive Signature for type_inv_data.
 
@@ -1637,7 +1671,7 @@ Lemma type_inv Γ l t T :
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  induction H. 1-21:econstructor; eauto using conv_refl.
+  induction H. 1-25:econstructor; eauto using conv_refl.
   eapply validity_conv_left in H0 as AWt.
   eapply IHtyping in AWt as IH.
   depelim IH; econstructor; subst; eauto using conv_sym, conv_trans.
