@@ -432,6 +432,8 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
     Γ ⊢< ty (max i j) > inr (ty i) (ty j) A B b ≡ inr (ty i) (ty j) A' B' b' : tysum (ty i) (ty j) A B
 
 | conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+    Γ ⊢< Ax (ty i) > A : Sort (ty i) →
+    Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
     Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax (ty j) > P ≡ P' : Sort l →
