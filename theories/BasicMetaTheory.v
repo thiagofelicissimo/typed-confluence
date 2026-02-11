@@ -1704,7 +1704,7 @@ Theorem type_sort_unique Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  2-21:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
+  2-25:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
   - eapply type_inv in H0. dependent destruction H0.
     eapply var_unique in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.
