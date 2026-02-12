@@ -614,31 +614,31 @@ Proof.
 
   (* ortho_sum_case *)
   - eapply ortho_meta_conv.
-    { cbn. econstructor. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+    { cbn. econstructor. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty, subst_conv.
       - eapply ortho_meta_conv.
-        { eapply IHortho_red3.
+        { eapply IHortho_red1.
           - econstructor. 1: auto.
             econstructor.
-            all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           - eapply ortho_subst_up. all: eauto.
             cbn. econstructor.
-            all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         }
         reflexivity.
       - eapply ortho_meta_conv.
-        { eapply IHortho_red4.
+        { eapply IHortho_red2.
           - econstructor. 1: auto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           - eapply ortho_subst_up. all: eauto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         }
         rasimpl. apply ext_term. intro. rasimpl. reflexivity.
       - eapply ortho_meta_conv.
-        { eapply IHortho_red5.
+        { eapply IHortho_red3.
           - econstructor. 1: auto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           - eapply ortho_subst_up. all: eauto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         }
         rasimpl. apply ext_term. intro. rasimpl. reflexivity.
     }
@@ -664,28 +664,28 @@ Proof.
 
   (* ortho_sum_case_inl *)
   - eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_case_inl. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+    { cbn. eapply ortho_sum_case_inl. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty, subst_conv, refl_subst.
       - eapply subst_ty.
         all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + econstructor. 1: auto.
           econstructor.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + apply WellSubst_up.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           econstructor.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
       - eapply ortho_meta_conv.
         { eapply IHortho_red1.
           - econstructor. 1: auto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           - eapply ortho_subst_up. all: eauto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         }
         rasimpl. apply ext_term. intro. rasimpl. reflexivity.
       - eapply subst_ty.
-        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        all: eauto 7 using validity_conv_left, validity_conv_right, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + apply WellSubst_up.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + rasimpl. apply ext_term. intro. rasimpl. reflexivity.
     }
     all: rasimpl. 2: reflexivity.
@@ -693,27 +693,27 @@ Proof.
 
   (* ortho_sum_case_inr *)
   - eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_case_inr. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+    { cbn. eapply ortho_sum_case_inr. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty, subst_conv, refl_subst.
       - eapply subst_ty.
         all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + econstructor. 1: auto.
           econstructor.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + apply WellSubst_up.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           econstructor.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
       - eapply subst_ty.
-        all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+        all: eauto 7 using validity_conv_left, validity_conv_right, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + apply WellSubst_up.
-          all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+          all: eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + rasimpl. apply ext_term. intro. rasimpl. reflexivity.
       - eapply ortho_meta_conv.
         { eapply IHortho_red1.
           - econstructor. 1: auto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
           - eapply ortho_subst_up. all: eauto.
-            eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
+            eauto using validity_conv_left, ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         }
         rasimpl. apply ext_term. intro. rasimpl. reflexivity.
     }
@@ -1207,8 +1207,8 @@ Lemma ortho_inl_inv Γ l1 l2 l' t' A B a T :
     l2 = ty m ∧
     t' = inl (ty n) (ty m) A' B' a' ∧
     l' = ty (max n m) ∧
-    Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
-    Γ ⊢< Ax (ty m) > B ⟹ B' : Sort (ty m) ∧
+    Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
+    Γ ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
     Γ ⊢< ty n > a ⟹ a' : A ∧
     Γ ⊢< Ax (ty (max n m)) > tysum l1 l2 A B ≡ T : Sort (ty (max n m)).
 Proof.
@@ -1231,8 +1231,8 @@ Lemma ortho_inr_inv Γ l1 l2 l' t' A B b T :
     l2 = ty m ∧
     t' = inr (ty n) (ty m) A' B' b' ∧
     l' = ty (max n m) ∧
-    Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) ∧
-    Γ ⊢< Ax (ty m) > B ⟹ B' : Sort (ty m) ∧
+    Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
+    Γ ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
     Γ ⊢< ty m > b ⟹ b' : B ∧
     Γ ⊢< Ax (ty (max n m)) > tysum l1 l2 A B ≡ T : Sort (ty (max n m)).
 Proof.
@@ -1257,22 +1257,26 @@ Lemma ortho_sum_case_inv Γ l1 l2 k l A B P pl pr u t T :
     (( (* by sum_case cong *)
       ∃ A' B' P' pl' pr' u',
         t = sum_case (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
-        Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
-        Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
+        Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) ∧
+        Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) ∧
         Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
         Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ⊢< ty (max i j) > u ⟹ u' : tysum (ty i) (ty j) A B
     ) ∨ ( (* by ortho_sum_case_inl *)
-      ∃ pl' a a',
+      ∃ A' B' pl' a a',
         t = pl' <[ a' .. ] ∧
-        u = inl (ty i) (ty j) A B a ∧
+        u = inl (ty i) (ty j) A' B' a ∧
+        Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) ∧
+        Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) ∧
         Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ⊢< ty i > a ⟹ a' : A
     ) ∨ ( (* by ortho_sum_case_inr *)
-      ∃ pr' b b',
+      ∃ A' B' pr' b b',
         t = pr' <[ b' .. ] ∧
-        u = inr (ty i) (ty j) A B b ∧
+        u = inr (ty i) (ty j) A' B' b ∧
+        Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) ∧
+        Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) ∧
         Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ⊢< ty j > b ⟹ b' : B
     )).
@@ -1281,8 +1285,8 @@ Proof.
   dependent induction H.
   - do 2 eexists. intuition eauto. left. do 6 eexists. intuition eauto.
   - eapply IHortho_red.
-  - do 2 eexists. intuition eauto. right. left. do 3 eexists. intuition eauto.
-  - do 2 eexists. intuition eauto. right. right. do 3 eexists. intuition eauto.
+  - do 2 eexists. intuition eauto. right. left. do 5 eexists. intuition eauto.
+  - do 2 eexists. intuition eauto. right. right. do 5 eexists. intuition eauto.
 Qed.
 
 
@@ -2259,30 +2263,26 @@ Proof.
   (* inl *)
   - rename t1 into A, t2 into B, t3 into a.
     ttinv t_red_t'.
-    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & A_red_A' & B_red_B' & a_red_a' & _).
+    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & hA1 & hB1 & a_red_a' & _).
     ttinv t_red_t''.
-    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & A_red_A'' & B_red_B'' & a_red_a'' & _).
+    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & hA2 & hB2 & a_red_a'' & _).
     ty_inj_tac. subst.
 
-    destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
-    destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
     destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
-    do 4 eexists. eexists (inl _ _ A''' B''' a''').
-    split; apply ortho_inl; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv.
+    do 4 eexists. eexists (inl _ _ A'' B'' a''').
+    split; apply ortho_inl; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv, conv_trans.
 
   (* inr *)
   - rename t1 into A, t2 into B, t3 into a.
     ttinv t_red_t'.
-    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & A_red_A' & B_red_B' & a_red_a' & _).
+    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & hA1 & hB1 & a_red_a' & _).
     ttinv t_red_t''.
-    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & A_red_A'' & B_red_B'' & a_red_a'' & _).
+    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & hA2 & hB2 & a_red_a'' & _).
     ty_inj_tac. subst.
 
-    destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
-    destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
     destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
-    do 4 eexists. eexists (inr _ _ A''' B''' a''').
-    split; apply ortho_inr; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv.
+    do 4 eexists. eexists (inr _ _ A'' B'' a''').
+    split; apply ortho_inr; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv, conv_trans.
 
   (* sum_case *)
   - rename t1 into A, t2 into B, t3 into P, t4 into pl, t5 into pr, t6 into u.
@@ -2294,29 +2294,26 @@ Proof.
 
     destruct h1 as [
       (A' & B' & P' & pl' & pr' & u' & -> & hA1 & hB1 & hP1 & hpl1 & hpr1 & hu1)
-    | [(pl' & a & a' & -> & -> & hpl1 & ha1)
-    | (pr' & b & b' & -> & -> & hpr1 & hb1)
+    | [(A1 & B1 & pl' & a & a' & -> & -> & hpl1 & ha1)
+    | (A1 & B1 & pr' & b & b' & -> & -> & hpr1 & hb1)
     ]], h2 as [
       (A'' & B'' & P'' & pl'' & pr'' & u'' & -> & hA2 & hB2 & hP2 & hpl2 & hpr2 & hu2)
-    | [(pl'' & a2 & a'' & -> & eu & hpl2 & ha2)
-    | (pr'' & b2 & b'' & -> & eu & hpr2 & hb2)
+    | [(A2 & B2 & pl'' & a2 & a'' & -> & eu & hpl2 & ha2)
+    | (A2 & B2 & pr'' & b2 & b'' & -> & eu & hpr2 & hb2)
     ]].
 
-    + destruct (IH A ltac:(simpl; lia) _ _ _ _ _ hA1 hA2) as (A''' & ? & ?).
-      destruct (IH B ltac:(simpl; lia) _ _ _ _ _ hB1 hB2) as (B''' & ? & ?).
-      destruct (IH P ltac:(simpl; lia) _ _ _ _ _ hP1 hP2) as (P''' & ? & ?).
+    + destruct (IH P ltac:(simpl; lia) _ _ _ _ _ hP1 hP2) as (P''' & ? & ?).
       destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
       destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
       destruct (IH u ltac:(simpl; lia) _ _ _ _ _ hu1 hu2) as (u''' & ? & ?).
-      do 4 eexists. eexists (sum_case _ _ _ A''' B''' P''' pl''' pr''' u''').
-      split; apply ortho_sum_case; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv.
+      do 4 eexists. eexists (sum_case _ _ _ A'' B'' P''' pl''' pr''' u''').
+      (* split; apply ortho_sum_case; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans. *)
       all: admit.
 
     + subst.
       ttinv hu1.
       destruct hu1 as (?A & ?B & ?a & ?n & ?m & ? & ? & -> & ? & huA & huB & hua & _).
       ty_inj_tac. subst.
-      (* TODO Check the rules, currently too complicated probably *)
 Qed.
 
 
