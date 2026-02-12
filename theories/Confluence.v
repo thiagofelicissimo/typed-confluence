@@ -1387,6 +1387,10 @@ Fixpoint size (t : term) : nat :=
   | pi1 i j A B t => 1 + size A + size B + size t
   | pi2 i j A B t => 1 + size A + size B + size t
   | cast i A B e t => 1 + size A + size B + size e + size t
+  | tysum i j A B => 1 + size A + size B
+  | inl i j A B a => 1 + size A + size B + size a
+  | inr i j A B b => 1 + size A + size B + size b
+  | sum_rec i j l A B P pl pr u => 1 + size A + size B + size P + size pl + size pr + size u
   | _ => 0
 end.
 
@@ -2242,14 +2246,46 @@ Proof.
 
   (* tysum *)
   - rename t1 into A. rename t2 into B.
-    ttinv t_red_t'. destruct t_red_t' as (A' & B' & n & m & eq1 & eq2 & t'_eq_sig & _ & A_red_A' & B_red_B' & _).
-    ttinv t_red_t''. destruct t_red_t'' as (A'' & B''  & n' & m' & eq1' & eq2' & t''_eq_sig & _ & A_red_A'' & B_red_B'' & _).
-    subst. ty_inj_tac. subst.
+    ttinv t_red_t'. destruct t_red_t' as (A' & B' & n & m & -> & -> & -> & ? & A_red_A' & B_red_B' & _).
+    ttinv t_red_t''. destruct t_red_t'' as (A'' & B'' & n' & m' & ? & ? & -> & _ & A_red_A'' & B_red_B'' & _).
+    ty_inj_tac. subst.
 
     destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
     destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
-    do 4 eexists. eexists (Sigma _ _ A''' B''').
-    split; apply ortho_sigma; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, conv_refl, validity_ty_ty, validity_conv_left.
+    do 4 eexists. eexists (tysum _ _ A''' B''').
+    split; apply ortho_sum; eauto 7 using conv_ty_in_ctx_ortho, ortho_to_conv, conv_refl, validity_ty_ty, validity_conv_left.
+
+  (* inl *)
+  - rename t1 into A, t2 into B, t3 into a.
+    ttinv t_red_t'.
+    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & A_red_A' & B_red_B' & a_red_a' & _).
+    ttinv t_red_t''.
+    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & A_red_A'' & B_red_B'' & a_red_a'' & _).
+    ty_inj_tac. subst.
+
+    destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
+    destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
+    destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
+    do 4 eexists. eexists (inl _ _ A''' B''' a''').
+    split; apply ortho_inl; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv.
+
+  (* inr *)
+  - rename t1 into A, t2 into B, t3 into a.
+    ttinv t_red_t'.
+    destruct t_red_t' as (A' & B' & a' & n & m & -> & -> & -> & ? & A_red_A' & B_red_B' & a_red_a' & _).
+    ttinv t_red_t''.
+    destruct t_red_t'' as (A'' & B'' & a'' & n' & m' & ? & ? & -> & _ & A_red_A'' & B_red_B'' & a_red_a'' & _).
+    ty_inj_tac. subst.
+
+    destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
+    destruct (IH B ltac:(simpl; lia) _ _ _ _ _ B_red_B' B_red_B'') as (B''' & B'_red_B''' & B''_red_B''').
+    destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
+    do 4 eexists. eexists (inr _ _ A''' B''' a''').
+    split; apply ortho_inr; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv.
+
+  (* sum_rec *)
+  - rename t1 into A, t2 into B, t3 into P, t4 into pl, t5 into pr, t6 into u.
+    ttinv t_red_t'.
 Qed.
 
 
