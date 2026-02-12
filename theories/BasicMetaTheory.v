@@ -1849,3 +1849,35 @@ Lemma conv_injpi2' Γ i n A1 A1' A2 A2' B1 B1' B2 B2' e e' a2 a2' :
 Proof.
   intros; econstructor; eauto using validity_conv_left.
 Qed.
+
+Lemma conv_sum_case_inl' Γ i j l A A' B B' P pl pr a :
+  Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+  Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
+  Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ⊢< ty i > a : A →
+  Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr (inl (ty i) (ty j) A' B' a) ≡ pl <[ a .. ] : P <[ (inl (ty i) (ty j) A B a) .. ].
+Proof.
+  intros. eapply conv_trans.
+  - eapply conv_sym. eapply conv_sum_case.
+    all: eauto using validity_conv_left, conv_refl.
+    econstructor. all: eauto using validity_conv_left, conv_refl.
+  - eapply conv_sum_case_inl. all: eauto using validity_conv_left.
+Qed.
+
+Lemma conv_sum_case_inr' Γ i j l A A' B B' P pl pr b :
+  Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+  Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
+  Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ⊢< ty j > b : B →
+  Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr (inr (ty i) (ty j) A' B' b) ≡ pr <[ b .. ] : P <[ (inr (ty i) (ty j) A B b) .. ].
+Proof.
+  intros. eapply conv_trans.
+  - eapply conv_sym. eapply conv_sum_case.
+    all: eauto using validity_conv_left, conv_refl.
+    econstructor. all: eauto using validity_conv_left, conv_refl.
+  - eapply conv_sum_case_inr. all: eauto using validity_conv_left.
+Qed.
