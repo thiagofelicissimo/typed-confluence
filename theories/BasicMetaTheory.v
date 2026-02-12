@@ -311,7 +311,7 @@ Proof.
                 | ssimpl; reflexivity]
               | ssimpl; reflexivity] ].
 
-  (* type_sum_rec *)
+  (* type_sum_case *)
   - intros **. cbn in *.
     meta_conv.
     { econstructor. all: eauto with sidecond.
@@ -329,7 +329,7 @@ Proof.
     }
     rasimpl. reflexivity.
 
-  (* conv_sum_rec *)
+  (* conv_sum_case *)
   - intros **. cbn in *.
     meta_conv.
     { econstructor. all: eauto with sidecond.
@@ -356,10 +356,10 @@ Proof.
       * fold ren_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal. f_equal; substify; asimpl; reflexivity.
     + fold ren_term. rasimpl. reflexivity.
 
-  (* conv_sum_rec_inl *)
+  (* conv_sum_case_inl *)
   - intros **. cbn in *.
     meta_conv. 1: eapply meta_rhs_conv.
-    { eapply conv_sum_rec_inl. all: eauto 7 using typing with sidecond.
+    { eapply conv_sum_case_inl. all: eauto 7 using typing with sidecond.
       - meta_conv.
         { eauto using typing with sidecond. }
         rasimpl. apply ext_term. intros [].
@@ -375,10 +375,10 @@ Proof.
     apply ext_term. intros []. 2: reflexivity.
     rasimpl. reflexivity.
 
-  (* conv_sum_rec_inr *)
+  (* conv_sum_case_inr *)
   - intros **. cbn in *.
     meta_conv. 1: eapply meta_rhs_conv.
-    { eapply conv_sum_rec_inr. all: eauto 7 using typing with sidecond.
+    { eapply conv_sum_case_inr. all: eauto 7 using typing with sidecond.
       - meta_conv.
         { eauto using typing with sidecond. }
         rasimpl. apply ext_term. intros [].
@@ -578,14 +578,14 @@ Proof.
                 [ eapply meta_rhs_conv;
                   [ ((eapply conv_beta + eapply conv_rec_zero + eapply conv_rec_succ +
                       eapply conv_J_refl + eapply conv_lower_lift + eapply conv_lift_lower +
-                      eapply conv_pi1pair + eapply conv_pi2pair + eapply conv_sum_rec_inl) ;
+                      eapply conv_pi1pair + eapply conv_pi2pair + eapply conv_sum_case_inl) ;
                     eauto using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta; try (eapply meta_conv;
                     [ eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta
                     | rasimpl; reflexivity]))
                   | rasimpl; reflexivity]
                 | rasimpl; reflexivity] ].
 
-  (* type_sum_rec *)
+  (* type_sum_case *)
   - cbn in *.
     meta_conv.
     { econstructor. all: eauto with sidecond.
@@ -603,7 +603,7 @@ Proof.
     }
     rasimpl. reflexivity.
 
-  (* conv_sum_rec *)
+  (* conv_sum_case *)
   - cbn in *.
     meta_conv.
     { econstructor. all: eauto with sidecond.
@@ -630,10 +630,10 @@ Proof.
       * fold subst_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal.
     + fold subst_term. rasimpl. reflexivity.
 
-  (* conv_sum_rec_inl *)
+  (* conv_sum_case_inl *)
   - cbn in *.
     meta_conv. 1: eapply meta_rhs_conv.
-    { eapply conv_sum_rec_inl. all: eauto 10 using typing with sidecond.
+    { eapply conv_sum_case_inl. all: eauto 10 using typing with sidecond.
       - meta_conv.
         { eauto 7 using typing with sidecond. }
         rasimpl. apply ext_term. intros [].
@@ -649,10 +649,10 @@ Proof.
     apply ext_term. intros []. 2: reflexivity.
     rasimpl. reflexivity.
 
-  (* conv_sum_rec_inr *)
+  (* conv_sum_case_inr *)
   - cbn in *.
     meta_conv. 1: eapply meta_rhs_conv.
-    { eapply conv_sum_rec_inr. all: eauto 10 using typing with sidecond.
+    { eapply conv_sum_case_inr. all: eauto 10 using typing with sidecond.
       - meta_conv.
         { eauto 7 using typing with sidecond. }
         rasimpl. apply ext_term. intros [].
@@ -923,7 +923,7 @@ Notation "Γ ⊢⊢< l > u ≡ v : A" :=
   (⊢ Γ → Γ ⊢< l > u ≡ v : A)
   (at level 50, l, u, v, A at next level).
 
-Lemma wf_conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+Lemma wf_conv_sum_case Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
   Γ ⊢< Ax (ty i) > A : Sort (ty i) →
   Γ ⊢< Ax (ty j) > B : Sort (ty j) →
   Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
@@ -935,7 +935,7 @@ Lemma wf_conv_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
   (Γ ⊢< Ax (ty j) > B : Sort (ty j) →
   Γ ,, (ty j, B) ⊢⊢< l > pr ≡ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ]) →
   Γ ⊢< ty (max i j) > t ≡ t' : tysum (ty i) (ty j) A B →
-  Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t ≡ sum_rec (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ].
+  Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr t ≡ sum_case (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ].
 Proof.
   intros **.
   econstructor. all: eauto 7 using validity_ty_ctx, ctx_cons, typing.
@@ -966,7 +966,7 @@ Proof.
         eauto 12 using ctx_typing, typing, WellSubst_up, conv_substs_up, subst_conv_meta_conv_ctx, subst_meta_conv_ctx | rasimpl ; reflexivity]].
     + rasimpl; reflexivity.
   - meta_conv.
-    { eapply wf_conv_sum_rec. all: intros. all: eauto with sidecond.
+    { eapply wf_conv_sum_case. all: intros. all: eauto with sidecond.
       1,2: meta_conv ; [ eapply typing_conversion_subst | ] ; eauto with sidecond.
       - meta_conv.
         { eapply IHht3. all: eauto using typing, conv_substs_up with sidecond.
@@ -1172,7 +1172,7 @@ Proof.
     }
     apply conv_sym. econstructor. all: eauto.
 
-  (* conv_sum_rec *)
+  (* conv_sum_case *)
   - intuition idtac. 1: econstructor ; eauto.
     econstructor.
     { econstructor. all: eauto using pre_conv_ty_in_ctx_ty, typing, conversion.
@@ -1295,14 +1295,14 @@ Proof.
         1-3:eapply type_ren; eauto using WellRen_S, ctx_typing, validity_ty_ctx, WellRen_up, type_ren.
         rasimpl; reflexivity.
 
-  (* conv_sum_rec_inl *)
+  (* conv_sum_case_inl *)
   - intuition idtac. 1: eauto using typing with sidecond.
     meta_conv.
     { eapply typing_conversion_subst. all: eauto using subst_one with sidecond. }
     rasimpl. apply ext_term. intros.
     rasimpl. reflexivity.
 
-  (* conv_sum_rec_inr *)
+  (* conv_sum_case_inr *)
   - intuition idtac. 1: eauto using typing with sidecond.
     meta_conv.
     { eapply typing_conversion_subst. all: eauto using subst_one with sidecond. }
@@ -1652,7 +1652,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     l = ty (max i j) →
     type_inv_data Γ l (inr (ty i) (ty j) A B b) T
 
-  | inv_data_sum_rec Γ i j l A B P pl pr t k T :
+  | inv_data_sum_case Γ i j l A B P pl pr t k T :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
@@ -1661,7 +1661,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     Γ ⊢< ty (max i j) > t : tysum (ty i) (ty j) A B →
     Γ ⊢< Ax l > T ≡ P <[ t .. ] : Sort l →
     k = l →
-    type_inv_data Γ k (sum_rec (ty i) (ty j) l A B P pl pr t) T.
+    type_inv_data Γ k (sum_case (ty i) (ty j) l A B P pl pr t) T.
 
 Derive Signature for type_inv_data.
 

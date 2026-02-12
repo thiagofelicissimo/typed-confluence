@@ -38,4 +38,4 @@ injpi2  : level -> level -> term -> term -> (bind term in term) -> (bind term in
 tysum : level -> level -> term -> term -> term
 inl : level -> level -> term -> term -> term -> term
 inr : level -> level -> term -> term -> term -> term
-sum_rec : level -> level -> level -> term -> term -> (bind term in term) -> (bind term in term) -> (bind term in term) -> term -> term
+sum_case : level -> level -> level -> term -> term -> (bind term in term) -> (bind term in term) -> (bind term in term) -> term -> term

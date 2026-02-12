@@ -158,7 +158,7 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
     Γ ⊢< ty j > b ⟹ b' : B →
     Γ ⊢< ty (max i j) > inr (ty i) (ty j) A B b ⟹ inr (ty i) (ty j) A' B' b' : tysum (ty i) (ty j) A B
 
-| ortho_sum_rec Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+| ortho_sum_case Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) →
@@ -167,7 +167,7 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
     Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty (max i j) > t ⟹ t' : tysum (ty i) (ty j) A B →
-    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr t ⟹ sum_rec (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ]
+    Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr t ⟹ sum_case (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ]
 
 | ortho_conv :
     ∀ Γ l A B t t',
@@ -273,23 +273,23 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
     let t4 := lam i (ty n) A2' B2' t3 in
     Γ ⊢< Ru i (ty n) > cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) e f ⟹ t4 : Pi i (ty n) A2 B2
 
-| ortho_sum_rec_inl Γ i j l A B P pl pl' pr a a' :
+| ortho_sum_case_inl Γ i j l A B P pl pl' pr a a' :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty i > a ⟹ a' : A →
-    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inl (ty i) (ty j) A B a) ⟹ pl' <[ a' .. ] : P <[ (inl (ty i) (ty j) A B a) .. ]
+    Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr (inl (ty i) (ty j) A B a) ⟹ pl' <[ a' .. ] : P <[ (inl (ty i) (ty j) A B a) .. ]
 
-| ortho_sum_rec_inr Γ i j l A B P pl pr pr' b b' :
+| ortho_sum_case_inr Γ i j l A B P pl pr pr' b b' :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P : Sort l →
     Γ ,, (ty i, A) ⊢< l > pl : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
     Γ ⊢< ty j > b ⟹ b' : B →
-    Γ ⊢< l > sum_rec (ty i) (ty j) l A B P pl pr (inr (ty i) (ty j) A B b) ⟹ pr' <[ b' .. ] : P <[ (inr (ty i) (ty j) A B b) .. ]
+    Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr (inr (ty i) (ty j) A B b) ⟹ pr' <[ b' .. ] : P <[ (inr (ty i) (ty j) A B b) .. ]
 
 where "Γ ⊢< l > t ⟹ u : A" := (ortho_red Γ l t u A).
 
@@ -369,12 +369,12 @@ Proof.
         econstructor; eauto using validity_conv_left.
     + eapply conv_sym. econstructor; eauto using validity_conv_left.
   - eapply conv_trans.
-    1: eapply conv_sum_rec_inl ; eauto using conversion, validity_conv_left.
+    1: eapply conv_sum_case_inl ; eauto using conversion, validity_conv_left.
     meta_conv.
     { eapply subst_conv. all: eauto using substs_one with sidecond. }
     rasimpl. apply ext_term. intro. rasimpl. reflexivity.
   - eapply conv_trans.
-    1: eapply conv_sum_rec_inr ; eauto using conversion, validity_conv_left.
+    1: eapply conv_sum_case_inr ; eauto using conversion, validity_conv_left.
     meta_conv.
     { eapply subst_conv. all: eauto using substs_one with sidecond. }
     rasimpl. apply ext_term. intro. rasimpl. reflexivity.
@@ -452,7 +452,7 @@ Proof.
               | ssimpl ; reflexivity]])
             | ssimpl; reflexivity | ssimpl; reflexivity ]].
 
-  (* ortho_sum_rec *)
+  (* ortho_sum_case *)
   - intros. eapply ortho_meta_conv.
     { cbn. econstructor. all: eauto using type_ren.
       - eapply ortho_meta_conv.
@@ -476,9 +476,9 @@ Proof.
     + fold ren_term. unfold_all_local. simpl.
       f_equal. rasimpl. f_equal. f_equal. f_equal. rasimpl. f_equal. f_equal; substify; asimpl; reflexivity.
 
-  (* ortho_sum_rec_inl *)
+  (* ortho_sum_case_inl *)
   - intros. eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_rec_inl. all: eauto using type_ren.
+    { cbn. eapply ortho_sum_case_inl. all: eauto using type_ren.
       - meta_conv.
         { eauto 7 using type_ren, typing with sidecond. }
         reflexivity.
@@ -492,9 +492,9 @@ Proof.
     all: rasimpl. 2: reflexivity.
     apply ext_term. intros. rasimpl. reflexivity.
 
-  (* ortho_sum_rec_inr *)
+  (* ortho_sum_case_inr *)
   - intros. eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_rec_inr. all: eauto using type_ren.
+    { cbn. eapply ortho_sum_case_inr. all: eauto using type_ren.
       - meta_conv.
         { eauto 7 using type_ren, typing with sidecond. }
         reflexivity.
@@ -606,7 +606,7 @@ Proof.
               | ssimpl ; reflexivity]])
             | ssimpl; reflexivity | ssimpl; reflexivity ]].
 
-  (* ortho_sum_rec *)
+  (* ortho_sum_case *)
   - eapply ortho_meta_conv.
     { cbn. econstructor. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
       - eapply ortho_meta_conv.
@@ -656,9 +656,9 @@ Proof.
     + fold subst_term. unfold_all_local. simpl.
       f_equal. rasimpl. f_equal. f_equal. f_equal. rasimpl. f_equal.
 
-  (* ortho_sum_rec_inl *)
+  (* ortho_sum_case_inl *)
   - eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_rec_inl. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+    { cbn. eapply ortho_sum_case_inl. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
       - eapply subst_ty.
         all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + econstructor. 1: auto.
@@ -685,9 +685,9 @@ Proof.
     all: rasimpl. 2: reflexivity.
     apply ext_term. intros. rasimpl. reflexivity.
 
-  (* ortho_sum_rec_inr *)
+  (* ortho_sum_case_inr *)
   - eapply ortho_meta_conv2.
-    { cbn. eapply ortho_sum_rec_inr. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
+    { cbn. eapply ortho_sum_case_inr. all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty.
       - eapply subst_ty.
         all: eauto using ortho_subst_to_conv, validity_subst_conv_left, subst_ty with sidecond.
         + econstructor. 1: auto.
@@ -1242,28 +1242,28 @@ Proof.
     discriminate.
 Qed.
 
-Lemma ortho_sum_rec_inv Γ l1 l2 k l A B P pl pr u t T :
-  Γ ⊢< ty k > sum_rec l1 l2 l A B P pl pr u ⟹ t : T →
+Lemma ortho_sum_case_inv Γ l1 l2 k l A B P pl pr u t T :
+  Γ ⊢< ty k > sum_case l1 l2 l A B P pl pr u ⟹ t : T →
   ∃ i j,
     l1 = ty i ∧
     l2 = ty j ∧
     l = ty k ∧
-    (( (* by sum_rec cong *)
+    (( (* by sum_case cong *)
       ∃ A' B' P' pl' pr' u',
-        t = sum_rec (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
+        t = sum_case (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
         Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
         Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
         Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
         Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ⊢< ty (max i j) > u ⟹ u' : tysum (ty i) (ty j) A B
-    ) ∨ ( (* by ortho_sum_rec_inl *)
+    ) ∨ ( (* by ortho_sum_case_inl *)
       ∃ pl' a a',
         t = pl' <[ a' .. ] ∧
         u = inl (ty i) (ty j) A B a ∧
         Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
         Γ ⊢< ty i > a ⟹ a' : A
-    ) ∨ ( (* by ortho_sum_rec_inr *)
+    ) ∨ ( (* by ortho_sum_case_inr *)
       ∃ pr' b b',
         t = pr' <[ b' .. ] ∧
         u = inr (ty i) (ty j) A B b ∧
@@ -1314,7 +1314,7 @@ Ltac ttinv h :=
     | tysum _ _ _ _ => eapply ortho_sum_inv in h
     | inl _ _ _ _ _ => eapply ortho_inl_inv in h
     | inr _ _ _ _ _ => eapply ortho_inr_inv in h
-    | sum_rec _ _ _ _ _ _ _ _ _ => eapply ortho_sum_rec_inv in h
+    | sum_case _ _ _ _ _ _ _ _ _ => eapply ortho_sum_case_inv in h
     | _ => idtac
     end
   end.
@@ -1385,7 +1385,7 @@ Fixpoint size (t : term) : nat :=
   | tysum i j A B => 1 + size A + size B
   | inl i j A B a => 1 + size A + size B + size a
   | inr i j A B b => 1 + size A + size B + size b
-  | sum_rec i j l A B P pl pr u => 1 + size A + size B + size P + size pl + size pr + size u
+  | sum_case i j l A B P pl pr u => 1 + size A + size B + size P + size pl + size pr + size u
   | _ => 0
 end.
 
@@ -2278,7 +2278,7 @@ Proof.
     do 4 eexists. eexists (inr _ _ A''' B''' a''').
     split; apply ortho_inr; eauto using conv_ty_in_ctx_ortho, ortho_conv, conv_ty_in_ctx_conv, conv_sym, substs_one, ortho_to_conv, subst_conv.
 
-  (* sum_rec *)
+  (* sum_case *)
   - rename t1 into A, t2 into B, t3 into P, t4 into pl, t5 into pr, t6 into u.
     ttinv t_red_t'.
     destruct t_red_t' as (j & k & -> & -> & -> & h1).
@@ -2302,8 +2302,8 @@ Proof.
       destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
       destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
       destruct (IH u ltac:(simpl; lia) _ _ _ _ _ hu1 hu2) as (u''' & ? & ?).
-      do 4 eexists. eexists (sum_rec _ _ _ A''' B''' P''' pl''' pr''' u''').
-      split; apply ortho_sum_rec; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv.
+      do 4 eexists. eexists (sum_case _ _ _ A''' B''' P''' pl''' pr''' u''').
+      split; apply ortho_sum_case; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv.
       all: admit.
 
     + subst.
