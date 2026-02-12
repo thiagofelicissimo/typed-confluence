@@ -1244,44 +1244,39 @@ Qed.
 
 Lemma ortho_sum_rec_inv Γ l1 l2 k l A B P pl pr u t T :
   Γ ⊢< ty k > sum_rec l1 l2 l A B P pl pr u ⟹ t : T →
-  ( (* by sum_rec cong *)
-    ∃ i j A' B' P' pl' pr' u',
-      t = sum_rec (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
-      l1 = ty i ∧
-      l2 = ty j ∧
-      l = ty k ∧
-      Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
-      Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
-      Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
-      Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
-      Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
-      Γ ⊢< ty (max i j) > u ⟹ u' : tysum (ty i) (ty j) A B
-  ) ∨ ( (* by ortho_sum_rec_inl *)
-    ∃ i j pl' a a',
-      t = pl' <[ a' .. ] ∧
-      l1 = ty i ∧
-      l2 = ty j ∧
-      l = ty k ∧
-      u = inl (ty i) (ty j) A B a ∧
-      Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
-      Γ ⊢< ty i > a ⟹ a' : A
-  ) ∨ ( (* by ortho_sum_rec_inr *)
-    ∃ i j pr' b b',
-      t = pr' <[ b' .. ] ∧
-      l1 = ty i ∧
-      l2 = ty j ∧
-      l = ty k ∧
-      u = inr (ty i) (ty j) A B b ∧
-      Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
-      Γ ⊢< ty j > b ⟹ b' : B
-  ).
+  ∃ i j,
+    l1 = ty i ∧
+    l2 = ty j ∧
+    l = ty k ∧
+    (( (* by sum_rec cong *)
+      ∃ A' B' P' pl' pr' u',
+        t = sum_rec (ty i) (ty j) (ty k) A' B' P' pl' pr' u' ∧
+        Γ ⊢< Ax (ty i) > A ⟹ A' : Sort (ty i) ∧
+        Γ ⊢< Ax (ty j) > B ⟹ B' : Sort (ty j) ∧
+        Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ⟹ P' : Sort l ∧
+        Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+        Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+        Γ ⊢< ty (max i j) > u ⟹ u' : tysum (ty i) (ty j) A B
+    ) ∨ ( (* by ortho_sum_rec_inl *)
+      ∃ pl' a a',
+        t = pl' <[ a' .. ] ∧
+        u = inl (ty i) (ty j) A B a ∧
+        Γ ,, (ty i, A) ⊢< l > pl ⟹ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+        Γ ⊢< ty i > a ⟹ a' : A
+    ) ∨ ( (* by ortho_sum_rec_inr *)
+      ∃ pr' b b',
+        t = pr' <[ b' .. ] ∧
+        u = inr (ty i) (ty j) A B b ∧
+        Γ ,, (ty j, B) ⊢< l > pr ⟹ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ∧
+        Γ ⊢< ty j > b ⟹ b' : B
+    )).
 Proof.
   intros H.
   dependent induction H.
-  - left. do 8 eexists. intuition eauto.
+  - do 2 eexists. intuition eauto. left. do 6 eexists. intuition eauto.
   - eapply IHortho_red.
-  - right. left. do 5 eexists. intuition eauto.
-  - right. right. do 5 eexists. intuition eauto.
+  - do 2 eexists. intuition eauto. right. left. do 3 eexists. intuition eauto.
+  - do 2 eexists. intuition eauto. right. right. do 3 eexists. intuition eauto.
 Qed.
 
 
@@ -1569,13 +1564,13 @@ Proof.
     all:try destruct (IH u ltac:(simpl; lia) _ _ _ _ _ u_red_u' u_red_u'') as (u''' & u'_red_u''' & u''_red_u''').
 
     + do 4 eexists. eexists (pi1 _ _ A B u''').
-      split; apply ortho_pi1; eauto  7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left.
+      split; apply ortho_pi1; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left.
 
     + rename a_ into a. rename b_ into b. rename A0_ into A0. rename B0_ into B0.
       ttinv u_red_u'. destruct u_red_u' as (A'' & B'' & a' & b' & n & m & eq1 & eq2 & u'_eq & eq3 & A0_conv_A'' & B0_conv_B'' & a_red_a' & b_red_b' & _).
       ty_inj_tac. subst. clear eq3.
 
-      assert (Γ ⊢< ty n > a ⟹ a' : A)  as temp by eauto using ortho_conv, conv_sym, conv_trans. clear a_red_a'. rename temp into a_red_a'.
+      assert (Γ ⊢< ty n > a ⟹ a' : A) as temp by eauto using ortho_conv, conv_sym, conv_trans. clear a_red_a'. rename temp into a_red_a'.
 
       destruct (IH a ltac:(simpl; lia) _ _ _ _ _ a_red_a' a_red_a'') as (a''' & a'_red_a''' & a''_red_a''').
 
@@ -2286,6 +2281,36 @@ Proof.
   (* sum_rec *)
   - rename t1 into A, t2 into B, t3 into P, t4 into pl, t5 into pr, t6 into u.
     ttinv t_red_t'.
+    destruct t_red_t' as (j & k & -> & -> & -> & h1).
+    ttinv t_red_t''.
+    destruct t_red_t'' as (? & ? & ? & ? & ? & h2).
+    ty_inj_tac. subst.
+
+    destruct h1 as [
+      (A' & B' & P' & pl' & pr' & u' & -> & hA1 & hB1 & hP1 & hpl1 & hpr1 & hu1)
+    | [(pl' & a & a' & -> & -> & hpl1 & ha1)
+    | (pr' & b & b' & -> & -> & hpr1 & hb1)
+    ]], h2 as [
+      (A'' & B'' & P'' & pl'' & pr'' & u'' & -> & hA2 & hB2 & hP2 & hpl2 & hpr2 & hu2)
+    | [(pl'' & a2 & a'' & -> & eu & hpl2 & ha2)
+    | (pr'' & b2 & b'' & -> & eu & hpr2 & hb2)
+    ]].
+
+    + destruct (IH A ltac:(simpl; lia) _ _ _ _ _ hA1 hA2) as (A''' & ? & ?).
+      destruct (IH B ltac:(simpl; lia) _ _ _ _ _ hB1 hB2) as (B''' & ? & ?).
+      destruct (IH P ltac:(simpl; lia) _ _ _ _ _ hP1 hP2) as (P''' & ? & ?).
+      destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
+      destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
+      destruct (IH u ltac:(simpl; lia) _ _ _ _ _ hu1 hu2) as (u''' & ? & ?).
+      do 4 eexists. eexists (sum_rec _ _ _ A''' B''' P''' pl''' pr''' u''').
+      split; apply ortho_sum_rec; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv.
+      all: admit.
+
+    + subst.
+      ttinv hu1.
+      destruct hu1 as (?A & ?B & ?a & ?n & ?m & ? & ? & -> & ? & huA & huB & hua & _).
+      ty_inj_tac. subst.
+      (* TODO Check the rules, currently too complicated probably *)
 Qed.
 
 
