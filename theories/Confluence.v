@@ -2664,10 +2664,10 @@ Qed.
 Ltac equiv_red_ind_aux0 :=
   ty_inj_tac ; subst ;
   try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_sort,
-      validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
+      validity_conv_right, conv_Eq, conv_sum, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
   try solve [ eapply type_conv ;
     [ econstructor ; eauto 13 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty, conv_sort,
-        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
+        validity_conv_right, conv_Eq, conv_sum, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
     | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl]].
 
 Ltac equiv_red_ind_aux1 :=
@@ -2683,10 +2683,10 @@ Ltac equiv_red_ind_aux2 :=
   ty_inj_tac ; subst ;
   eapply equiv_step ;
   try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, ortho_refl, ortho_conv, ortho_to_conv,
-      validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
+      validity_conv_right, conv_Eq, conv_sum, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
   try solve [ eapply ortho_conv ;
     [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, conv_ty_in_ctx_ty, ortho_refl, ortho_conv, conv_ty_in_ctx_ortho,
-        validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
+        validity_conv_right, conv_Eq, conv_sum, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym
     | eauto 11 using equiv_to_conv, validity_conv_left, subst_conv, substs_one, conv_sym, validity_ty_ctx, conv_refl, ortho_to_conv]].
 
 Ltac equiv_red_ind_aux :=
@@ -2974,28 +2974,77 @@ Lemma equiv_sum_case Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
 Proof.
   intros hA hB hP hpl hpr ht.
   eapply equiv_trans. 1: eapply equiv_trans. 1: eapply equiv_trans. 1: eapply equiv_trans.
-  - refine (equiv_red_ind (fun P => P <[ t .. ]) (fun P => sum_case _ _ _ _ _ P _ _ _) _ _ hP _).
-    + admit.
-    + equiv_red_ind_aux.
-    + equiv_red_ind_aux.
   - refine (equiv_red_ind (fun _ => _) (fun pl => sum_case _ _ _ _ _ _ pl _ _) _ _ hpl _).
-    + admit.
-    + admit.
-    + admit.
+    all: equiv_red_ind_aux.
   - refine (equiv_red_ind (fun _ => _) (fun pr => sum_case _ _ _ _ _ _ _ pr _) _ _ hpr _).
-    + admit.
-    + admit.
-    + admit.
+    all: equiv_red_ind_aux.
   - refine (equiv_red_ind (fun t => P <[ t .. ]) (fun t => sum_case _ _ _ _ _ _ _ _ t) _ _ ht _).
-    + admit.
+    all: equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun P => P <[ t .. ]) (fun P => sum_case _ _ _ _ _ P _ _ _) _ _ hP _).
+    + (* adding all the required lemmas to the eauto database of equiv_red_ind_aux1 would make
+        other cases too slow, so we handle this case manually *)
+      intros; apply type_inv in H0; dependent destruction H0.
+      econstructor.
+      1: apply type_sum_case ; eauto 9 using equiv_to_conv, subst_conv, type_conv,
+        subst_one, validity_ty_ctx, validity_conv_left, conv_sym, conv_ty_in_ctx_ty, ctx_from_conv, refl_subst.
+      * econstructor. 1: eassumption.
+        eapply subst_conv.
+        all: eauto using ctx_cons, validity_conv_left, conv_ty_in_ctx_ty, ctx_from_conv.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right, conv_refl with sidecond.
+        apply conv_refl.
+        econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eassumption.
+        eapply subst_conv.
+        all: eauto using ctx_cons, validity_conv_left, conv_ty_in_ctx_ty, ctx_from_conv.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right, conv_refl with sidecond.
+        apply conv_refl.
+        econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * eapply subst_conv.
+        all: eauto using conv_refl, validity_conv_left, conv_sym, substs_one, equiv_to_conv with sidecond.
     + equiv_red_ind_aux.
-    + admit.
+    + equiv_red_ind_aux.
   - eapply equiv_step. eapply ortho_conv. 1: econstructor.
     all: eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
-    + admit.
-    + admit.
-    + admit.
-Admitted.
+    + apply ortho_refl.
+      econstructor. 1: eauto using equiv_to_conv, validity_conv_right.
+      eapply subst_conv.
+      all: eauto using conv_ren, equiv_to_conv, validity_conv_left, validity_conv_right with sidecond.
+      apply conv_scons_alt.
+      1:{
+        eapply refl_subst. eapply WellSubst_ren. eapply WellRen_S.
+        eauto using validity_conv_left with sidecond.
+      }
+      rasimpl. econstructor.
+      all: eauto 8 using conv_refl, type_ren, validity_conv_left with sidecond.
+      apply conv_refl.
+      econstructor.
+      all: eauto 8 using conv_refl, type_ren, validity_conv_left with sidecond.
+    + apply ortho_refl.
+      econstructor. 1: eauto using equiv_to_conv, validity_conv_right.
+      eapply subst_conv.
+      all: eauto using conv_ren, equiv_to_conv, validity_conv_left, validity_conv_right with sidecond.
+      apply conv_scons_alt.
+      1:{
+        eapply refl_subst. eapply WellSubst_ren. eapply WellRen_S.
+        eauto using validity_conv_left with sidecond.
+      }
+      rasimpl. econstructor.
+      all: eauto 8 using conv_refl, type_ren, validity_conv_left with sidecond.
+      apply conv_refl.
+      econstructor.
+      all: eauto 8 using conv_refl, type_ren, validity_conv_left with sidecond.
+    + apply conv_sym. eapply subst_conv.
+      all: eauto using conv_ren, equiv_to_conv, validity_conv_left, validity_conv_right with sidecond.
+      apply substs_one. apply equiv_to_conv. assumption.
+Qed.
 
 Lemma conv_to_equiv Γ l t u A :
   Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t ≈ u : A.
