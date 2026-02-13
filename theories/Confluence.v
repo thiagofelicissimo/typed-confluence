@@ -3119,6 +3119,7 @@ Definition is_type_former T :=
   | Nat => True
   | Lift i A => True
   | Eq i A a b => True
+  | tysum i j A B => True
   | _ => False
   end.
 
@@ -3150,6 +3151,11 @@ Proposition type_former_redd Γ l U T T' :
     exists A',
     T' = Lift l A' ∧
     Γ ⊢< Ax l > A ⟹* A' : Sort l
+  | tysum l1 l2 A B =>
+      ∃ A' B',
+        T' = tysum l1 l2 A' B' ∧
+        Γ ⊢< Ax l1 > A ⟹* A' : Sort l1 ∧
+        Γ ⊢< Ax l2 > B ⟹* B' : Sort l2
   | _ => False
   end.
 Proof.
@@ -3179,6 +3185,8 @@ Proposition type_formers_inj Γ l T T1 T2 :
   | Sort l, Sort l0 => l = l0
   | Eq l A a b, Eq l' A' a' b' =>
     l = l' ∧ Γ ⊢< Ax l > A ≡ A' : Sort l ∧ Γ ⊢< l > a ≡ a' : A ∧ Γ ⊢< l > b ≡ b' : A
+  | tysum i j A B, tysum i' j' A' B' =>
+    i = i' ∧ j = j' ∧ Γ ⊢< Ax i > A ≡ A' : Sort i ∧ Γ ⊢< Ax j > B ≡ B' : Sort j
   | _, _ => False
   end.
 Proof.
@@ -3204,4 +3212,8 @@ Proof.
 
   - intuition trivial.
     eauto using conv_sym, conv_trans, redd_to_conv.
+
+  - intuition trivial.
+    eauto using conv_sym, conv_trans, redd_to_conv.
+    all:eauto 10 using conv_sym, conv_trans, redd_to_conv, conv_conv.
 Qed.
