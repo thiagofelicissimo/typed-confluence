@@ -2926,6 +2926,77 @@ Proof.
   - refine (equiv_red_ind (fun B => B) (fun B => cast _ _ B _ _) _ _ B_equiv_B' _); equiv_red_ind_aux.
 Qed.
 
+Lemma equiv_sum Γ n m A B A' B' :
+  Γ ⊢< Ax (ty n) > A ≈ A' : Sort (ty n) →
+  Γ ⊢< Ax (ty m) > B ≈ B' : Sort (ty m) →
+  Γ ⊢< Ax (ty (max n m)) > tysum (ty n) (ty m) A B ≈ tysum (ty n) (ty m) A' B' : Sort (ty (max n m)).
+Proof.
+  intros A_equiv_A' B_equiv_B'.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun B => tysum _ _ A B) _ _ B_equiv_B' _); equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => Sort (ty (max n m))) (fun A => tysum (ty n) (ty m) A B') _ _ A_equiv_A' _); equiv_red_ind_aux.
+Qed.
+
+Lemma equiv_inl Γ n m A B A' B' a a' :
+  Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+  Γ ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+  Γ ⊢< ty n > a ≈ a' : A →
+  Γ ⊢< ty (max n m) > inl (ty n) (ty m) A B a ≈ inl (ty n) (ty m) A' B' a' : tysum (ty n) (ty m) A B.
+Proof.
+  intros hA hB ha.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun a => inl _ _ A B a) _ _ ha _); equiv_red_ind_aux.
+  - eapply equiv_step. econstructor.
+    all: eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
+Qed.
+
+Lemma equiv_inr Γ n m A B A' B' b b' :
+  Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) →
+  Γ ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) →
+  Γ ⊢< ty m > b ≈ b' : B →
+  Γ ⊢< ty (max n m) > inr (ty n) (ty m) A B b ≈ inr (ty n) (ty m) A' B' b' : tysum (ty n) (ty m) A B.
+Proof.
+  intros hA hB hb.
+  eapply equiv_trans.
+  - refine (equiv_red_ind (fun _ => _) (fun b => inr _ _ A B b) _ _ hb _); equiv_red_ind_aux.
+  - eapply equiv_step. econstructor.
+    all: eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
+Qed.
+
+Lemma equiv_sum_case Γ i j l A A' B B' P P' pl pl' pr pr' t t' :
+  Γ ⊢< Ax (ty i) > A ≡ A' : Sort (ty i) →
+  Γ ⊢< Ax (ty j) > B ≡ B' : Sort (ty j) →
+  Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< Ax l > P ≈ P' : Sort l →
+  Γ ,, (ty i, A) ⊢< l > pl ≈ pl' : P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ,, (ty j, B) ⊢< l > pr ≈ pr' : P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] →
+  Γ ⊢< ty (max i j) > t ≈ t' : tysum (ty i) (ty j) A B →
+  Γ ⊢< l > sum_case (ty i) (ty j) l A B P pl pr t ≈ sum_case (ty i) (ty j) l A' B' P' pl' pr' t' : P <[ t .. ].
+Proof.
+  intros hA hB hP hpl hpr ht.
+  eapply equiv_trans. 1: eapply equiv_trans. 1: eapply equiv_trans. 1: eapply equiv_trans.
+  - refine (equiv_red_ind (fun P => P <[ t .. ]) (fun P => sum_case _ _ _ _ _ P _ _ _) _ _ hP _).
+    + admit.
+    + equiv_red_ind_aux.
+    + equiv_red_ind_aux.
+  - refine (equiv_red_ind (fun _ => _) (fun pl => sum_case _ _ _ _ _ _ pl _ _) _ _ hpl _).
+    + admit.
+    + admit.
+    + admit.
+  - refine (equiv_red_ind (fun _ => _) (fun pr => sum_case _ _ _ _ _ _ _ pr _) _ _ hpr _).
+    + admit.
+    + admit.
+    + admit.
+  - refine (equiv_red_ind (fun t => P <[ t .. ]) (fun t => sum_case _ _ _ _ _ _ _ _ t) _ _ ht _).
+    + admit.
+    + equiv_red_ind_aux.
+    + admit.
+  - eapply equiv_step. eapply ortho_conv. 1: econstructor.
+    all: eauto 13 using equiv_to_conv, validity_conv_right, ortho_refl, type_conv, subst_conv, validity_conv_left, conv_refl, substs_one, validity_ty_ctx.
+    + admit.
+    + admit.
+    + admit.
+Admitted.
+
 Lemma conv_to_equiv Γ l t u A :
   Γ ⊢< l > t ≡ u : A -> Γ ⊢< l > t ≈ u : A.
 Proof.
@@ -2935,11 +3006,11 @@ Proof.
   all: try solve [eapply equiv_step, conv_to_ortho_prop; eauto using conversion].
 
   (* solves easy goals, involving variables, constant symbols, sym, trans, conv *)
-  all : try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
+  all: try solve [apply equiv_step; econstructor; eauto using conv_refl, ortho_refl ].
 
-  all : solve [eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
+  all: solve [eauto using equiv_pi, equiv_lam, equiv_app, equiv_succ,
     equiv_rec, equiv_conv, equiv_sym, equiv_trans, equiv_Eq, equiv_J, equiv_Lift, equiv_lower, equiv_lift,
-    equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2, equiv_cast].
+    equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2, equiv_cast, equiv_sum, equiv_inl, equiv_inr, equiv_sum_case].
 Qed.
 
 (* --- Proof of CR --- *)
