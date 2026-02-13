@@ -36,6 +36,10 @@ Fixpoint erasure l t : term :=
   | ty _, lift i A a => lift prop box (erasure i a)
   | ty _, lower i A a => lower prop box (erasure (Ax i) a)
   | ty _, cast i A B e a => cast i (erasure (Ax i) A) (erasure (Ax i) B) box (erasure i a)
+  | ty _, tysum i j A B => tysum i j (erasure (Ax i) A) (erasure (Ax j) B)
+  | ty _, inl i j A B a => inl prop prop box box (erasure i a)
+  | ty _, inr i j A B b => inr prop prop box box (erasure j b)
+  | ty _, sum_case i j l A B P pl pr u => sum_case prop prop l box box (erasure (Ax l) P) (erasure l pl) (erasure l pr) (erasure (Ru i j) u)
   | _, _ => box (* junk branch *)
 end.
 
@@ -63,6 +67,9 @@ Inductive Nf : term -> Prop :=
 | nf_eq i A a b : Nf A -> Nf a -> Nf b -> Nf (Eq i A a b)
 | nf_Lift i A : Nf A -> Nf (Lift i A)
 | nf_lift a : Nf a -> Nf (lift prop box a)
+| nf_sum i j A B : Nf A → Nf B → Nf (tysum i j A B)
+| nf_inl a : Nf a → Nf (inl prop prop box box a)
+| nf_inr b : Nf b → Nf (inr prop prop box box b)
 | nf_box : Nf box
 with Ne : term -> Prop :=
 | ne_var x : Ne (var x)
@@ -82,7 +89,11 @@ with Ne : term -> Prop :=
     | Sort i, Sort i' => i = i'
     | Nat , Nat => True
     | _, _ => False
-    end) -> Nf t -> Ne (cast i A B box t).
+    end) -> Nf t -> Ne (cast i A B box t)
+| ne_sum_case l P pl pr u :
+    Nf P → Nf pl → Nf pr → Ne u →
+    Ne (sum_case prop prop l box box P pl pr u)
+.
 
 Scheme Nf_mut := Induction for Nf Sort Prop
 with Ne_mut := Induction for Ne Sort Prop.
@@ -251,11 +262,49 @@ Inductive red : term -> term -> Prop :=
     let t4 := lam prop prop box box t3 in
     cast (Ru i (ty n)) (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) box f ---> t4
 
+| red_sum_1 i j A A' B :
+    A ---> A' ->
+    tysum i j A B ---> tysum i j A' B
+
+| red_sum_2 i j A B B' :
+    B ---> B' ->
+    tysum i j A B ---> tysum i j A B'
+
+| red_inl a a' :
+    a ---> a' ->
+    inl prop prop box box a ---> inl prop prop box box a'
+
+| red_inr b b' :
+    b ---> b' ->
+    inr prop prop box box b ---> inr prop prop box box b'
+
+| red_sum_case_P l P P' pl pr u :
+    P ---> P' →
+    sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P' pl pr u
+
+| red_sum_case_pl l P pl pl' pr u :
+    pl ---> pl' →
+    sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P pl' pr u
+
+| red_sum_case_pr l P pl pr pr' u :
+    pl ---> pr' →
+    sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P pl pr' u
+
+| red_sum_case_u l P pl pr u u' :
+    u ---> u' →
+    sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P pl pr u'
+
+| red_sum_case_inl l P pl pr a :
+    sum_case prop prop l box box P pl pr (inl prop prop box box a) ---> pl <[ a .. ]
+
+| red_sum_case_inr l P pl pr b :
+    sum_case prop prop l box box P pl pr (inr prop prop box box b) ---> pr <[ b .. ]
+
 where "t ---> u" := (red t u).
 
 Derive Signature for red.
 
-Lemma case_lvl l : l = prop \/ exists i, l = ty i.
+Lemma case_lvl l : l = prop ∨ exists i, l = ty i.
 Proof.
   destruct l; eauto.
 Qed.
@@ -404,6 +453,14 @@ Proof.
   induction h. all: eauto.
 Qed.
 
+Lemma erasure_subst_up Δ σ t l :
+  (erasure l t) <[ up_term (erasure_subst Δ σ)] =
+  (erasure l t) <[ erasure_subst (Δ ;; ty 0) (var 0 .: σ >> ren_term S)].
+Proof.
+  setoid_rewrite erasure_subst_cons.
+  reflexivity.
+Qed.
+
 Lemma erasure_subst_commutes Γ t A l σ :
   Γ ⊢< l > t : A ->
   ∀ f, refines (fun_of_ctx Γ) f ->
@@ -461,6 +518,14 @@ Proof.
     2:eauto.
     setoid_rewrite <- erasure_subst_cons.
     eapply IHt3; eauto using refines_cons. setoid_rewrite cons_ctx_commute. eauto using refines_cons.
+  (* case sum *)
+  - subst. cbn. f_equal. all: eauto.
+    + rewrite erasure_subst_up. eapply IHt3. all: eauto using refines_cons.
+      setoid_rewrite cons_ctx_commute. eauto using refines_cons.
+    + rewrite erasure_subst_up. eapply IHt4. all: eauto using refines_cons.
+      setoid_rewrite cons_ctx_commute. eauto using refines_cons.
+    + rewrite erasure_subst_up. eapply IHt5. all: eauto using refines_cons.
+      setoid_rewrite cons_ctx_commute. eauto using refines_cons.
 Qed.
 
 Lemma erasure_aux i u : erasure_subst ((fun _ => ty 0) ;; i) (u ..) ~ ((erasure i u) ..).
