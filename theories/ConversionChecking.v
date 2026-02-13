@@ -85,7 +85,7 @@ with Ne : term -> Prop :=
     (* if both A, B are in nf, then they should not have
       the same relevant head in order for the result to be a neutral *)
     not (match A, B with
-    | Pi i (ty n) _ _, Pi i' (ty n') _ _ => i = i' /\ n = n'
+    | Pi i (ty n) _ _, Pi i' (ty n') _ _ => i = i' ∧ n = n'
     | Sort i, Sort i' => i = i'
     | Nat , Nat => True
     | _, _ => False
@@ -287,7 +287,7 @@ Inductive red : term -> term -> Prop :=
     sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P pl' pr u
 
 | red_sum_case_pr l P pl pr pr' u :
-    pl ---> pr' →
+    pr ---> pr' →
     sum_case prop prop l box box P pl pr u ---> sum_case prop prop l box box P pl pr' u
 
 | red_sum_case_u l P pl pr u u' :
@@ -675,7 +675,7 @@ Proof.
     econstructor; eauto using red;
     eapply nf_is_ne; eauto using red;
     match goal with
-      | |-  ¬ (can ?t _) => destruct t
+    | |-  ¬ (can ?t _) => destruct t
     end; intro K; inversion K;
     eapply is_nf; simpl; eauto using red ].
 
@@ -690,7 +690,7 @@ Proof.
     clear IHt1 IHt2 IHt3 IHt4.
 
     destruct A; destruct B; eauto using Ne.
-    2-23:destruct l0; eauto using Ne.
+    2-27:destruct l0; eauto using Ne.
     + eapply type_inv in A_Wt. dependent destruction A_Wt.
       eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       pose (K := level_eq_dec l l0). destruct K.
@@ -729,7 +729,7 @@ Lemma eq_erased :
     (erased_t0_eq_erased_u0 : erasure (ty i) t0 = erasure (ty i) u0)
     (et_eq_erased_t0 : et = erasure (ty i) t0),
     Γ ⊢< ty i > t0 ≡ u0 : T)
-    /\
+    ∧
   (forall et, Ne et ->
     forall Γ i i' t0 u0 T T'
     (t0_Wt : Γ ⊢< ty i > t0 : T)
@@ -749,7 +749,7 @@ Proof.
     eapply type_inv in u0_Wt as temp; dependent destruction temp; subst).
 
   (* solves cases in sprop *)
-  all:try solve [dependent destruction lvl_eq].
+  all: try solve [dependent destruction lvl_eq].
 
   (* solves cases Nat, zero, Sort, var *)
   all: try solve [ eauto using conv_refl ].
@@ -803,6 +803,28 @@ Proof.
     eapply conv_conv.
     eapply conv_lift; eauto using type_conv, conv_sym.
     eauto using conv_sym.
+  - rewrite H6.
+    eapply conv_conv. all: eauto 7 using conv_sym, conv_sum, conv_ty_in_ctx_ty.
+  - rename t0_1 into A, t0_2 into B, t0_3 into a, u0_1 into A', u0_2 into B', u0_3 into a'.
+    rewrite H5. eapply conv_conv; eauto using conv_sym.
+    rewrite <- H5 in H4. rewrite <- H10 in H9.
+    eassert (_ ⊢< _ > tysum _ _ A B ≡ tysum _ _ A' B' : _) as hsum
+      by eauto using conv_sym, conv_trans.
+    apply type_formers_inj in hsum as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    assert (Γ ⊢< ty i1 > a ≡ a' : A)
+      by eauto 9 using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv, subst_conv, substs_one, type_conv.
+    econstructor; eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
+  - rename t0_1 into A, t0_2 into B, t0_3 into b, u0_1 into A', u0_2 into B', u0_3 into b'.
+    rewrite H5. eapply conv_conv; eauto using conv_sym.
+    rewrite <- H5 in H4. rewrite <- H10 in H9.
+    eassert (_ ⊢< _ > tysum _ _ A B ≡ tysum _ _ A' B' : _) as hsum
+      by eauto using conv_sym, conv_trans.
+    apply type_formers_inj in hsum as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    assert (Γ ⊢< ty j0 > b ≡ b' : B)
+      by eauto 9 using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv, subst_conv, substs_one, type_conv.
+    econstructor; eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
   - rename t0_1 into A. rename t0_2 into B. rename t0_3 into t. rename t0_4 into u.
     rename u0_1 into A'. rename u0_2 into B'. rename u0_3 into t'. rename u0_4 into u'.
     eapply conv_conv; eauto using conv_sym.
@@ -877,7 +899,18 @@ Proof.
     eapply conv_sym, conv_conv.
     econstructor; eauto 8 using conv_sym, conv_irrel, type_conv, conv_Eq, conv_sort, validity_ty_ctx.
     eauto using conv_sym, conv_trans.
-Qed.
+
+  - rename t0_1 into A, t0_2 into B, t0_3 into P, t0_4 into pl, t0_5 into pr, t0_6 into u.
+    rename u0_1 into A', u0_2 into B', u0_3 into P', u0_4 into pl', u0_5 into pr', u0_6 into u'.
+    eapply H' in H3 as HP. all: eauto.
+    eapply H0' in H4 as Hpl. all: eauto.
+    eapply H1' in H5 as Hpr. all: eauto.
+    eapply H2 in H6 as Hu. all: eauto.
+    (* How do I know i0 = i1? *)
+    ty_inj_tac. subst.
+    (* eapply conv_sym. eapply conv_conv.
+    { econstructor. } *)
+Admitted.
 
 
 Lemma eq_erased_nf Γ l t u A :
@@ -897,7 +930,7 @@ Qed.
 Theorem subject_reduction Γ l t A u :
   Γ ⊢< l > t : A ->
   erasure l t ---> u ->
-  exists u', Γ ⊢< l > t ≡ u' : A /\ erasure l u' = u.
+  exists u', Γ ⊢< l > t ≡ u' : A ∧ erasure l u' = u.
 Proof.
   intros tWt. generalize u. clear u.
   induction tWt; intros u_ erased_t_red_u; intros.
@@ -907,7 +940,7 @@ Proof.
 
 
   all: (match goal with
-          | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ /\ _ => pose (K := case_lvl l)
+          | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ ∧ _ => pose (K := case_lvl l)
         end; destruct K as [l_eq_prop | (n' & l_eq_n)];
     [ rewrite l_eq_prop in erased_t_red_u;
       rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u
@@ -1052,7 +1085,7 @@ Lemma subject_reduction_redd_aux Γ l t t' A u' :
   Γ ⊢< l > t : A ->
   erasure l t = t' ->
   t' -->> u' ->
-  exists u, Γ ⊢< l > t ≡ u : A /\ erasure l u = u'.
+  exists u, Γ ⊢< l > t ≡ u : A ∧ erasure l u = u'.
 Proof.
   intros t_Wt erased_t_eq_t' t'_redd_u'.
   generalize t erased_t_eq_t' t_Wt. clear t erased_t_eq_t' t_Wt.
@@ -1069,7 +1102,7 @@ Qed.
 Corollary subject_reduction_redd Γ l t A u :
   Γ ⊢< l > t : A ->
   erasure l t -->> u ->
-  exists u', Γ ⊢< l > t ≡ u' : A /\ erasure l u' = u.
+  exists u', Γ ⊢< l > t ≡ u' : A ∧ erasure l u' = u.
 Proof.
   eauto using subject_reduction_redd_aux.
 Qed.
@@ -1121,7 +1154,7 @@ Lemma ortho_red_to_eq Γ l t t' A :
 Proof.
   intros t_red_t' nf_t.
 
-  assert (exists X, fst X = l /\ snd X = t ) as (X & eq1 & eq2).
+  assert (exists X, fst X = l ∧ snd X = t ) as (X & eq1 & eq2).
     {exists ((l, t)). split; eauto. }
   rewrite <- eq1 in *. rewrite <- eq2 in *. clear eq1 eq2 t l.
 
