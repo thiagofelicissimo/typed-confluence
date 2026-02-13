@@ -600,17 +600,22 @@ Definition can t T :=
   | Nat, zero
   | Nat, succ _
   | Lift _ _, lift _ _ _
+  | tysum _ _ _ _, inl _ _ _ _ _
+  | tysum _ _ _ _, inr _ _ _ _ _
   | Sort _, Pi _ _ _ _
   | Sort _, Sigma _ _ _ _
   | Sort _, Sort _
   | Sort _, Nat
   | Sort _, Lift _ _
-  | Sort _, Eq _ _ _ _ => True
+  | Sort _, Eq _ _ _ _
+  | Sort _, tysum _ _ _ _ => True
   | _, _ => False
 end.
 
 
 Hint Unfold is_type_former : core.
+
+Derive Signature for Nf.
 
 Lemma nf_is_ne Γ l T t :
   Γ ⊢< ty l > t : T ->
@@ -634,7 +639,10 @@ Proof.
   all:try solve [ destruct t; dependent destruction H;
   destruct T; dependent destruction is_tf;
   eapply type_inv in t_Wt as temp; dependent destruction temp;
-  eapply type_formers_inj in conv_ty;
+  lazymatch goal with
+  | conv_ty : _ ⊢< _ > _ ≡ _ : Sort _ |- _ =>
+    eapply type_formers_inj in conv_ty
+  end ;
   unfold can in *; intuition eauto].
 Qed.
 
