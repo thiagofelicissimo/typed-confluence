@@ -2294,12 +2294,12 @@ Proof.
 
     destruct h1 as [
       (A' & B' & P' & pl' & pr' & u' & -> & hA1 & hB1 & hP1 & hpl1 & hpr1 & hu1)
-    | [(A1 & B1 & pl' & a & a' & -> & -> & hpl1 & ha1)
-    | (A1 & B1 & pr' & b & b' & -> & -> & hpr1 & hb1)
+    | [(A1 & B1 & pl' & a & a' & -> & -> & hA1 & hB1 & hpl1 & ha1)
+    | (A1 & B1 & pr' & b & b' & -> & -> & hA1 & hB1 & hpr1 & hb1)
     ]], h2 as [
       (A'' & B'' & P'' & pl'' & pr'' & u'' & -> & hA2 & hB2 & hP2 & hpl2 & hpr2 & hu2)
-    | [(A2 & B2 & pl'' & a2 & a'' & -> & eu & hpl2 & ha2)
-    | (A2 & B2 & pr'' & b2 & b'' & -> & eu & hpr2 & hb2)
+    | [(A2 & B2 & pl'' & a2 & a'' & -> & eu & hA2 & hB2 & hpl2 & ha2)
+    | (A2 & B2 & pr'' & b2 & b'' & -> & eu & hA2 & hB2 & hpr2 & hb2)
     ]].
 
     + destruct (IH P ltac:(simpl; lia) _ _ _ _ _ hP1 hP2) as (P''' & ? & ?).
@@ -2307,13 +2307,227 @@ Proof.
       destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
       destruct (IH u ltac:(simpl; lia) _ _ _ _ _ hu1 hu2) as (u''' & ? & ?).
       do 4 eexists. eexists (sum_case _ _ _ A'' B'' P''' pl''' pr''' u''').
-      (* split; apply ortho_sum_case; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sigma, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans. *)
-      all: admit.
+      split; apply ortho_sum_case; eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
 
     + subst.
       ttinv hu1.
       destruct hu1 as (?A & ?B & ?a & ?n & ?m & ? & ? & -> & ? & huA & huB & hua & _).
       ty_inj_tac. subst.
+      eapply ortho_conv in ha2 as ha'. 2: eassumption.
+      destruct (IH a2 ltac:(simpl; lia) _ _ _ _ _ hua ha') as (a''' & ? & ?).
+      destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
+      do 4 eexists. exists (pl''' <[ a''' .. ]).
+      split. 1: apply ortho_sum_case_inl.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_in_ctx_ty.
+        2: eauto using ortho_to_conv, validity_conv_right.
+        1: econstructor. all: eauto using ctx_cons, ctx_conv_refl.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * eapply subst_ortho.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        eapply red_scons_id.
+        econstructor. all: eauto using conv_sym.
+
+    + subst.
+      ttinv hu1.
+      destruct hu1 as (?A & ?B & ?b & ?n & ?m & ? & ? & -> & ? & huA & huB & hub & _).
+      ty_inj_tac. subst.
+      eapply ortho_conv in hb2 as hb'. 2: eassumption.
+      destruct (IH b2 ltac:(simpl; lia) _ _ _ _ _ hub hb') as (b''' & ? & ?).
+      destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
+      do 4 eexists. exists (pr''' <[ b''' .. ]).
+      split. 1: apply ortho_sum_case_inr.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans.
+      * econstructor. 1: eapply conv_in_ctx_ty.
+        2: eauto using ortho_to_conv, validity_conv_right.
+        1: econstructor. all: eauto using ctx_cons, ctx_conv_refl.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * eapply subst_ortho.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        eapply red_scons_id.
+        econstructor. all: eauto using conv_sym.
+
+    + ttinv hu2.
+      destruct hu2 as (?A & ?B & ?a & ?n & ?m & ? & ? & -> & ? & huA & huB & hua & _).
+      ty_inj_tac. subst.
+      eapply ortho_conv in ha1 as ha'. 2: eapply hA1.
+      destruct (IH a ltac:(simpl; lia) _ _ _ _ _ hua ha') as (a''' & ? & ?).
+      destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
+      do 4 eexists. exists (pl''' <[ a''' .. ]).
+      split. 2: apply ortho_sum_case_inl.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans.
+      * eapply subst_ortho.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        eapply red_scons_id.
+        econstructor. all: eauto using conv_sym.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_in_ctx_ty.
+        2: eauto using ortho_to_conv, validity_conv_right.
+        1: econstructor. all: eauto using ctx_cons, ctx_conv_refl.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+
+    + inversion eu. subst. clear eu.
+      destruct (IH a2 ltac:(simpl; lia) _ _ _ _ _ ha1 ha2) as (a''' & ? & ?).
+      destruct (IH pl ltac:(simpl; lia) _ _ _ _ _ hpl1 hpl2) as (pl''' & ? & ?).
+      do 4 eexists. exists (pl''' <[ a''' .. ]).
+      split. all: eapply subst_ortho.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans, red_scons_id.
+
+    + discriminate.
+
+    + ttinv hu2.
+      destruct hu2 as (?A & ?B & ?b & ?n & ?m & ? & ? & -> & ? & huA & huB & hub & _).
+      ty_inj_tac. subst.
+      eapply ortho_conv in hb1 as hb'. 2: eapply hB1.
+      destruct (IH b ltac:(simpl; lia) _ _ _ _ _ hub hb') as (b''' & ? & ?).
+      destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
+      do 4 eexists. exists (pr''' <[ b''' .. ]).
+      split. 2: apply ortho_sum_case_inr. 1: eapply subst_ortho.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans, red_scons_id.
+      * econstructor. 1: eapply conv_in_ctx_ty.
+        2: eauto using ortho_to_conv, validity_conv_right.
+        1: econstructor. all: eauto using ctx_cons, ctx_conv_refl.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+      * econstructor. 1: eapply conv_ty_in_ctx_ortho. 1: eassumption.
+        1: eauto.
+        eapply subst_conv.
+        all: eauto using ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_refl. eapply type_conv.
+        1: eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        apply conv_sym.
+        all: eauto using conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+
+    + discriminate.
+
+    + inversion eu. subst. clear eu.
+      destruct (IH b2 ltac:(simpl; lia) _ _ _ _ _ hb1 hb2) as (b''' & ? & ?).
+      destruct (IH pr ltac:(simpl; lia) _ _ _ _ _ hpr1 hpr2) as (pr''' & ? & ?).
+      do 4 eexists. exists (pr''' <[ b''' .. ]).
+      split. all: eapply subst_ortho.
+      all: eauto 7 using conv_sym, conv_ty_in_ctx_conv, conv_ty_in_ctx_ortho, conv_sym, ortho_conv, conv_sum, validity_conv_left, substs_one, ortho_to_conv, subst_conv, conv_trans, red_scons_id.
 Qed.
 
 
