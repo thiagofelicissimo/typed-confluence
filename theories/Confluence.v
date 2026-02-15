@@ -2026,26 +2026,13 @@ Qed.
   *)
 
 
-(* 
-Lemma test Δ σ τ Γ l t A :
-  Γ ⊢s σ ⟹ τ : Δ -> 
-  ⊢ Δ ->
-  Γ ⊢< l > t<[σ] : A ->
-  Γ ⊢< l > t<[σ] ⟹ t<[τ] : A.
-Proof.
-  intros.
-  dependent induction t. 
-  - eapply ortho_meta_conv. eapply subst_ortho; eauto using validity_ty_ctx, ortho_red.
-  -   *)
-  
-
 Lemma equiv_red_ind {Γ Δ l A i} P f :
     (forall t u, Δ ⊢< i > t ≡ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f u : P u) ->
-    (forall t u, Δ ⊢< i > t ⟹ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ≈ f u : P t) ->
+    (forall t u, Δ ⊢< i > t ⟹ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ⟹ f u : P t) ->
     forall {t u}, Δ ⊢< i > t ≈ u : A -> Γ ⊢< l > f t : P t -> Γ ⊢< l > f t ≈ f u : P t.
 Proof.
   intros. induction H1.
-  - eapply H0; eauto.
+  - eauto using equiv_step.
   - eapply equiv_to_conv in H1_ as H1'. 
     eapply H in H1'; eauto.
     eapply IHortho_equiv1 in H2.
@@ -2084,7 +2071,6 @@ Ltac equiv_red_ind_aux2 :=
   eapply type_inv in _deriv ; 
   dependent destruction _deriv ;
   ty_inj_tac ; subst ;
-  eapply equiv_step ;
   try solve [ econstructor ; eauto 9 using equiv_to_conv, validity_conv_left, ortho_refl, ortho_conv, ortho_to_conv,
       validity_conv_right, conv_Eq, conv_Lift, type_conv, conv_refl, subst_conv, substs_one, validity_ty_ctx, conv_sym ];
   try solve [ eapply ortho_conv ; 
