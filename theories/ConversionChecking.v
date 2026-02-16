@@ -973,7 +973,7 @@ Theorem subject_reduction Γ l t A u :
   erasure l t ---> u ->
   exists u', Γ ⊢< l > t ≡ u' : A ∧ erasure l u' = u.
 Proof.
-  intros tWt. generalize u. clear u.
+  intros tWt. revert u.
   induction tWt; intros u_ erased_t_red_u; intros.
 
   (* solves cases in sprop *)
@@ -991,7 +991,7 @@ Proof.
   all: try solve [ inversion erased_t_red_u ].
 
   (* solves last case, the conversion rule *)
-  16 : solve [ subst; edestruct IHtWt; intuition eauto; repeat eexists; eauto using conv_conv ].
+  20 : solve [ subst; edestruct IHtWt; intuition eauto; repeat eexists; eauto using conv_conv ].
 
   (* for each case, we consider all the possible ways in which the rewrite step could have happened *)
   all:dependent destruction erased_t_red_u.
@@ -1108,6 +1108,50 @@ Proof.
         ++  reflexivity.
       * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute.
         f_equal. destruct i0; reflexivity.
+
+  (* sum_case_inl *)
+  - destruct t. all: noconf H.
+    eapply type_inv in tWt6. dependent destruction tWt6.
+    eapply type_formers_inj in H2 as he. 2,3: eauto.
+    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    eexists. split.
+    + eapply conv_conv.
+      { eapply conv_sum_case_inl'.
+        all: eauto.
+        eauto using type_conv, conv_sym.
+      }
+      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
+      apply substs_one.
+      apply conv_inl. all: eauto using conv_refl, conv_sym, type_conv.
+    + erewrite erasure_subst_commutes. all: eauto.
+      2:{
+        setoid_rewrite cons_ctx_commute.
+        eapply refines_cons'; eauto. eapply refines_all.
+      }
+      apply ext_term. intros []. all: reflexivity.
+
+  (* sum_case_inr *)
+  - destruct t. all: noconf H.
+    eapply type_inv in tWt6. dependent destruction tWt6.
+    eapply type_formers_inj in H2 as he. 2,3: eauto.
+    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    eexists. split.
+    + eapply conv_conv.
+      { eapply conv_sum_case_inr'.
+        all: eauto.
+        eauto using type_conv, conv_sym.
+      }
+      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
+      apply substs_one.
+      apply conv_inr. all: eauto using conv_refl, conv_sym, type_conv.
+    + erewrite erasure_subst_commutes. all: eauto.
+      2:{
+        setoid_rewrite cons_ctx_commute.
+        eapply refines_cons'; eauto. eapply refines_all.
+      }
+      apply ext_term. intros []. all: reflexivity.
 Qed.
 
 
