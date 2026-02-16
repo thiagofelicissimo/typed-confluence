@@ -1048,18 +1048,22 @@ Proof.
       repeat eexists; eauto using redd_to_conv.
 Qed.
 
-Inductive label : Type := | agda | rocq.
+Inductive label : Type := agda | rocq.
 
 Inductive CTerm : label -> cterm -> Prop :=
 
-(* in agda we have non-annotated abstractions and pairs, and type ascriptions *)
+(* in Agda we have non-annotated abstractions and pairs, and type ascriptions *)
 | clam_ M : CTerm agda M -> CTerm agda (clam M)
 | cann_ M MA : CTerm agda M -> CTerm agda MA -> CTerm agda (cann M MA)
 | cpair_ Mt Mu : CTerm agda Mt -> CTerm agda Mu -> CTerm agda (cpair Mt Mu)
+| cinl_ Ma : CTerm agda Ma → CTerm agda (cinl Ma)
+| cinr_ Mb : CTerm agda Mb → CTerm agda (cinr Mb)
 
-(* in rocq we have annotated abstractions and pairs, and no ascriptions *)
+(* in Rocq we have annotated abstractions and pairs, and no ascriptions *)
 | clam'_ MA M : CTerm rocq MA -> CTerm rocq M -> CTerm rocq (clam' MA M)
 | cpair'_ Mt MB Mu : CTerm rocq Mt -> CTerm rocq MB -> CTerm rocq Mu -> CTerm rocq (cpair' Mt MB Mu)
+| iinl_ MB Ma : CTerm rocq MB → CTerm rocq Ma → CTerm rocq (iinl MB Ma)
+| iine_ MA Mb : CTerm rocq MA → CTerm rocq Mb → CTerm rocq (iinl MA Mb)
 
 (* all the rest is the same *)
 | cvar_ h n : CTerm h (cvar n)
@@ -1082,46 +1086,50 @@ Inductive CTerm : label -> cterm -> Prop :=
 | clower_ h Ma : CTerm h Ma -> CTerm h (clower Ma)
 | ccast_ h Me Ma : CTerm h Me -> CTerm h Ma -> CTerm h (ccast Me Ma)
 | cinjpi1_ h Me : CTerm h Me -> CTerm h (cinjpi1 Me)
-| cinjpi2_ h Me Ma : CTerm h Me -> CTerm h Ma -> CTerm h (cinjpi2 Me Ma).
-
-
-
+| cinjpi2_ h Me Ma : CTerm h Me -> CTerm h Ma -> CTerm h (cinjpi2 Me Ma)
+| csum_ h MA MB : CTerm h MA → CTerm h MB → CTerm h (csum MA MB)
+| csum_case_ h MP Mpl Mpr Mu :
+    CTerm h MP →
+    CTerm h Mpl →
+    CTerm h Mpr →
+    CTerm h Mu →
+    CTerm h (csum_case MP Mpl Mpr Mu).
 
 (* auxiliary lemma that only requires us to show the inferring case,
    for the checking case we use the same term *)
 Lemma completeness_aux_infer Γ l t T Δ h :
-    wt_is_wn ->
-    Γ ⊢< l > t : T ->
-    ⊢ Γ ≡ Δ ->
-    (exists M U t0,
-        (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ Γ ⊢< Ax l > T ≡ U : Sort l
-        ∧ CTerm h M)
-    ->
-    (forall U,
-        Γ ⊢< Ax l > T ≡ U : Sort l ->
-        exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ CTerm h M)
-    ∧
-    (exists M U t0,
-        (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ Γ ⊢< Ax l > T ≡ U : Sort l
-        ∧ CTerm h M).
+  wt_is_wn ->
+  Γ ⊢< l > t : T ->
+  ⊢ Γ ≡ Δ ->
+  (∃ M U t0,
+    (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
+    ∧ Γ ⊢< l > t ≡ t0 : T
+    ∧ Γ ⊢< Ax l > T ≡ U : Sort l
+    ∧ CTerm h M)
+  ->
+  (∀ U,
+    Γ ⊢< Ax l > T ≡ U : Sort l ->
+    exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
+    ∧ Γ ⊢< l > t ≡ t0 : T
+    ∧ CTerm h M)
+  ∧
+  (∃ M U t0,
+    (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
+    ∧ Γ ⊢< l > t ≡ t0 : T
+    ∧ Γ ⊢< Ax l > T ≡ U : Sort l
+    ∧ CTerm h M).
 Proof.
-    intros wt_is_wn tWt Γ_eq_Δ H.
-    split; intros; auto.
-    edestruct H as (M & V & t0' & M_infer & t_conv_t0' & T_eq_V & C); eauto.
-    assert (Γ ⊢< Ax l > V ≡ U : Sort l) as V_eq_U by eauto using conv_sym, conv_trans.
-    apply validity_conv_left in V_eq_U as V_wt.
-    apply validity_conv_right in V_eq_U as U_wt.
-    apply wt_is_wn in V_wt as (V' & V_redd_V' & nf_V').
-    apply wt_is_wn in U_wt as (U' & U_redd_U' & nf_U').
-    exists M. eexists. repeat split; eauto using conv_conv.
-    eapply check_conv; eauto.
-    eapply convcheck_complete; eauto.
+  intros wt_is_wn tWt Γ_eq_Δ H.
+  split; intros; auto.
+  edestruct H as (M & V & t0' & M_infer & t_conv_t0' & T_eq_V & C); eauto.
+  assert (Γ ⊢< Ax l > V ≡ U : Sort l) as V_eq_U by eauto using conv_sym, conv_trans.
+  apply validity_conv_left in V_eq_U as V_wt.
+  apply validity_conv_right in V_eq_U as U_wt.
+  apply wt_is_wn in V_wt as (V' & V_redd_V' & nf_V').
+  apply wt_is_wn in U_wt as (U' & U_redd_U' & nf_U').
+  exists M. eexists. repeat split; eauto using conv_conv.
+  eapply check_conv; eauto.
+  eapply convcheck_complete; eauto.
 Qed.
 
 
@@ -1129,137 +1137,179 @@ Qed.
    for the inferring case we derive it by putting a type ascription.
    because of this, we also need to show the checking case for the type *)
 Lemma completeness_aux_check Γ l t T Δ :
-    wt_is_wn ->
-    Γ ⊢< l > t : T ->
-    ⊢ Γ ≡ Δ ->
-    (exists MT U T0,
-        (erase_ctx Δ) ⊢< Ax l > MT ⇒ (erasure (Ax (Ax l)) U) ↣ erasure (Ax l) T0
-        ∧ Γ ⊢< Ax l > T ≡ T0 : Sort l
-        ∧ Γ ⊢< Ax (Ax l) > Sort l ≡ U : Sort (Ax l)
-        ∧ CTerm agda MT) ->
-    (forall U,
-        Γ ⊢< Ax l > T ≡ U : Sort l ->
-        exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T ∧ CTerm agda M)
-    ->
-    (forall U,
-        Γ ⊢< Ax l > T ≡ U : Sort l ->
-        exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T ∧ CTerm agda M)
-    ∧
-    (exists M U t0,
-        (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ Γ ⊢< Ax l > T ≡ U : Sort l
-        ∧ CTerm agda M).
+  wt_is_wn ->
+  Γ ⊢< l > t : T ->
+  ⊢ Γ ≡ Δ ->
+  (exists MT U T0,
+      (erase_ctx Δ) ⊢< Ax l > MT ⇒ (erasure (Ax (Ax l)) U) ↣ erasure (Ax l) T0
+      ∧ Γ ⊢< Ax l > T ≡ T0 : Sort l
+      ∧ Γ ⊢< Ax (Ax l) > Sort l ≡ U : Sort (Ax l)
+      ∧ CTerm agda MT) ->
+  (forall U,
+      Γ ⊢< Ax l > T ≡ U : Sort l ->
+      exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
+      ∧ Γ ⊢< l > t ≡ t0 : T ∧ CTerm agda M)
+  ->
+  (forall U,
+      Γ ⊢< Ax l > T ≡ U : Sort l ->
+      exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
+      ∧ Γ ⊢< l > t ≡ t0 : T ∧ CTerm agda M)
+  ∧
+  (exists M U t0,
+      (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
+      ∧ Γ ⊢< l > t ≡ t0 : T
+      ∧ Γ ⊢< Ax l > T ≡ U : Sort l
+      ∧ CTerm agda M).
 Proof.
-    intros. split; eauto.
-    destruct H2 as (MT & U & T0 & MT_infers & T_conv_T0 & sort_conv & CMT).
-    edestruct H3 as (M & t0 & M_checks & t_conv_t0 & cM); eauto using validity_ty_ty.
-    eapply gen_red in sort_conv; eauto.
-    eexists (cann M MT). eexists. eexists.
+  intros. split; eauto.
+  destruct H2 as (MT & U & T0 & MT_infers & T_conv_T0 & sort_conv & CMT).
+  edestruct H3 as (M & t0 & M_checks & t_conv_t0 & cM); eauto using validity_ty_ty.
+  eapply gen_red in sort_conv; eauto.
+  eexists (cann M MT). eexists. eexists.
 
-    repeat split; eauto using validity_ty_ty, conv_refl, CTerm.
-    eapply infer_ann; eauto using CTerm, redd_refl.
+  repeat split; eauto using validity_ty_ty, conv_refl, CTerm.
+  eapply infer_ann; eauto using CTerm, redd_refl.
 Qed.
 
 
 (* we separate the case in the proof for pi, because we reuse it in the
   case for lam, when constructing the type annotation needed for inference *)
 Lemma completeness_pi Γ i j A B h :
-    wt_is_wn ->
-    Γ ⊢< Ax i > A : Sort i ->
-    Γ,, (i, A) ⊢< Ax j > B : Sort j ->
-    (∀ Δ : ctx, ⊢ Γ ≡ Δ →
-        ∃ (M : cterm) (U w : term),
-            erase_ctx Δ ⊢< Ax i > M ⇒ erasure (Ax (Ax i)) U ↣ erasure (Ax i) w
-            ∧ Γ ⊢< Ax i > A ≡ w : Sort i
-            ∧ Γ ⊢< Ax (Ax i) > Sort i ≡ U : Sort (Ax i)
-            ∧ CTerm h M) ->
-    (∀ Δ : ctx, ⊢ Γ,, (i, A) ≡ Δ →
-        ∃ (M : cterm) (U w : term),
-            erase_ctx Δ ⊢< Ax j > M ⇒ erasure (Ax (Ax j)) U ↣ erasure (Ax j) w
-            ∧ Γ,, (i, A) ⊢< Ax j > B ≡ w : Sort j
-            ∧ Γ,, (i, A) ⊢< Ax (Ax j) > Sort j ≡ U : Sort (Ax j)
-            ∧ CTerm h M) ->
-    forall Δ, ⊢ Γ ≡ Δ ->
-    ∃ (M : cterm) (U w : term),
-        erase_ctx Δ ⊢< Ax (Ru i j) > M ⇒ erasure (Ax (Ax (Ru i j))) U ↣ erasure (Ax (Ru i j)) w
-        ∧ Γ ⊢< Ax (Ru i j) > Pi i j A B ≡ w : Sort (Ru i j)
-        ∧ Γ ⊢< Ax (Ax (Ru i j)) > Sort (Ru i j) ≡ U : Sort (Ax (Ru i j))
-        ∧ CTerm h M.
+  wt_is_wn ->
+  Γ ⊢< Ax i > A : Sort i ->
+  Γ,, (i, A) ⊢< Ax j > B : Sort j ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ →
+      ∃ (M : cterm) (U w : term),
+          erase_ctx Δ ⊢< Ax i > M ⇒ erasure (Ax (Ax i)) U ↣ erasure (Ax i) w
+          ∧ Γ ⊢< Ax i > A ≡ w : Sort i
+          ∧ Γ ⊢< Ax (Ax i) > Sort i ≡ U : Sort (Ax i)
+          ∧ CTerm h M) ->
+  (∀ Δ : ctx, ⊢ Γ,, (i, A) ≡ Δ →
+      ∃ (M : cterm) (U w : term),
+          erase_ctx Δ ⊢< Ax j > M ⇒ erasure (Ax (Ax j)) U ↣ erasure (Ax j) w
+          ∧ Γ,, (i, A) ⊢< Ax j > B ≡ w : Sort j
+          ∧ Γ,, (i, A) ⊢< Ax (Ax j) > Sort j ≡ U : Sort (Ax j)
+          ∧ CTerm h M) ->
+  forall Δ, ⊢ Γ ≡ Δ ->
+  ∃ (M : cterm) (U w : term),
+      erase_ctx Δ ⊢< Ax (Ru i j) > M ⇒ erasure (Ax (Ax (Ru i j))) U ↣ erasure (Ax (Ru i j)) w
+      ∧ Γ ⊢< Ax (Ru i j) > Pi i j A B ≡ w : Sort (Ru i j)
+      ∧ Γ ⊢< Ax (Ax (Ru i j)) > Sort (Ru i j) ≡ U : Sort (Ax (Ru i j))
+      ∧ CTerm h M.
 Proof.
-    intros wt_is_wn A_Wt B_Wt HA HB Δ Γ_eq_Δ.
-    edestruct HA as (MA & UA & wA & MA_infer & A_conv_wA & sort_eq_UA & CA); eauto.
-    eapply gen_red in sort_eq_UA; eauto.
+  intros wt_is_wn A_Wt B_Wt HA HB Δ Γ_eq_Δ.
+  edestruct HA as (MA & UA & wA & MA_infer & A_conv_wA & sort_eq_UA & CA); eauto.
+  eapply gen_red in sort_eq_UA; eauto.
 
-    edestruct HB as (MB & UB & wB & MB_infer & B_conv_wB & sort_eq_UB & CB); eauto using conv_ccons, conv_refl.
-    eapply gen_red in sort_eq_UB; eauto.
+  edestruct HB as (MB & UB & wB & MB_infer & B_conv_wB & sort_eq_UB & CB); eauto using conv_ccons, conv_refl.
+  eapply gen_red in sort_eq_UB; eauto.
 
-    exists (cPi MA MB). exists (Sort (Ru i j)). exists (Pi i j wA wB).
-    repeat split; eauto using CTerm, conv_sort, validity_ty_ctx, conv_pi, validity_conv_left.
-    eapply infer_pi; eauto.
+  exists (cPi MA MB). exists (Sort (Ru i j)). exists (Pi i j wA wB).
+  repeat split; eauto using CTerm, conv_sort, validity_ty_ctx, conv_pi, validity_conv_left.
+  eapply infer_pi; eauto.
 Qed.
 
 Lemma completeness_Sigma Γ n m A B h :
-    wt_is_wn ->
-    Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
-    Γ,, (ty n, A) ⊢< Ax (ty m) > B : Sort (ty m) ->
-    (∀ Δ : ctx, ⊢ Γ ≡ Δ ->
-        ∃ (M : cterm) (U w : term),
-            erase_ctx Δ ⊢< Ax (ty n) > M ⇒ erasure (Ax (Ax (ty n))) U ↣ erasure (Ax (ty n)) w
-            ∧ Γ ⊢< Ax (ty n) > A ≡ w : Sort (ty n)
-            ∧ Γ ⊢< Ax (Ax (ty n)) > Sort (ty n) ≡ U : Sort (Ax (ty n)) ∧ CTerm h M) ->
+  wt_is_wn ->
+  Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
+  Γ,, (ty n, A) ⊢< Ax (ty m) > B : Sort (ty m) ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ ->
+      ∃ (M : cterm) (U w : term),
+          erase_ctx Δ ⊢< Ax (ty n) > M ⇒ erasure (Ax (Ax (ty n))) U ↣ erasure (Ax (ty n)) w
+          ∧ Γ ⊢< Ax (ty n) > A ≡ w : Sort (ty n)
+          ∧ Γ ⊢< Ax (Ax (ty n)) > Sort (ty n) ≡ U : Sort (Ax (ty n)) ∧ CTerm h M) ->
 
-    (∀ Δ : ctx, ⊢ Γ,, (ty n, A) ≡ Δ ->
-        ∃ (M : cterm) (U w : term),
-            erase_ctx Δ ⊢< Ax (ty m) > M ⇒ erasure (Ax (Ax (ty m))) U ↣ erasure (Ax (ty m)) w
-            ∧ Γ,, (ty n, A) ⊢< Ax (ty m) > B ≡ w : Sort (ty m)
-            ∧ Γ,, (ty n, A) ⊢< Ax (Ax (ty m)) > Sort (ty m) ≡ U : Sort (Ax (ty m)) ∧ CTerm h M) ->
-    forall Δ, ⊢ Γ ≡ Δ ->
-    ∃ (M : cterm) (U w : term),
-        erase_ctx Δ ⊢< Ax (ty (max n m)) > M ⇒ erasure (Ax (Ax (ty (max n m)))) U ↣ erasure (Ax (ty (max n m))) w
-        ∧ Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≡ w : Sort (ty (max n m))
-        ∧ Γ ⊢< Ax (Ax (ty (max n m))) > Sort (ty (max n m)) ≡ U : Sort (Ax (ty (max n m)))
-        ∧ CTerm h M.
+  (∀ Δ : ctx, ⊢ Γ,, (ty n, A) ≡ Δ ->
+      ∃ (M : cterm) (U w : term),
+          erase_ctx Δ ⊢< Ax (ty m) > M ⇒ erasure (Ax (Ax (ty m))) U ↣ erasure (Ax (ty m)) w
+          ∧ Γ,, (ty n, A) ⊢< Ax (ty m) > B ≡ w : Sort (ty m)
+          ∧ Γ,, (ty n, A) ⊢< Ax (Ax (ty m)) > Sort (ty m) ≡ U : Sort (Ax (ty m)) ∧ CTerm h M) ->
+  forall Δ, ⊢ Γ ≡ Δ ->
+  ∃ (M : cterm) (U w : term),
+      erase_ctx Δ ⊢< Ax (ty (max n m)) > M ⇒ erasure (Ax (Ax (ty (max n m)))) U ↣ erasure (Ax (ty (max n m))) w
+      ∧ Γ ⊢< Ax (ty (max n m)) > Sigma (ty n) (ty m) A B ≡ w : Sort (ty (max n m))
+      ∧ Γ ⊢< Ax (Ax (ty (max n m))) > Sort (ty (max n m)) ≡ U : Sort (Ax (ty (max n m)))
+      ∧ CTerm h M.
 Proof.
-    intros wt_is_wn A_Wt B_Wt HA HB Δ Γ_eq_Δ.
-    edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
-    eapply gen_red in sort_eq_UA; eauto. clear HA.
+  intros wt_is_wn A_Wt B_Wt HA HB Δ Γ_eq_Δ.
+  edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
+  eapply gen_red in sort_eq_UA; eauto. clear HA.
 
-    edestruct HB as (MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto using conv_ccons, conv_refl. clear HB.
-    eapply gen_red in sort_eq_UB; eauto.
+  edestruct HB as (MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto using conv_ccons, conv_refl. clear HB.
+  eapply gen_red in sort_eq_UB; eauto.
 
-    exists (cSigma MA MB). eexists. exists (Sigma (ty n) (ty m) A0 B0).
-    repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
-    eapply infer_sigma; eauto.
-    econstructor; eauto.
+  exists (cSigma MA MB). eexists. exists (Sigma (ty n) (ty m) A0 B0).
+  repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
+  eapply infer_sigma; eauto.
+  econstructor; eauto.
+Qed.
+
+Lemma completeness_sum Γ n m A B h :
+  wt_is_wn →
+  Γ ⊢< Ax (ty n) > A : Sort (ty n) →
+  Γ ⊢< Ax (ty m) > B : Sort (ty m) →
+  (∀ Δ : ctx,
+    ⊢ Γ ≡ Δ →
+    ∃ (M : cterm) (U w : term),
+      erase_ctx Δ ⊢< Ax (ty n) > M ⇒ erasure (Ax (Ax (ty n))) U ↣ erasure (Ax (ty n)) w ∧
+      Γ ⊢< Ax (ty n) > A ≡ w : Sort (ty n) ∧
+      Γ ⊢< Ax (Ax (ty n)) > Sort (ty n) ≡ U : Sort (Ax (ty n)) ∧
+      CTerm h M
+  ) →
+  (∀ Δ : ctx,
+    ⊢ Γ ≡ Δ →
+    ∃ (M : cterm) (U w : term),
+      erase_ctx Δ ⊢< Ax (ty m) > M ⇒ erasure (Ax (Ax (ty m))) U ↣ erasure (Ax (ty m)) w ∧
+      Γ ⊢< Ax (ty m) > B ≡ w : Sort (ty m) ∧
+      Γ ⊢< Ax (Ax (ty m)) > Sort (ty m) ≡ U : Sort (Ax (ty m)) ∧
+      CTerm h M
+  ) →
+  ∀ Δ,
+    ⊢ Γ ≡ Δ →
+    ∃ (M : cterm) (U w : term),
+      erase_ctx Δ ⊢< Ax (ty (max n m)) > M ⇒ erasure (Ax (Ax (ty (max n m)))) U ↣ erasure (Ax (ty (max n m))) w ∧
+      Γ ⊢< Ax (ty (max n m)) > tysum (ty n) (ty m) A B ≡ w : Sort (ty (max n m)) ∧
+      Γ ⊢< Ax (Ax (ty (max n m))) > Sort (ty (max n m)) ≡ U : Sort (Ax (ty (max n m))) ∧
+      CTerm h M.
+Proof.
+  intros wt_is_wn A_Wt B_Wt HA HB Δ Γ_eq_Δ.
+  edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
+  eapply gen_red in sort_eq_UA; eauto. clear HA.
+
+  edestruct HB as (MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto.
+  clear HB.
+  eapply gen_red in sort_eq_UB; eauto.
+
+  eexists (csum MA MB), _, (tysum (ty n) (ty m) A0 B0).
+  repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
+  - eapply infer_sum; eauto.
+  - econstructor; eauto.
 Qed.
 
 Lemma completeness_Lift Γ i A h :
-    wt_is_wn ->
-    Γ ⊢< Ax i > A : Sort i ->
-    (∀ Δ : ctx, ⊢ Γ ≡ Δ →
-        ∃ (M : cterm) (U A0 : term),
-            erase_ctx Δ ⊢< Ax i > M ⇒ erasure (Ax (Ax i)) U ↣ erasure (Ax i) A0
-            ∧ Γ ⊢< Ax i > A ≡ A0 : Sort i
-            ∧ Γ ⊢< Ax (Ax i) > Sort i ≡ U : Sort (Ax i)
-            ∧ CTerm h M) ->
-    forall Δ, ⊢ Γ ≡ Δ ->
-    ∃ (M : cterm) (U A0 : term),
-        erase_ctx Δ ⊢< Ax (Ax i) > M ⇒ erasure (Ax (Ax (Ax i))) U ↣ erasure (Ax (Ax i)) A0
-        ∧ Γ ⊢< Ax (Ax i) > Lift i A ≡ A0 : Sort (Ax i)
-        ∧ Γ ⊢< Ax (Ax (Ax i)) > Sort (Ax i) ≡ U : Sort (Ax (Ax i))
-        ∧ CTerm h M.
+  wt_is_wn ->
+  Γ ⊢< Ax i > A : Sort i ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ →
+      ∃ (M : cterm) (U A0 : term),
+          erase_ctx Δ ⊢< Ax i > M ⇒ erasure (Ax (Ax i)) U ↣ erasure (Ax i) A0
+          ∧ Γ ⊢< Ax i > A ≡ A0 : Sort i
+          ∧ Γ ⊢< Ax (Ax i) > Sort i ≡ U : Sort (Ax i)
+          ∧ CTerm h M) ->
+  forall Δ, ⊢ Γ ≡ Δ ->
+  ∃ (M : cterm) (U A0 : term),
+      erase_ctx Δ ⊢< Ax (Ax i) > M ⇒ erasure (Ax (Ax (Ax i))) U ↣ erasure (Ax (Ax i)) A0
+      ∧ Γ ⊢< Ax (Ax i) > Lift i A ≡ A0 : Sort (Ax i)
+      ∧ Γ ⊢< Ax (Ax (Ax i)) > Sort (Ax i) ≡ U : Sort (Ax (Ax i))
+      ∧ CTerm h M.
 Proof.
-    intros wt_is_wn A_Wt HA Δ Γ_eq_Δ.
-    edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
-    eapply gen_red in sort_eq_UA; eauto.
+  intros wt_is_wn A_Wt HA Δ Γ_eq_Δ.
+  edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
+  eapply gen_red in sort_eq_UA; eauto.
 
-    exists (cLift MA). exists (Sort (Ax i)). exists (Lift i A0).
-    repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
-    eapply infer_Lift; eauto.
-    econstructor; eauto.
+  exists (cLift MA). exists (Sort (Ax i)). exists (Lift i A0).
+  repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
+  eapply infer_Lift; eauto.
+  econstructor; eauto.
 Qed.
 
 Lemma eq_redd l A A' a a' b b' :
