@@ -902,15 +902,56 @@ Proof.
 
   - rename t0_1 into A, t0_2 into B, t0_3 into P, t0_4 into pl, t0_5 into pr, t0_6 into u.
     rename u0_1 into A', u0_2 into B', u0_3 into P', u0_4 into pl', u0_5 into pr', u0_6 into u'.
-    eapply H' in H3 as HP. all: eauto.
-    eapply H0' in H4 as Hpl. all: eauto.
-    eapply H1' in H5 as Hpr. all: eauto.
     eapply H2 in H6 as Hu. all: eauto.
-    (* How do I know i0 = i1? *)
+    eapply type_unique in H12 as he.
+    2:{ eapply validity_conv_right in Hu. eapply Hu. }
+    apply type_formers_inj in he as hh.
+    destruct hh as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
     ty_inj_tac. subst.
-    (* eapply conv_sym. eapply conv_conv.
-    { econstructor. } *)
-Admitted.
+    eapply H' in H3 as HP. all: eauto.
+    2: eauto using conv_ty_in_ctx_ty, conv_sym.
+    eapply H0' in H4 as Hpl. all: eauto.
+    2:{
+      eapply conv_ty_in_ctx_ty. 1: econstructor.
+      - eauto.
+      - eapply subst_conv.
+        all: eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        { econstructor.
+          all: eauto using conv_sym, conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+          apply conv_refl.
+          eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        }
+        eapply conv_ren in he. 3: eapply WellRen_S.
+        all: eauto using conv_sym, validity_ty_ctx.
+      - eauto using conv_sym.
+    }
+    eapply H1' in H5 as Hpr. all: eauto.
+    2:{
+      eapply conv_ty_in_ctx_ty. 1: econstructor.
+      - eauto.
+      - eapply subst_conv.
+        all: eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
+        apply conv_scons_alt.
+        1: eauto using refl_subst, ortho_to_conv, validity_conv_right with sidecond.
+        rasimpl. econstructor.
+        { econstructor.
+          all: eauto using conv_sym, conv_ren, ortho_to_conv, validity_conv_right with sidecond.
+          apply conv_refl.
+          eauto using typing, ortho_to_conv, validity_conv_right with sidecond.
+        }
+        eapply conv_ren in he. 3: eapply WellRen_S.
+        all: eauto using conv_sym, validity_ty_ctx.
+      - eauto using conv_sym.
+    }
+    eapply conv_sym. eapply conv_conv.
+    { econstructor.
+      all: eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
+    }
+    eauto 7 using conv_trans, type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
+Qed.
 
 
 Lemma eq_erased_nf Γ l t u A :
