@@ -1327,380 +1327,391 @@ Proof.
 Qed.
 
 Lemma varty_erase Γ l x A :
-    Γ ∋< l > x : A →
-    erase_ctx Γ ∋< l > x : erasure (Ax l) A.
+  Γ ∋< l > x : A →
+  erase_ctx Γ ∋< l > x : erasure (Ax l) A.
 Proof.
-    intros h. induction h.
-    - cbn. rewrite erasure_rename_commute. constructor.
-    - cbn. rewrite erasure_rename_commute. constructor. eauto.
+  intros h. induction h.
+  - cbn. rewrite erasure_rename_commute. constructor.
+  - cbn. rewrite erasure_rename_commute. constructor. eauto.
 Qed.
 
 Theorem completeness Γ l t T Δ h :
-    wt_is_wn ->
-    Γ ⊢< l > t : T ->
-    ⊢ Γ ≡ Δ ->
-    (forall U,
-        Γ ⊢< Ax l > T ≡ U : Sort l ->
-        exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ CTerm h M)
-    ∧
-    (exists M U t0,
-        (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
-        ∧ Γ ⊢< l > t ≡ t0 : T
-        ∧ Γ ⊢< Ax l > T ≡ U : Sort l
-        ∧ CTerm h M).
+  wt_is_wn ->
+  Γ ⊢< l > t : T ->
+  ⊢ Γ ≡ Δ ->
+  (forall U,
+    Γ ⊢< Ax l > T ≡ U : Sort l ->
+    exists M t0, (erase_ctx Δ) ⊢< l > M ⇐ (erasure (Ax l) U) ↣ (erasure l t0)
+    ∧ Γ ⊢< l > t ≡ t0 : T
+    ∧ CTerm h M)
+  ∧
+  (exists M U t0,
+    (erase_ctx Δ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t0)
+    ∧ Γ ⊢< l > t ≡ t0 : T
+    ∧ Γ ⊢< Ax l > T ≡ U : Sort l
+    ∧ CTerm h M).
 Proof.
-    intros wt_is_wn Wt.
-    pose proof Wt as Wt'.
-    generalize Δ. clear Δ.
-    induction Wt;intros.
+  intros wt_is_wn Wt.
+  pose proof Wt as Wt'.
+  generalize Δ. clear Δ.
+  induction Wt;intros.
 
 
-    (* case var *)
-    - eapply completeness_aux_infer; eauto.
-      eapply conv_in_ctx_ty in Wt'; eauto.
-      eapply type_inv in Wt'. dependent destruction Wt'.
-      exists (cvar x). eexists. exists (var x).
-      repeat split; eauto using CTerm.
-      + eapply infer_var. apply varty_erase. eassumption.
-      + eapply conv_in_ctx_conv; eauto using ctx_conv_sym, conv_var, validity_ctx_conv_right, conv_conv, conv_sym.
-      + eapply conv_in_ctx_conv; eauto using ctx_conv_sym.
+  (* case var *)
+  - eapply completeness_aux_infer; eauto.
+    eapply conv_in_ctx_ty in Wt'; eauto.
+    eapply type_inv in Wt'. dependent destruction Wt'.
+    exists (cvar x). eexists. exists (var x).
+    repeat split; eauto using CTerm.
+    + eapply infer_var. apply varty_erase. eassumption.
+    + eapply conv_in_ctx_conv; eauto using ctx_conv_sym, conv_var, validity_ctx_conv_right, conv_conv, conv_sym.
+    + eapply conv_in_ctx_conv; eauto using ctx_conv_sym.
 
-    (* case sort *)
-    - eapply completeness_aux_infer; eauto.
-      exists (cSort l). exists (Sort (Ax l)). exists (Sort l).
-      split; eauto using CTerm, conv_refl, validity_ty_ty, infer_Sort, conv_sort.
+  (* case sort *)
+  - eapply completeness_aux_infer; eauto.
+    exists (cSort l). exists (Sort (Ax l)). exists (Sort l).
+    split; eauto using CTerm, conv_refl, validity_ty_ty, infer_Sort, conv_sort.
 
-    (* case pi *)
-    - eapply completeness_aux_infer; eauto.
-      eapply completeness_pi; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
+  (* case pi *)
+  - eapply completeness_aux_infer; eauto.
+    eapply completeness_pi; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
 
-    (* case lam *)
-    - destruct h.
-        + eapply completeness_aux_check; eauto.
-          * eapply completeness_pi; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
-          * intros. clear IHWt1 IHWt2.
-            eapply gen_red in H0 as (A' & B' & A_eq_A' & B_eq_B' & U_red_pi); eauto.
-            edestruct IHWt3 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using conv_ccons, conv_refl. clear IHWt3.
-            exists (clam Mt). eexists (lam i j A B t0). repeat split; eauto using CTerm, conv_refl, conv_lam, validity_conv_left.
-            erewrite lam_box_erasure; eauto using validity_conv_right.
-            eapply check_lam. apply U_red_pi. eauto.
-
-        +   apply completeness_aux_infer; eauto. clear IHWt2.
-            edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto. clear IHWt1.
-            eapply gen_red in sort_eq_UA; eauto.
-
-            edestruct IHWt3 as (_ & Mt & B' & t0  & Mt_infer & t_conv_t0 & B_eq_B' & CM); eauto using conv_ccons, conv_refl. clear IHWt3.
-
-            exists (clam' MA Mt). exists (Pi i j A0 B').
-            exists (lam i j A0 B' t0).
-            repeat split; eauto using CTerm.
-            ++ erewrite lam_box_erasure; eauto using validity_conv_right.
-               eapply infer_lam; eauto.
-            ++ econstructor; eauto.
-            ++ eauto using conv_pi, conv_refl.
-
-    (* case app *)
-    - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
-      edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & pi_eq_UA & Ct); eauto. clear IHWt3.
-      eapply gen_red in pi_eq_UA as (A' & B' & A_eq_A' & B_eq_B' & erasure_UA_red); eauto.
-
-      edestruct IHWt4 as ((Mu & u0 & Mu_check & u_conv_u0 & Cu) & _); eauto. clear IHWt4.
-
-      exists (capp Mt Mu). eexists (B' <[ u0 ..]).
-      exists (app i j A' B' t0 u0).
-      repeat split; eauto using CTerm.
-      + erewrite app_box_erasure; eauto using validity_conv_right.
-        erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-        eapply infer_app; eauto.
-      + econstructor; eauto.
-      + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
-
-
-
-    (* case sigma *)
-    - eapply completeness_aux_infer; eauto.
-      eapply completeness_Sigma; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
-
-    (* case pair *)
-    - destruct h.
-        + eapply completeness_aux_check; eauto.
-          * eapply completeness_Sigma; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
-          * intros. clear IHWt1. clear IHWt2.
-            eapply gen_red in H0 as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & U_red_pi); eauto.
-            ty_inj_tac. subst.
-            edestruct IHWt3 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto.
-            edestruct IHWt4 as ((Mu & u0 & Mu_check & u_conv_u0 & Cu) & _); eauto.
-            1:eapply subst_conv; eauto using validity_ty_ctx, substs_one, conv_refl.
-            clear IHWt3 IHWt4.
-            erewrite erasure_subst_1_commutes in Mu_check; eauto using validity_conv_right.
-            exists (cpair Mt Mu). exists (pair (ty n') (ty m') A' B' t0 u0).
-            repeat split; eauto using CTerm.
-            simpl. eapply check_pair; eauto.
-            econstructor; eauto.
-
-        +   apply completeness_aux_infer; eauto. clear IHWt1.
-            edestruct IHWt3 as (_ & Ma & A' & a0 & Ma_infer & a_conv_a0 & A_conv_A' & Ca); eauto.
-
-            edestruct IHWt2 as (_ & MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto using  conv_ccons.
-            eapply gen_red in sort_eq_UB; eauto. clear IHWt3 IHWt2.
-
-            edestruct IHWt4 as ((Mb & b0 & Mb_check & b_conv_b0 & Cb) & _).
-            1,2:eauto using conv_refl, validity_ty_ty.
-            1:eapply subst_conv; eauto using substs_one, validity_ty_ctx.
-            clear IHWt4.
-            erewrite erasure_subst_1_commutes in Mb_check; eauto using validity_conv_right.
-
-            exists (cpair' Ma MB Mb). exists (Sigma (ty n) (ty m) A' B0).
-            exists (pair (ty n) (ty m) A' B0 a0 b0).
-            repeat split; eauto using CTerm.
-            ++ simpl. eapply infer_pair; eauto.
-            ++ econstructor; eauto.
-            ++ eauto using conv_sigma, conv_refl.
-
-    (* case pi1 *)
-    - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
-      edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & sig_eq_UA & Ct); eauto.
-      eapply gen_red in sig_eq_UA as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & erasure_UA_red); eauto. clear IHWt3.
-      ty_inj_tac. subst.
-
-      exists (cpi1 Mt). eexists. exists (pi1 (ty n') (ty m') A' B' t0).
-      repeat split; eauto using CTerm.
-      simpl. econstructor; eauto.
-      econstructor;eauto.
-
-    (* case pi2 *)
-    - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
-      edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & sig_eq_UA & Ct); eauto.
-      eapply gen_red in sig_eq_UA as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & erasure_UA_red); eauto. clear IHWt3.
-      ty_inj_tac. subst.
-
-      exists (cpi2 Mt). eexists. exists (pi2 (ty n') (ty m') A' B' t0).
-      repeat split; eauto using CTerm; simpl.
-      3:{eapply subst_conv; eauto using validity_ty_ctx.
-         eapply substs_one; econstructor; eauto. }
-      erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-      eapply infer_pi2; eauto.
-      econstructor; eauto.
-
-    (* case nat *)
-    - eapply completeness_aux_infer; eauto.
-      exists cNat. exists (Sort (ty 0)). exists Nat.
-      intuition eauto using conv_refl, validity_ty_ty, infer_Nat, CTerm.
-
-    (* case zero *)
-    - eapply completeness_aux_infer; eauto.
-      exists czero. exists Nat. exists zero.
-      intuition eauto using conv_refl, validity_ty_ty, infer_zero, CTerm.
-
-    (* case succ *)
-    - eapply completeness_aux_infer; eauto.
-      edestruct IHWt as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using validity_ty_ty, conv_refl.
-      exists (csucc Mt). exists Nat. exists (succ t0).
-      intuition eauto using conv_refl, validity_ty_ty, infer_succ, CTerm, conversion.
-
-    (* case rec *)
-    - eapply completeness_aux_infer; eauto.
-      edestruct IHWt1 as (_ & MP & U & P0 & MP_infer & P_conv_P0 & sort_eq_U & CP); eauto using conv_ccons, conv_nat, validity_ty_ctx. clear IHWt1.
-      eapply gen_red in sort_eq_U; eauto.
-
-      edestruct IHWt2 as ((Mp_zero & p_zero0 & Mp_zero_check & p_zero_conv_p_zero0 & Cp_zero) & _); eauto 6 using subst_conv, substs_one, conv_zero, validity_ty_ctx.
-      clear IHWt2.
-
-      edestruct IHWt3 as ((Mp_succ & p_succ0 & Mp_succ_check & p_succ_conv_p_succ0 & Cp_succ) & _); eauto 7 using conv_ccons, conv_nat, conv_nat, validity_ty_ctx.
-      eapply subst_conv; eauto using validity_ty_ctx, subst_id_var1, refl_subst.
-      clear IHWt3.
-
-      edestruct IHWt4 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using conv_refl, validity_ty_ty. clear IHWt4.
-
-      exists (crec MP Mp_zero Mp_succ Mt). exists (P0 <[ t0 ..]).
-      exists (rec l P0 p_zero0 p_succ0 t0).
-      intuition eauto using validity_ty_ty, CTerm.
-      + erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-        eapply infer_rec; eauto; fold erasure.
-        * erewrite erasure_subst_1_commutes in Mp_zero_check; eauto using validity_conv_right. eauto.
-        * erewrite aux_subst_commute in Mp_succ_check; eauto using validity_conv_right.
-      + econstructor; eauto.
-      + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
-
-    (* case Eq *)
-    - eapply completeness_aux_infer; eauto.
-      edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
-      eapply gen_red in sort_eq_UA; eauto. clear IHWt1.
-
-      edestruct IHWt2 as ((Ma & a0 & Ma_checks & a_conv_a0 & Ca) & _); eauto using conv_refl.
-      edestruct IHWt3 as ((Mb & b0 & Mb_checks & b_conv_b0 & Cb) & _); eauto using conv_refl.
-
-      eexists (cEq MA Ma Mb). eexists (Sort prop). exists (Eq l A0 a0 b0).
-      intuition eauto using CTerm, conv_sort, validity_ty_ctx.
-      simpl. eapply infer_eq; eauto.
-      econstructor; eauto.
-
-    (* case J *)
-    - eapply completeness_aux_infer; eauto.
-      clear IHWt1 IHWt2 IHWt5.
-
-      edestruct IHWt6 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt6.
-      eapply gen_red in Eq_eq_UA as (A' & a' & b' & A_conv_A' & a_conv_a' & b_conv_b' & erasure_UA_red ); eauto.
-
-      edestruct IHWt3 as (_ & MP & UP & P0 & MP_infer & P_conv_P0 & sort_eq_UP & CP); eauto  using ConvCtx.
-      eapply gen_red in sort_eq_UP; eauto. clear IHWt3.
-
-      edestruct IHWt4 as ((Mp & p0 & Mp_checks & p_conv_p0 & Cp) & _); eauto using subst_conv, substs_one, validity_ty_ctx.
-      clear IHWt4.
-
-      exists (cJ MP Mp Me).
-      exists (P0 <[b'..]).
-      exists (J l i A' a' P0 p0 b' e0).
-      intuition eauto using CTerm.
-      + erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-        simpl. eapply infer_J; eauto.
-        * rewrite erasure_prop in Me_infer; eauto.
-        * erewrite erasure_subst_1_commutes in Mp_checks; eauto using validity_conv_right.
-      + econstructor; eauto.
-      + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
-
-    (* case Lift *)
-    - eapply completeness_aux_infer; eauto.
-      eapply completeness_Lift; eauto.  intros. eapply IHWt; eauto.
-
-
-    (* case lift *)
-    - destruct h.
+  (* case lam *)
+  - destruct h.
       + eapply completeness_aux_check; eauto.
-        * eapply completeness_Lift; eauto. eapply IHWt1; eauto.
+        * eapply completeness_pi; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
+        * intros. clear IHWt1 IHWt2.
+          eapply gen_red in H0 as (A' & B' & A_eq_A' & B_eq_B' & U_red_pi); eauto.
+          edestruct IHWt3 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using conv_ccons, conv_refl. clear IHWt3.
+          exists (clam Mt). eexists (lam i j A B t0). repeat split; eauto using CTerm, conv_refl, conv_lam, validity_conv_left.
+          erewrite lam_box_erasure; eauto using validity_conv_right.
+          eapply check_lam. apply U_red_pi. eauto.
 
-        * intros.
-          eapply gen_red in H0 as (A' & A_eq_A' & erasure_UA_red); eauto.
-          edestruct IHWt2 as (H' & _); eauto. clear IHWt1 IHWt2.
-          eapply H' in A_eq_A' as temp.
-          destruct temp as (M & a0 & M_checks & a_conv_a0 & CM).
-          exists (clift M). exists (lift l A' a0).
-          intuition eauto using CTerm.
-          eapply check_lift; eauto.
+      +   apply completeness_aux_infer; eauto. clear IHWt2.
+          edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto. clear IHWt1.
+          eapply gen_red in sort_eq_UA; eauto.
+
+          edestruct IHWt3 as (_ & Mt & B' & t0  & Mt_infer & t_conv_t0 & B_eq_B' & CM); eauto using conv_ccons, conv_refl. clear IHWt3.
+
+          exists (clam' MA Mt). exists (Pi i j A0 B').
+          exists (lam i j A0 B' t0).
+          repeat split; eauto using CTerm.
+          ++ erewrite lam_box_erasure; eauto using validity_conv_right.
+              eapply infer_lam; eauto.
+          ++ econstructor; eauto.
+          ++ eauto using conv_pi, conv_refl.
+
+  (* case app *)
+  - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
+    edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & pi_eq_UA & Ct); eauto. clear IHWt3.
+    eapply gen_red in pi_eq_UA as (A' & B' & A_eq_A' & B_eq_B' & erasure_UA_red); eauto.
+
+    edestruct IHWt4 as ((Mu & u0 & Mu_check & u_conv_u0 & Cu) & _); eauto. clear IHWt4.
+
+    exists (capp Mt Mu). eexists (B' <[ u0 ..]).
+    exists (app i j A' B' t0 u0).
+    repeat split; eauto using CTerm.
+    + erewrite app_box_erasure; eauto using validity_conv_right.
+      erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      eapply infer_app; eauto.
+    + econstructor; eauto.
+    + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
+
+
+
+  (* case sigma *)
+  - eapply completeness_aux_infer; eauto.
+    eapply completeness_Sigma; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
+
+  (* case pair *)
+  - destruct h.
+      + eapply completeness_aux_check; eauto.
+        * eapply completeness_Sigma; eauto. apply IHWt1; eauto. apply IHWt2; eauto.
+        * intros. clear IHWt1. clear IHWt2.
+          eapply gen_red in H0 as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & U_red_pi); eauto.
+          ty_inj_tac. subst.
+          edestruct IHWt3 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto.
+          edestruct IHWt4 as ((Mu & u0 & Mu_check & u_conv_u0 & Cu) & _); eauto.
+          1:eapply subst_conv; eauto using validity_ty_ctx, substs_one, conv_refl.
+          clear IHWt3 IHWt4.
+          erewrite erasure_subst_1_commutes in Mu_check; eauto using validity_conv_right.
+          exists (cpair Mt Mu). exists (pair (ty n') (ty m') A' B' t0 u0).
+          repeat split; eauto using CTerm.
+          simpl. eapply check_pair; eauto.
           econstructor; eauto.
 
-      + eapply completeness_aux_infer; eauto.
-        edestruct IHWt2 as (_ & Ma & UA & a0 & Mr_infer & a_conv_a0 & Lift_eq_UA & Ca); eauto. clear IHWt1 IHWt2.
-        exists (clift Ma). eexists. exists (lift l UA a0).
-        repeat split; eauto using CTerm.
-        3:eauto using conv_Lift.
-        simpl. eapply infer_lift; eauto.
-        econstructor;eauto.
+      +   apply completeness_aux_infer; eauto. clear IHWt1.
+          edestruct IHWt3 as (_ & Ma & A' & a0 & Ma_infer & a_conv_a0 & A_conv_A' & Ca); eauto.
 
-    (* case lower *)
-    - eapply completeness_aux_infer; eauto.
-      edestruct IHWt2 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & Lift_eq_UA & Ct); eauto. clear IHWt1 IHWt2.
-      eapply gen_red in Lift_eq_UA as (A' & A_eq_A' & erasure_UA_red); eauto.
+          edestruct IHWt2 as (_ & MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto using  conv_ccons.
+          eapply gen_red in sort_eq_UB; eauto. clear IHWt3 IHWt2.
 
-      exists (clower Mt). eexists. exists (lower l A' t0).
+          edestruct IHWt4 as ((Mb & b0 & Mb_check & b_conv_b0 & Cb) & _).
+          1,2:eauto using conv_refl, validity_ty_ty.
+          1:eapply subst_conv; eauto using substs_one, validity_ty_ctx.
+          clear IHWt4.
+          erewrite erasure_subst_1_commutes in Mb_check; eauto using validity_conv_right.
+
+          exists (cpair' Ma MB Mb). exists (Sigma (ty n) (ty m) A' B0).
+          exists (pair (ty n) (ty m) A' B0 a0 b0).
+          repeat split; eauto using CTerm.
+          ++ simpl. eapply infer_pair; eauto.
+          ++ econstructor; eauto.
+          ++ eauto using conv_sigma, conv_refl.
+
+  (* case pi1 *)
+  - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
+    edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & sig_eq_UA & Ct); eauto.
+    eapply gen_red in sig_eq_UA as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & erasure_UA_red); eauto. clear IHWt3.
+    ty_inj_tac. subst.
+
+    exists (cpi1 Mt). eexists. exists (pi1 (ty n') (ty m') A' B' t0).
+    repeat split; eauto using CTerm.
+    simpl. econstructor; eauto.
+    econstructor;eauto.
+
+  (* case pi2 *)
+  - eapply completeness_aux_infer; eauto. clear IHWt1 IHWt2.
+    edestruct IHWt3 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & sig_eq_UA & Ct); eauto.
+    eapply gen_red in sig_eq_UA as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & erasure_UA_red); eauto. clear IHWt3.
+    ty_inj_tac. subst.
+
+    exists (cpi2 Mt). eexists. exists (pi2 (ty n') (ty m') A' B' t0).
+    repeat split; eauto using CTerm; simpl.
+    3:{eapply subst_conv; eauto using validity_ty_ctx.
+        eapply substs_one; econstructor; eauto. }
+    erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+    eapply infer_pi2; eauto.
+    econstructor; eauto.
+
+  (* case nat *)
+  - eapply completeness_aux_infer; eauto.
+    exists cNat. exists (Sort (ty 0)). exists Nat.
+    intuition eauto using conv_refl, validity_ty_ty, infer_Nat, CTerm.
+
+  (* case zero *)
+  - eapply completeness_aux_infer; eauto.
+    exists czero. exists Nat. exists zero.
+    intuition eauto using conv_refl, validity_ty_ty, infer_zero, CTerm.
+
+  (* case succ *)
+  - eapply completeness_aux_infer; eauto.
+    edestruct IHWt as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using validity_ty_ty, conv_refl.
+    exists (csucc Mt). exists Nat. exists (succ t0).
+    intuition eauto using conv_refl, validity_ty_ty, infer_succ, CTerm, conversion.
+
+  (* case rec *)
+  - eapply completeness_aux_infer; eauto.
+    edestruct IHWt1 as (_ & MP & U & P0 & MP_infer & P_conv_P0 & sort_eq_U & CP); eauto using conv_ccons, conv_nat, validity_ty_ctx. clear IHWt1.
+    eapply gen_red in sort_eq_U; eauto.
+
+    edestruct IHWt2 as ((Mp_zero & p_zero0 & Mp_zero_check & p_zero_conv_p_zero0 & Cp_zero) & _); eauto 6 using subst_conv, substs_one, conv_zero, validity_ty_ctx.
+    clear IHWt2.
+
+    edestruct IHWt3 as ((Mp_succ & p_succ0 & Mp_succ_check & p_succ_conv_p_succ0 & Cp_succ) & _); eauto 7 using conv_ccons, conv_nat, conv_nat, validity_ty_ctx.
+    eapply subst_conv; eauto using validity_ty_ctx, subst_id_var1, refl_subst.
+    clear IHWt3.
+
+    edestruct IHWt4 as ((Mt & t0 & Mt_check & t_conv_t0 & Ct) & _); eauto using conv_refl, validity_ty_ty. clear IHWt4.
+
+    exists (crec MP Mp_zero Mp_succ Mt). exists (P0 <[ t0 ..]).
+    exists (rec l P0 p_zero0 p_succ0 t0).
+    intuition eauto using validity_ty_ty, CTerm.
+    + erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      eapply infer_rec; eauto; fold erasure.
+      * erewrite erasure_subst_1_commutes in Mp_zero_check; eauto using validity_conv_right. eauto.
+      * erewrite aux_subst_commute in Mp_succ_check; eauto using validity_conv_right.
+    + econstructor; eauto.
+    + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
+
+  (* case Eq *)
+  - eapply completeness_aux_infer; eauto.
+    edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
+    eapply gen_red in sort_eq_UA; eauto. clear IHWt1.
+
+    edestruct IHWt2 as ((Ma & a0 & Ma_checks & a_conv_a0 & Ca) & _); eauto using conv_refl.
+    edestruct IHWt3 as ((Mb & b0 & Mb_checks & b_conv_b0 & Cb) & _); eauto using conv_refl.
+
+    eexists (cEq MA Ma Mb). eexists (Sort prop). exists (Eq l A0 a0 b0).
+    intuition eauto using CTerm, conv_sort, validity_ty_ctx.
+    simpl. eapply infer_eq; eauto.
+    econstructor; eauto.
+
+  (* case J *)
+  - eapply completeness_aux_infer; eauto.
+    clear IHWt1 IHWt2 IHWt5.
+
+    edestruct IHWt6 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt6.
+    eapply gen_red in Eq_eq_UA as (A' & a' & b' & A_conv_A' & a_conv_a' & b_conv_b' & erasure_UA_red ); eauto.
+
+    edestruct IHWt3 as (_ & MP & UP & P0 & MP_infer & P_conv_P0 & sort_eq_UP & CP); eauto  using ConvCtx.
+    eapply gen_red in sort_eq_UP; eauto. clear IHWt3.
+
+    edestruct IHWt4 as ((Mp & p0 & Mp_checks & p_conv_p0 & Cp) & _); eauto using subst_conv, substs_one, validity_ty_ctx.
+    clear IHWt4.
+
+    exists (cJ MP Mp Me).
+    exists (P0 <[b'..]).
+    exists (J l i A' a' P0 p0 b' e0).
+    intuition eauto using CTerm.
+    + erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      simpl. eapply infer_J; eauto.
+      * rewrite erasure_prop in Me_infer; eauto.
+      * erewrite erasure_subst_1_commutes in Mp_checks; eauto using validity_conv_right.
+    + econstructor; eauto.
+    + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
+
+  (* case Lift *)
+  - eapply completeness_aux_infer; eauto.
+    eapply completeness_Lift; eauto.  intros. eapply IHWt; eauto.
+
+
+  (* case lift *)
+  - destruct h.
+    + eapply completeness_aux_check; eauto.
+      * eapply completeness_Lift; eauto. eapply IHWt1; eauto.
+
+      * intros.
+        eapply gen_red in H0 as (A' & A_eq_A' & erasure_UA_red); eauto.
+        edestruct IHWt2 as (H' & _); eauto. clear IHWt1 IHWt2.
+        eapply H' in A_eq_A' as temp.
+        destruct temp as (M & a0 & M_checks & a_conv_a0 & CM).
+        exists (clift M). exists (lift l A' a0).
+        intuition eauto using CTerm.
+        eapply check_lift; eauto.
+        econstructor; eauto.
+
+    + eapply completeness_aux_infer; eauto.
+      edestruct IHWt2 as (_ & Ma & UA & a0 & Mr_infer & a_conv_a0 & Lift_eq_UA & Ca); eauto. clear IHWt1 IHWt2.
+      exists (clift Ma). eexists. exists (lift l UA a0).
       repeat split; eauto using CTerm.
-      eapply infer_lower; eauto.
-      econstructor; eauto.
+      3:eauto using conv_Lift.
+      simpl. eapply infer_lift; eauto.
+      econstructor;eauto.
 
-      (* case cast *)
-      - eapply completeness_aux_infer; eauto.  clear IHWt1 IHWt2.
-      edestruct IHWt3 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt3.
-      eapply gen_red in Eq_eq_UA as (_sort & A' & B' & sort_conv_sort & A_conv_A' & B_conv_B' & erasure_UA_red); eauto.
-      eapply gen_red in sort_conv_sort; eauto.
+  (* case lower *)
+  - eapply completeness_aux_infer; eauto.
+    edestruct IHWt2 as (_ & Mt & UA & t0 & Mr_infer & t_conv_t0 & Lift_eq_UA & Ct); eauto. clear IHWt1 IHWt2.
+    eapply gen_red in Lift_eq_UA as (A' & A_eq_A' & erasure_UA_red); eauto.
 
-      assert (erasure (Ax prop) UA -->> Eq (Ax i) (Sort i) (erasure (Ax i) A')
+    exists (clower Mt). eexists. exists (lower l A' t0).
+    repeat split; eauto using CTerm.
+    eapply infer_lower; eauto.
+    econstructor; eauto.
+
+    (* case cast *)
+    - eapply completeness_aux_infer; eauto.  clear IHWt1 IHWt2.
+    edestruct IHWt3 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt3.
+    eapply gen_red in Eq_eq_UA as (_sort & A' & B' & sort_conv_sort & A_conv_A' & B_conv_B' & erasure_UA_red); eauto.
+    eapply gen_red in sort_conv_sort; eauto.
+
+    assert (erasure (Ax prop) UA -->> Eq (Ax i) (Sort i) (erasure (Ax i) A')
 (erasure (Ax i) B')) by eauto using redd_trans, eq_redd, redd_refl.
 
-      edestruct IHWt4 as ((Ma & a0 & Ma_check & a_conv_a0 & Ca) & _); eauto. clear IHWt4.
-      exists (ccast Me Ma). exists B'. eexists (cast i A' B' e0 a0).
-      repeat split; eauto using CTerm.
-      eapply infer_cast; eauto; fold erasure.
-      econstructor; eauto.
+    edestruct IHWt4 as ((Ma & a0 & Ma_check & a_conv_a0 & Ca) & _); eauto. clear IHWt4.
+    exists (ccast Me Ma). exists B'. eexists (cast i A' B' e0 a0).
+    repeat split; eauto using CTerm.
+    eapply infer_cast; eauto; fold erasure.
+    econstructor; eauto.
 
-      (* case injpi1 *)
-    - eapply completeness_aux_infer; eauto.
-      clear IHWt1 IHWt2 IHWt3 IHWt4.
-      edestruct IHWt5 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt5.
-      eapply gen_red in Eq_eq_UA as (_sort & V1 & V2 & sort_conv & Pi1_conv & Pi2_conv & erasure_UA_red ); eauto.
-      eapply gen_red in sort_conv; eauto.
+    (* case injpi1 *)
+  - eapply completeness_aux_infer; eauto.
+    clear IHWt1 IHWt2 IHWt3 IHWt4.
+    edestruct IHWt5 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt5.
+    eapply gen_red in Eq_eq_UA as (_sort & V1 & V2 & sort_conv & Pi1_conv & Pi2_conv & erasure_UA_red ); eauto.
+    eapply gen_red in sort_conv; eauto.
 
-      eapply gen_red in Pi1_conv as (A1' & B1' & A1_conv_A1' & B1_conv_B1' & erasure_Pi1); eauto.
+    eapply gen_red in Pi1_conv as (A1' & B1' & A1_conv_A1' & B1_conv_B1' & erasure_Pi1); eauto.
 
-      eapply gen_red in Pi2_conv as (A2' & B2' & A2_conv_A2' & B2_conv_B2' & erasure_Pi2); eauto.
+    eapply gen_red in Pi2_conv as (A2' & B2' & A2_conv_A2' & B2_conv_B2' & erasure_Pi2); eauto.
 
-      assert (erasure (Ax prop) UA -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) (erasure (Ax i) A1') (erasure (Ax (ty n)) B1')) (Pi i (ty n) (erasure (Ax i) A2') (erasure (Ax (ty n)) B2')))  by eauto using redd_trans, eq_redd, redd_refl.
+    assert (erasure (Ax prop) UA -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) (erasure (Ax i) A1') (erasure (Ax (ty n)) B1')) (Pi i (ty n) (erasure (Ax i) A2') (erasure (Ax (ty n)) B2')))  by eauto using redd_trans, eq_redd, redd_refl.
 
-      clear erasure_UA_red erasure_Pi1 erasure_Pi2 sort_conv.
+    clear erasure_UA_red erasure_Pi1 erasure_Pi2 sort_conv.
 
-      exists (cinjpi1 Me). exists (Eq (Ax i) (Sort i) A2' A1').
-      exists (injpi1 i (ty n) A1' A2' B1' B2' e0).
-      repeat split; eauto using CTerm.
-      + eapply infer_injpi1; eauto.
-      + econstructor; eauto.
-      + econstructor; eauto using conv_sort, validity_ty_ctx.
+    exists (cinjpi1 Me). exists (Eq (Ax i) (Sort i) A2' A1').
+    exists (injpi1 i (ty n) A1' A2' B1' B2' e0).
+    repeat split; eauto using CTerm.
+    + eapply infer_injpi1; eauto.
+    + econstructor; eauto.
+    + econstructor; eauto using conv_sort, validity_ty_ctx.
 
-      (* case injpi2 *)
-    - eapply completeness_aux_infer; eauto.
-      clear IHWt1 IHWt2 IHWt3 IHWt4.
-      edestruct IHWt5 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt5.
-      eapply gen_red in Eq_eq_UA as (_sort & V1 & V2 & sort_conv & Pi1_conv & Pi2_conv & erasure_UA_red ); eauto.
-      eapply gen_red in sort_conv; eauto.
+    (* case injpi2 *)
+  - eapply completeness_aux_infer; eauto.
+    clear IHWt1 IHWt2 IHWt3 IHWt4.
+    edestruct IHWt5 as (_ & Me & UA & e0 & Me_infer & e_conv_e0 & Eq_eq_UA & Ce); eauto. clear IHWt5.
+    eapply gen_red in Eq_eq_UA as (_sort & V1 & V2 & sort_conv & Pi1_conv & Pi2_conv & erasure_UA_red ); eauto.
+    eapply gen_red in sort_conv; eauto.
 
-      eapply gen_red in Pi1_conv as (A1' & B1' & A1_conv_A1' & B1_conv_B1' & erasure_Pi1); eauto.
+    eapply gen_red in Pi1_conv as (A1' & B1' & A1_conv_A1' & B1_conv_B1' & erasure_Pi1); eauto.
 
-      eapply gen_red in Pi2_conv as (A2' & B2' & A2_conv_A2' & B2_conv_B2' & erasure_Pi2); eauto.
+    eapply gen_red in Pi2_conv as (A2' & B2' & A2_conv_A2' & B2_conv_B2' & erasure_Pi2); eauto.
 
-      assert (erasure (Ax prop) UA -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) (erasure (Ax i) A1') (erasure (Ax (ty n)) B1')) (Pi i (ty n) (erasure (Ax i) A2') (erasure (Ax (ty n)) B2')))  by eauto using redd_trans, eq_redd, redd_refl.
+    assert (erasure (Ax prop) UA -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n))) (Pi i (ty n) (erasure (Ax i) A1') (erasure (Ax (ty n)) B1')) (Pi i (ty n) (erasure (Ax i) A2') (erasure (Ax (ty n)) B2')))  by eauto using redd_trans, eq_redd, redd_refl.
 
-      clear erasure_UA_red erasure_Pi1 erasure_Pi2 sort_conv.
+    clear erasure_UA_red erasure_Pi1 erasure_Pi2 sort_conv.
 
-      edestruct IHWt6 as ((Ma & a20 & Ma_check & a2_conv_a20 & Ca) & _); eauto.
-      clear IHWt6.
+    edestruct IHWt6 as ((Ma & a20 & Ma_check & a2_conv_a20 & Ca) & _); eauto.
+    clear IHWt6.
 
-      pose (a10 := cast i A2' A1' (injpi1 i (ty n) A1 A2 B1 B2 e) a20).
+    pose (a10 := cast i A2' A1' (injpi1 i (ty n) A1 A2 B1 B2 e) a20).
 
-      exists (cinjpi2 Me Ma).
-      exists (Eq (Ax (ty n)) (Sort (ty n)) (B1'<[a10..]) (B2' <[a20..])).
-      exists (injpi2 i (ty n) A1' A2' B1' B2' e0 a20).
-      repeat split; eauto using CTerm.
-      + simpl.
-        erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-        erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
-        eapply infer_injpi2; eauto; fold erasure.
-      + econstructor; eauto.
-      + econstructor; eauto using conv_sort, validity_ty_ctx.
-        all:eapply subst_conv; eauto using validity_ty_ctx.
-        all:eapply substs_one; eauto.
-        unfold_all_local. econstructor; eauto using conv_refl, typing.
+    exists (cinjpi2 Me Ma).
+    exists (Eq (Ax (ty n)) (Sort (ty n)) (B1'<[a10..]) (B2' <[a20..])).
+    exists (injpi2 i (ty n) A1' A2' B1' B2' e0 a20).
+    repeat split; eauto using CTerm.
+    + simpl.
+      erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      eapply infer_injpi2; eauto; fold erasure.
+    + econstructor; eauto.
+    + econstructor; eauto using conv_sort, validity_ty_ctx.
+      all:eapply subst_conv; eauto using validity_ty_ctx.
+      all:eapply substs_one; eauto.
+      unfold_all_local. econstructor; eauto using conv_refl, typing.
 
+  (* sum *)
+  - admit.
 
-    (* case conv *)
-    - eapply IHWt in H0 as (IH_check & IH_infer); eauto. clear IHWt. split; intros.
-      + assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
-        eapply IH_check in A_eq_U as (M & t0 & M_check & t_conv_t0 & CM).
-        intuition eauto 7 using conv_conv.
-      + destruct IH_infer as (M & U & t0 & M_infer & t_conv_t0 & B_eq_U & CM).
-        assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
-        intuition eauto 12 using conv_conv, conv_sym, conv_trans.
-Qed.
+  (* inl *)
+  - admit.
+
+  (* inr *)
+  - admit.
+
+  (* sum_case *)
+  - admit.
+
+  (* case conv *)
+  - eapply IHWt in H0 as (IH_check & IH_infer); eauto. clear IHWt. split; intros.
+    + assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
+      eapply IH_check in A_eq_U as (M & t0 & M_check & t_conv_t0 & CM).
+      intuition eauto 7 using conv_conv.
+    + destruct IH_infer as (M & U & t0 & M_infer & t_conv_t0 & B_eq_U & CM).
+      assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
+      intuition eauto 12 using conv_conv, conv_sym, conv_trans.
+Admitted.
 
 Corollary completeness_check Γ l t T h :
-    wt_is_wn -> Γ ⊢< l > t : T ->
-    exists M t',
-      (erase_ctx Γ) ⊢< l > M ⇐ (erasure (Ax l) T) ↣ (erasure l t')
-      ∧ Γ ⊢< l > t ≡ t' : T ∧ CTerm h M.
+  wt_is_wn -> Γ ⊢< l > t : T ->
+  exists M t',
+    (erase_ctx Γ) ⊢< l > M ⇐ (erasure (Ax l) T) ↣ (erasure l t')
+    ∧ Γ ⊢< l > t ≡ t' : T ∧ CTerm h M.
 Proof.
-    intros. pose proof H0 as Wt.
-    eapply completeness in Wt as (case_check & case_infer);
-    eauto using ctx_conv_refl, validity_ty_ctx.
-    eapply case_check. eauto using validity_ty_ty, conv_refl.
+  intros. pose proof H0 as Wt.
+  eapply completeness in Wt as (case_check & case_infer);
+  eauto using ctx_conv_refl, validity_ty_ctx.
+  eapply case_check. eauto using validity_ty_ty, conv_refl.
 Qed.
 
 Corollary completeness_infer Γ l t T h :
-    wt_is_wn -> Γ ⊢< l > t : T ->
-    exists M U t', (erase_ctx Γ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t')
-        ∧ Γ ⊢< l > t ≡ t' : T ∧ Γ ⊢< Ax l > T ≡ U : Sort l  ∧ CTerm h M.
+  wt_is_wn -> Γ ⊢< l > t : T ->
+  exists M U t', (erase_ctx Γ) ⊢< l > M ⇒ (erasure (Ax l) U) ↣ (erasure l t')
+      ∧ Γ ⊢< l > t ≡ t' : T ∧ Γ ⊢< Ax l > T ≡ U : Sort l  ∧ CTerm h M.
 Proof.
-    intros. pose proof H0 as Wt.
-    eapply completeness in Wt as (case_check & case_infer);
-    eauto using ctx_conv_refl, validity_ty_ctx.
+  intros. pose proof H0 as Wt.
+  eapply completeness in Wt as (case_check & case_infer);
+  eauto using ctx_conv_refl, validity_ty_ctx.
 Qed.
 
 
