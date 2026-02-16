@@ -964,78 +964,88 @@ Qed.
 
 
 Corollary infer_sound Γ l M t T :
-    ⊢ Γ ->
-    (erase_ctx Γ) ⊢< l > M ⇒ T ↣ t ->
-    exists T' t', Γ ⊢< l > t' : T' ∧ erasure l t' = t ∧ erasure (Ax l) T' = T.
+  ⊢ Γ ->
+  (erase_ctx Γ) ⊢< l > M ⇒ T ↣ t ->
+  exists T' t', Γ ⊢< l > t' : T' ∧ erasure l t' = t ∧ erasure (Ax l) T' = T.
 Proof.
-    intros. eapply (proj1 sound); eauto.
+  intros. eapply (proj1 sound); eauto.
 Qed.
 
 
 Corollary check_sound Γ l M t T :
-    Γ ⊢< Ax l > T : Sort l ->
-    (erase_ctx Γ) ⊢< l > M ⇐ (erasure (Ax l) T) ↣ t ->
-    exists t', Γ ⊢< l > t' : T ∧ erasure l t' = t.
+  Γ ⊢< Ax l > T : Sort l ->
+  (erase_ctx Γ) ⊢< l > M ⇐ (erasure (Ax l) T) ↣ t ->
+  exists t', Γ ⊢< l > t' : T ∧ erasure l t' = t.
 Proof.
-    intros. eapply (proj2 sound); eauto.
+  intros. eapply (proj2 sound); eauto.
 Qed.
 
 Definition wt_is_wn :=
-    forall Γ l t A,
+  forall Γ l t A,
     Γ ⊢< l > t : A ->
     exists u, (erasure l t) -->> u ∧ nf u.
 
 Lemma gen_red Γ T l U :
-    wt_is_wn ->
-    Γ ⊢< Ax l > T ≡ U : Sort l ->
-    match T with
-    | Sort i =>
-        erasure (Ax (Ax i)) U -->> Sort i
-    | Pi i j A B =>
-        exists A' B',
+  wt_is_wn ->
+  Γ ⊢< Ax l > T ≡ U : Sort l ->
+  match T with
+  | Sort i =>
+      erasure (Ax (Ax i)) U -->> Sort i
+  | Pi i j A B =>
+      ∃ A' B',
         Γ ⊢< Ax i > A ≡ A' : Sort i ∧
         Γ ,, (i, A) ⊢< Ax j > B ≡ B' : Sort j ∧
-        erasure (Ax (Ru i j)) U -->> Pi i j (erasure (Ax i) A') (erasure (Ax j) B')
-    | Sigma i j A B =>
-        exists A' B' n m,
+        erasure (Ax (Ru i j)) U -->>
+        Pi i j (erasure (Ax i) A') (erasure (Ax j) B')
+  | Sigma i j A B =>
+      ∃ A' B' n m,
         i = ty n ∧ j = ty m ∧
         Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
         Γ ,, (ty n, A) ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
-        erasure (Ax (Ru (ty n) (ty m))) U -->> Sigma (ty n) (ty m) (erasure (Ax i) A') (erasure (Ax (ty m)) B')
-    | Lift i A =>
-        exists A',
+        erasure (Ax (Ru (ty n) (ty m))) U -->>
+        Sigma (ty n) (ty m) (erasure (Ax i) A') (erasure (Ax (ty m)) B')
+  | Lift i A =>
+      ∃ A',
         Γ ⊢< Ax i > A ≡ A' : Sort i ∧
         erasure (Ax (Ax i)) U -->> Lift i (erasure (Ax i) A')
-    | Eq i A a b =>
-        exists A' a' b',
+  | Eq i A a b =>
+      ∃ A' a' b',
         Γ ⊢< Ax i > A ≡ A' : Sort i ∧
         Γ ⊢< i > a ≡ a' : A ∧
         Γ ⊢< i > b ≡ b' : A ∧
         erasure (Ax prop) U -->> Eq i (erasure (Ax i) A') (erasure i a') (erasure i b')
-    | _ => True
-    end.
+  | tysum i j A B =>
+      ∃ A' B' n m,
+        i = ty n ∧
+        j = ty m ∧
+        Γ ⊢< Ax (ty n) > A ≡ A' : Sort (ty n) ∧
+        Γ ⊢< Ax (ty m) > B ≡ B' : Sort (ty m) ∧
+        erasure (Ax (Ru (ty n) (ty m))) U -->>
+        tysum (ty n) (ty m) (erasure (Ax i) A') (erasure (Ax (ty m)) B')
+  | _ => True
+  end.
 Proof.
-    intros wt_is_wn T_conv_U.
-    apply validity_conv_right in T_conv_U as U_Wt.
-    pose proof U_Wt as U_Wt'.
-    apply wt_is_wn in U_Wt as (Ve & erasure_U_red & Ve_nf).
-    eapply subject_reduction_redd in U_Wt' as (V & U_eq_V & erasure_V); eauto.
-    subst.
-    assert (Γ ⊢< _ > T ≡ V : _) as T_eq_V by eauto using conv_trans.
-    apply CR in T_eq_V as (W & tf_red_W & V_red_W).
+  intros wt_is_wn T_conv_U.
+  apply validity_conv_right in T_conv_U as U_Wt.
+  pose proof U_Wt as U_Wt'.
+  apply wt_is_wn in U_Wt as (Ve & erasure_U_red & Ve_nf).
+  eapply subject_reduction_redd in U_Wt' as (V & U_eq_V & erasure_V); eauto.
+  subst.
+  assert (Γ ⊢< _ > T ≡ V : _) as T_eq_V by eauto using conv_trans.
+  apply CR in T_eq_V as (W & tf_red_W & V_red_W).
 
-    destruct T; eauto.
+  destruct T; eauto.
 
-    all:eapply type_former_redd in tf_red_W; eauto;
-        rename tf_red_W into H' ; repeat destruct H' as (? & H'); subst.
+  all:eapply type_former_redd in tf_red_W; eauto;
+      rename tf_red_W into H' ; repeat destruct H' as (? & H'); subst.
 
-    all:eapply validity_conv_left in T_conv_U as temp;
-    eapply type_inv in temp; dependent destruction temp;
-    eapply Ax_inj in lvl_eq; subst.
+  all:eapply validity_conv_left in T_conv_U as temp;
+  eapply type_inv in temp; dependent destruction temp;
+  Ax_inj_tac ; subst.
 
-    all:eapply ortho_redd_to_eq in V_red_W; eauto;
-        rewrite V_red_W in erasure_U_red; clear V_red_W;
-        repeat eexists; eauto using redd_to_conv.
+  all:eapply ortho_redd_to_eq in V_red_W; eauto;
+      rewrite V_red_W in erasure_U_red; clear V_red_W;
+      repeat eexists; eauto using redd_to_conv.
 Qed.
 
 Inductive label : Type := | agda | rocq.
