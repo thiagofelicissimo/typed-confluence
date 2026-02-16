@@ -44,9 +44,9 @@ Inductive cterm : Type :=
 
 | csum : cterm → cterm → cterm
 | cinl : cterm → cterm
-| iinl (A B a : cterm)
+| iinl (B a : cterm)
 | cinr : cterm → cterm
-| iinr (A B b : cterm)
+| iinr (A b : cterm)
 | csum_case : cterm → cterm → cterm → cterm → cterm.
 
 Reserved Notation "Γ ⊢< l > M ⇒ T ↣ t" (at level 50, l, M, T, t at next level).
@@ -106,10 +106,10 @@ Definition inl_box a := inl prop prop box box a.
 
 Definition inr_box a := inr prop prop box box a.
 
-Definition sum_case_box i j l A B P pl pr u :=
+Definition sum_case_box l P pl pr u :=
   match l with
   | prop => box
-  | _ => sum_case i j l A B P pl pr u
+  | _ => sum_case prop prop l box box P pl pr u
   end.
 
 Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
@@ -237,30 +237,26 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     TB -->> Sort (ty m) →
     Γ ⊢< Ax (ty (max n m)) > csum MA MB ⇒ Sort (ty (max n m)) ↣ tysum (ty n) (ty m) A B
 
-| infer_inl Γ i j n m MA TA A MB TB B Ma a :
-    Γ ⊢< i > MA ⇒ TA ↣ A →
-    TA -->> Sort (ty n) →
+| infer_inl Γ j n m A MB TB B Ma a :
+    Γ ⊢< ty n > Ma ⇒ A ↣ a →
     Γ ⊢< j > MB ⇒ TB ↣ B →
     TB -->> Sort (ty m) →
-    Γ ⊢< ty n > Ma ⇐ A ↣ a →
-    Γ ⊢< ty (max n m) > iinl MA MB Ma ⇒ tysum (ty n) (ty m) A B ↣ inl_box a
+    Γ ⊢< ty (max n m) > iinl MB Ma ⇒ tysum (ty n) (ty m) A B ↣ inl_box a
 
-| infer_inr Γ i j n m MA TA A MB TB B Mb b :
+| infer_inr Γ i n m MA TA A B Mb b :
+    Γ ⊢< ty m > Mb ⇒ B ↣ b →
     Γ ⊢< i > MA ⇒ TA ↣ A →
     TA -->> Sort (ty n) →
-    Γ ⊢< j > MB ⇒ TB ↣ B →
-    TB -->> Sort (ty m) →
-    Γ ⊢< ty m > Mb ⇐ B ↣ b →
-    Γ ⊢< ty (max n m) > iinr MA MB Mb ⇒ tysum (ty n) (ty m) A B ↣ inr_box b
+    Γ ⊢< ty (max n m) > iinr MA Mb ⇒ tysum (ty n) (ty m) A B ↣ inr_box b
 
 | infer_sum_case Γ Mu Tu u k i j A B MP TP P sl l Mpl pl Mpr pr :
     Γ ⊢< k > Mu ⇒ Tu ↣ u →
     Tu -->> tysum (ty i) (ty j) A B →
     Γ ,, (ty (max i j), tysum (ty i) (ty j) A B) ⊢< sl > MP ⇒ TP ↣ P →
     TP -->> Sort l →
-    Γ ,, (ty i, A) ⊢< l > Mpl ⇐ P <[ (inl (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ↣ pl →
-    Γ ,, (ty j, B) ⊢< l > Mpr ⇐ P <[ (inr (ty i) (ty j) (S ⋅ A) (S ⋅ B) (var 0)) .: S >> var ] ↣ pr →
-    Γ ⊢< l > csum_case MP Mpl Mpr Mu ⇒ P <[ u .. ] ↣ sum_case_box (ty i) (ty j) l A B P pl pr u
+    Γ ,, (ty i, A) ⊢< l > Mpl ⇐ P <[ (inl_box (var 0)) .: S >> var ] ↣ pl →
+    Γ ,, (ty j, B) ⊢< l > Mpr ⇐ P <[ (inr_box (var 0)) .: S >> var ] ↣ pr →
+    Γ ⊢< l > csum_case MP Mpl Mpr Mu ⇒ P <[ u .. ] ↣ sum_case_box l P pl pr u
 
 | infer_ann Γ MA Mt t l A T i :
     Γ ⊢< l > MA ⇒ T ↣ A ->
@@ -294,15 +290,15 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
     Γ ⊢< i > Ma ⇐ A ↣ a ->
     Γ ⊢< l > clift Ma ⇐ T ↣ lift prop box a
 
-| check_inl Γ Ma a T i j A B :
+| check_inl Γ Ma a T i j A B l :
     T -->> tysum (ty i) (ty j) A B →
     Γ ⊢< ty i > Ma ⇐ A ↣ a →
-    Γ ⊢< ty (max i j) > cinl Ma ⇐ T ↣ inl_box a
+    Γ ⊢< l > cinl Ma ⇐ T ↣ inl_box a
 
-| check_inr Γ Mb b T i j A B :
+| check_inr Γ Mb b T i j A B l :
     T -->> tysum (ty i) (ty j) A B →
     Γ ⊢< ty j > Mb ⇐ B ↣ b →
-    Γ ⊢< ty (max i j) > cinr Mb ⇐ T ↣ inr_box b
+    Γ ⊢< l > cinr Mb ⇐ T ↣ inr_box b
 
 where "Γ ⊢< l > M ⇒ T ↣ t" := (infer Γ l M T t)
 and   "Γ ⊢< l > M ⇐ T ↣ t" := (check Γ l M T t).
@@ -441,6 +437,12 @@ Proof.
   - repeat rewrite erasure_prop. auto.
 Qed.
 
+Lemma sum_case_box_erasure i j l A B P pl pr u :
+  erasure l (sum_case i j l A B P pl pr u) =
+  sum_case_box l (erasure (Ax l) P) (erasure l pl) (erasure l pr) (erasure (Ru i j) u).
+Proof.
+  destruct l. all: reflexivity.
+Qed.
 
 Lemma aux_subst_commute A l x Γ T :
   Γ ⊢< l > A : T ->
@@ -459,14 +461,24 @@ Qed.
 Lemma inl_subst_comm Γ l n m A B P :
   Γ ,, (ty (max n m), tysum (ty n) (ty m) A B) ⊢< Ax l > P : Sort l →
   erasure (Ax l) (P <[ inl (ty n) (ty m) (S ⋅ A) (S ⋅ B) (var 0) .: S >> var ]) =
-  (erasure (Ax l) P) <[ inl (ty n) (ty m) (S ⋅ erasure (Ax (ty n)) A) (S ⋅ erasure (Ax (ty m)) B) (var 0) .: S >> var ].
+  (erasure (Ax l) P) <[ inl_box (var 0) .: S >> var ].
 Proof.
   intros h.
   erewrite erasure_subst_commutes with (f := λ _, ty 0). 2: eassumption.
-  - apply ext_term. intros []. 2: reflexivity.
-    cbn. admit.
+  - apply ext_term. intros []. all: reflexivity.
   - apply refines_all.
-Abort.
+Qed.
+
+Lemma inr_subst_comm Γ l n m A B P :
+  Γ ,, (ty (max n m), tysum (ty n) (ty m) A B) ⊢< Ax l > P : Sort l →
+  erasure (Ax l) (P <[ inr (ty n) (ty m) (S ⋅ A) (S ⋅ B) (var 0) .: S >> var ]) =
+  (erasure (Ax l) P) <[ inr_box (var 0) .: S >> var ].
+Proof.
+  intros h.
+  erewrite erasure_subst_commutes with (f := λ _, ty 0). 2: eassumption.
+  - apply ext_term. intros []. all: reflexivity.
+  - apply refines_all.
+Qed.
 
 Theorem sound :
   (forall Γ l M T t, Γ ⊢< l > M ⇒ T ↣ t ->
@@ -785,17 +797,13 @@ Proof.
     repeat split. econstructor; eauto.
 
   (* inl *)
-  - edestruct H as (TA' & A' & A'_Wt & erasure_t'_eq & erasure_A'_eq); eauto.
+  - edestruct H as (A' & a' & ha & ea & eA); eauto.
     subst.
-    eapply reduce_to_sort in A'_Wt as (A'_Wt & lvleq); eauto. subst.
 
     edestruct H0 as (TB' & B' & B'_Wt & erased_B'_eq & erased_TB_eq).
     all: eauto.
     subst.
     eapply reduce_to_sort in B'_Wt as (B'_Wt & lvl_eq); eauto.
-    Ax_inj_tac. subst.
-
-    edestruct H1 as (a' & a'_Wt & ea). all: eauto.
     subst.
 
     eexists. exists (inl (ty n) (ty m) A' B' a').
@@ -804,17 +812,13 @@ Proof.
     * reflexivity.
 
   (* inr *)
-  - edestruct H as (TA' & A' & A'_Wt & erasure_t'_eq & erasure_A'_eq); eauto.
+  - edestruct H as (B' & b' & hb & eb & eB); eauto.
     subst.
-    eapply reduce_to_sort in A'_Wt as (A'_Wt & lvleq); eauto. subst.
 
-    edestruct H0 as (TB' & B' & B'_Wt & erased_B'_eq & erased_TB_eq).
+    edestruct H0 as (TA' & A' & A'_Wt & eA & eTA).
     all: eauto.
     subst.
-    eapply reduce_to_sort in B'_Wt as (B'_Wt & lvl_eq); eauto.
-    Ax_inj_tac. subst.
-
-    edestruct H1 as (b' & b'_Wt & eb). all: eauto.
+    eapply reduce_to_sort in A'_Wt as (A'_Wt & lvl_eq); eauto.
     subst.
 
     eexists. exists (inr (ty n) (ty m) A' B' b').
@@ -838,21 +842,31 @@ Proof.
     subst.
 
     edestruct (H1 (Γ' ,, (ty n, A'))) as (pl' & hpl & epl). all: eauto.
+    1:{ eapply inl_subst_comm. eassumption. }
     1:{
-      fail.
-      erewrite erasure_subst_1_commutes with (u := inl _ _ _ _ _).
-      - apply ext_term. intros [].
-        + cbn.
-        +
-      -
-    eapply subst_ty; eauto using subst_one, type_zero.
+      eapply subst_ty.
+      all: eauto with sidecond.
+      apply well_scons_alt. 1: eauto with sidecond.
+      rasimpl. econstructor. all: eauto using type_ren with sidecond.
+      econstructor. all: eauto with sidecond.
+    }
+    subst.
 
-    apply validity_ty_ty in t'_Wt as SigmaA0B0_Wt.
-    apply type_inv in SigmaA0B0_Wt as temp. dependent destruction temp.
-    ty_inj_tac. subst.
+    edestruct (H2 (Γ' ,, (ty m, B'))) as (pr' & hpr & epr). all: eauto.
+    1:{ eapply inr_subst_comm. eassumption. }
+    1:{
+      eapply subst_ty.
+      all: eauto with sidecond.
+      apply well_scons_alt. 1: eauto with sidecond.
+      rasimpl. econstructor. all: eauto using type_ren with sidecond.
+      econstructor. all: eauto with sidecond.
+    }
+    subst.
 
-    exists A0. exists (pi1 (ty n) (ty m) A0 B0 t').
-    repeat split. econstructor; eauto.
+    eexists _, (sum_case (ty n) (ty m) l A' B' P' pl' pr' u').
+    repeat split.
+    + econstructor; eauto.
+    + eapply erasure_subst_1_commutes; eauto.
 
   (* case annotation *)
   - (* applying the ih to T *)
