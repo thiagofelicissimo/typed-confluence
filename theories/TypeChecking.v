@@ -932,10 +932,34 @@ Proof.
     split; eauto using type_lift, type_conv, conv_sym.
 
   (* inl *)
-  - admit.
+  - subst.
+    eapply reduce_to in r as (A' & B' & n & m & ? & ? & -> & -> & hT & ->).
+    2: eassumption.
+    ty_inj_tac. subst.
+
+    eapply validity_conv_right in hT as hsum.
+    eapply type_inv in hsum as hh. dependent destruction hh.
+
+    edestruct H as (a' & ha & <-); eauto.
+
+    exists (inl (ty n) (ty m) A' B' a').
+    repeat split.
+    eauto using type_conv, conv_sym, typing.
 
   (* inr *)
-  - admit.
+  - subst.
+    eapply reduce_to in r as (A' & B' & n & m & ? & ? & -> & -> & hT & ->).
+    2: eassumption.
+    ty_inj_tac. subst.
+
+    eapply validity_conv_right in hT as hsum.
+    eapply type_inv in hsum as hh. dependent destruction hh.
+
+    edestruct H as (b' & hb & <-); eauto.
+
+    exists (inr (ty n) (ty m) A' B' b').
+    repeat split.
+    eauto using type_conv, conv_sym, typing.
 Qed.
 
 
