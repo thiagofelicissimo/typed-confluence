@@ -456,6 +456,18 @@ Proof.
   apply refines_all.
 Qed.
 
+Lemma inl_subst_comm Γ l n m A B P :
+  Γ ,, (ty (max n m), tysum (ty n) (ty m) A B) ⊢< Ax l > P : Sort l →
+  erasure (Ax l) (P <[ inl (ty n) (ty m) (S ⋅ A) (S ⋅ B) (var 0) .: S >> var ]) =
+  (erasure (Ax l) P) <[ inl (ty n) (ty m) (S ⋅ erasure (Ax (ty n)) A) (S ⋅ erasure (Ax (ty m)) B) (var 0) .: S >> var ].
+Proof.
+  intros h.
+  erewrite erasure_subst_commutes with (f := λ _, ty 0). 2: eassumption.
+  - apply ext_term. intros []. 2: reflexivity.
+    cbn. admit.
+  - apply refines_all.
+Abort.
+
 Theorem sound :
   (forall Γ l M T t, Γ ⊢< l > M ⇒ T ↣ t ->
       forall Γ'
@@ -811,7 +823,36 @@ Proof.
     * reflexivity.
 
   (* sum_case *)
-  - admit.
+  - edestruct H as (Tu' & u' & hu' & eu & es); eauto.
+    subst.
+    eapply validity_ty_ty in hu' as hTu'.
+    eapply reduce_to in r as (A' & B' & n & m & ? & ? & -> & -> & eT & ->); eauto.
+    ty_inj_tac. subst.
+    eapply type_conv in hu'; eauto. clear eT hTu'.
+    eapply validity_ty_ty in hu' as hsum.
+    eapply type_inv in hsum as hh. dependent destruction hh.
+
+    edestruct (H0 (Γ' ,, (ty (max n m), tysum (ty n) (ty m) A' B'))) as (TP' & P' & hP & eP & eTP).
+    all: (eauto using ctx_cons, conv_sort). subst.
+    eapply reduce_to_sort in hP as (hP & e). 2: eauto.
+    subst.
+
+    edestruct (H1 (Γ' ,, (ty n, A'))) as (pl' & hpl & epl). all: eauto.
+    1:{
+      fail.
+      erewrite erasure_subst_1_commutes with (u := inl _ _ _ _ _).
+      - apply ext_term. intros [].
+        + cbn.
+        +
+      -
+    eapply subst_ty; eauto using subst_one, type_zero.
+
+    apply validity_ty_ty in t'_Wt as SigmaA0B0_Wt.
+    apply type_inv in SigmaA0B0_Wt as temp. dependent destruction temp.
+    ty_inj_tac. subst.
+
+    exists A0. exists (pi1 (ty n) (ty m) A0 B0 t').
+    repeat split. econstructor; eauto.
 
   (* case annotation *)
   - (* applying the ih to T *)
