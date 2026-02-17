@@ -1063,7 +1063,7 @@ Inductive CTerm : label -> cterm -> Prop :=
 | clam'_ MA M : CTerm rocq MA -> CTerm rocq M -> CTerm rocq (clam' MA M)
 | cpair'_ Mt MB Mu : CTerm rocq Mt -> CTerm rocq MB -> CTerm rocq Mu -> CTerm rocq (cpair' Mt MB Mu)
 | iinl_ MB Ma : CTerm rocq MB → CTerm rocq Ma → CTerm rocq (iinl MB Ma)
-| iine_ MA Mb : CTerm rocq MA → CTerm rocq Mb → CTerm rocq (iinl MA Mb)
+| iinr_ MA Mb : CTerm rocq MA → CTerm rocq Mb → CTerm rocq (iinr MA Mb)
 
 (* all the rest is the same *)
 | cvar_ h n : CTerm h (cvar n)
@@ -1355,7 +1355,6 @@ Proof.
   pose proof Wt as Wt'.
   generalize Δ. clear Δ.
   induction Wt;intros.
-
 
   (* case var *)
   - eapply completeness_aux_infer; eauto.
@@ -1671,16 +1670,114 @@ Proof.
       unfold_all_local. econstructor; eauto using conv_refl, typing.
 
   (* sum *)
-  - admit.
+  - eapply completeness_aux_infer ; eauto.
+    eapply completeness_sum ; eauto.
+    + apply IHWt1; eauto.
+    + apply IHWt2; eauto.
 
   (* inl *)
-  - admit.
+  - destruct h.
+    + eapply completeness_aux_check; eauto.
+      * eapply completeness_sum ; eauto.
+        -- apply IHWt1; eauto.
+        -- apply IHWt2; eauto.
+      * intros. clear IHWt1 IHWt2.
+        eapply gen_red in H0 as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & U_red_pi); eauto.
+        ty_inj_tac. subst.
+        edestruct IHWt3 as ((Ma & a0 & Ma_check & a_conv_a0 & Ca) & _); eauto.
+        clear IHWt3.
+        exists (cinl Ma), (inl (ty n') (ty m') A' B' a0).
+        repeat split; eauto using CTerm.
+        -- simpl. eapply check_inl; eauto.
+        -- econstructor; eauto.
+
+    + apply completeness_aux_infer; eauto. clear IHWt1.
+      edestruct IHWt3 as (_ & Ma & A' & a0 & Ma_infer & a_conv_a0 & A_conv_A' & Ca); eauto.
+
+      edestruct IHWt2 as (_ & MB & UB & B0 & MB_infer & B_conv_B0 & sort_eq_UB & CB); eauto using conv_ccons.
+      eapply gen_red in sort_eq_UB; eauto. clear IHWt3 IHWt2.
+
+      exists (iinl MB Ma), (tysum (ty i) (ty j) A' B0).
+      exists (inl (ty i) (ty j) A' B0 a0).
+      repeat split; eauto using CTerm.
+      -- simpl. eapply infer_inl; eauto.
+      -- econstructor; eauto.
+      -- eauto using conv_sum, conv_refl.
 
   (* inr *)
-  - admit.
+  - destruct h.
+    + eapply completeness_aux_check; eauto.
+      * eapply completeness_sum ; eauto.
+        -- apply IHWt1; eauto.
+        -- apply IHWt2; eauto.
+      * intros. clear IHWt1 IHWt2.
+        eapply gen_red in H0 as (A' & B' & n' & m' & eq1 & eq2 & A_eq_A' & B_eq_B' & U_red_pi); eauto.
+        ty_inj_tac. subst.
+        edestruct IHWt3 as ((Ma & a0 & Ma_check & a_conv_a0 & Ca) & _); eauto.
+        clear IHWt3.
+        exists (cinr Ma), (inr (ty n') (ty m') A' B' a0).
+        repeat split; eauto using CTerm.
+        -- simpl. eapply check_inr; eauto.
+        -- econstructor; eauto.
+
+    + apply completeness_aux_infer; eauto. clear IHWt2.
+      edestruct IHWt3 as (_ & Mb & B' & b0 & Mb_infer & b_conv_b0 & B_conv_B' & Cb); eauto.
+
+      edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto using conv_ccons.
+      eapply gen_red in sort_eq_UA; eauto. clear IHWt3 IHWt1.
+
+      exists (iinr MA Mb), (tysum (ty i) (ty j) A0 B').
+      exists (inr (ty i) (ty j) A0 B' b0).
+      repeat split; eauto using CTerm.
+      -- simpl. eapply infer_inr; eauto.
+      -- econstructor; eauto.
+      -- eauto using conv_sum, conv_refl.
 
   (* sum_case *)
-  - admit.
+  - eapply completeness_aux_infer ; eauto.
+
+    edestruct IHWt6 as (_ & Mt & Tt & t' & ht & et & eTt & Ct). all: eauto.
+    eapply gen_red in eTt as (A' & B' & n & m & ? & ? & eA & eB & rTt). 2: eauto.
+    ty_inj_tac. subst. clear IHWt6.
+
+    edestruct IHWt3 as (_ & MP & TP & P' & hP & eP & eTP & CP).
+    all: eauto using conv_ccons, conv_sum.
+    eapply gen_red in eTP. all: eauto.
+    clear IHWt3.
+
+    edestruct IHWt4 as ((Mpl & pl' & hpl & epl & Cpl) & _).
+    all: eauto using conv_ccons.
+    1:{
+      eapply subst_conv. all: eauto with sidecond.
+      apply refl_subst. apply well_scons_alt.
+      1: eauto with sidecond.
+      rasimpl. econstructor.
+      all: eauto using type_ren, validity_conv_left with sidecond.
+      econstructor. all: eauto with sidecond.
+    }
+    clear IHWt4.
+
+    edestruct IHWt5 as ((Mpr & pr' & hpr & epr & Cpr) & _).
+    all: eauto using conv_ccons.
+    1:{
+      eapply subst_conv. all: eauto with sidecond.
+      apply refl_subst. apply well_scons_alt.
+      1: eauto with sidecond.
+      rasimpl. econstructor.
+      all: eauto using type_ren, validity_conv_left with sidecond.
+      econstructor. all: eauto with sidecond.
+    }
+    clear IHWt5.
+
+    exists (csum_case MP Mpl Mpr Mt), (P' <[ t' ..]).
+    exists (sum_case (ty n) (ty m) l A' B' P' pl' pr' t').
+    intuition eauto using validity_ty_ty, CTerm.
+    + erewrite erasure_subst_1_commutes; eauto using validity_conv_right.
+      eapply infer_sum_case; eauto; fold erasure.
+      * erewrite inl_subst_comm in hpl; eauto using validity_conv_right.
+      * erewrite inr_subst_comm in hpr; eauto using validity_conv_right.
+    + econstructor; eauto.
+    + eapply subst_conv; eauto using substs_one, validity_ty_ctx.
 
   (* case conv *)
   - eapply IHWt in H0 as (IH_check & IH_infer); eauto. clear IHWt. split; intros.
@@ -1690,7 +1787,7 @@ Proof.
     + destruct IH_infer as (M & U & t0 & M_infer & t_conv_t0 & B_eq_U & CM).
       assert (Γ ⊢< Ax l > A ≡ U : Sort l) as A_eq_U by eauto using conv_sym, conv_trans.
       intuition eauto 12 using conv_conv, conv_sym, conv_trans.
-Admitted.
+Qed.
 
 Corollary completeness_check Γ l t T h :
   wt_is_wn -> Γ ⊢< l > t : T ->
