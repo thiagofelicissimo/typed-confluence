@@ -973,185 +973,145 @@ Theorem subject_reduction Γ l t A u :
   erasure l t ---> u ->
   exists u', Γ ⊢< l > t ≡ u' : A ∧ erasure l u' = u.
 Proof.
-  intros tWt. revert u.
-  induction tWt; intros u_ erased_t_red_u; intros.
+  intros t_Wt et_red.
+  remember (erasure l t) as lhs.
+  generalize Γ l t A t_Wt Heqlhs. clear Heqlhs  Γ l t A t_Wt Heqlhs.
+  induction et_red; intros Γ l0 t0 A0 t0_Wt eq.
+  
 
-  (* solves cases in sprop *)
-  all: try solve[rewrite erasure_prop in erased_t_red_u; dependent destruction erased_t_red_u].
+  (* the case l = prop is impossible, and in the case l = ty _ 
+    erasure l t0 computes so we can destruct t0 and 
+    by inversion on the equality we know it has the right shape *)
+  all:destruct l0; [ destruct t0; dependent destruction eq | 
+    rewrite erasure_prop in eq; dependent destruction eq ].
 
+  (* solves all cases of a rewrite not at the root *)
+  all:try solve [
+  eapply type_inv in t0_Wt; dependent destruction t0_Wt; 
+  ty_inj_tac; subst;
+  eassert (_ = _) as temp by reflexivity;
+  eapply IHet_red in temp as (u0 & conv & erased_u0); eauto; 
+  subst; 
+  eexists; split; [
+    try rewrite lvl_eq in *; eapply conv_conv; 
+      [ econstructor; eauto 6 using conv_refl 
+      | eauto using conv_sym ] 
+    | reflexivity
+  ]].
 
-  all: (match goal with
-          | |- exists _ : term, _ ⊢< ?l > _ ≡ _ : _ ∧ _ => pose (K := case_lvl l)
-        end; destruct K as [l_eq_prop | (n' & l_eq_n)];
-    [ rewrite l_eq_prop in erased_t_red_u;
-      rewrite erasure_prop in erased_t_red_u; inversion erased_t_red_u
-    | rewrite l_eq_n in erased_t_red_u at 1 ]).
-
-  (* solves cases Nat, zero, Sort and var *)
-  all: try solve [ inversion erased_t_red_u ].
-
-  (* solves last case, the conversion rule *)
-  20 : solve [ subst; edestruct IHtWt; intuition eauto; repeat eexists; eauto using conv_conv ].
-
-  (* for each case, we consider all the possible ways in which the rewrite step could have happened *)
-  all:dependent destruction erased_t_red_u.
-
-
-  (* treates all the congruence steps *)
-  all: try solve [
-  try destruct (IHtWt _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt1 _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt2 _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt3 _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt4 _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt5 _ erased_t_red_u) as (X & conv & eq);
-  try destruct (IHtWt6 _ erased_t_red_u) as (X & conv & eq);
-  eexists; split;
-    try solve [ econstructor; eauto 6 using conv_refl
-              | rewrite l_eq_n in * ; clear l_eq_n ; subst ; eauto ];
-    try solve [ econstructor; eauto 6 using conv_refl
-              | subst ; eauto ]].
-
-  all:ty_inj_tac;subst.
-
-  (* case beta *)
-  - destruct t. all : inversion H. clear t0 H H1.
-    rename l into i'. rename l0 into j'. rename t1 into A'.
-    rename t2 into B'. rename t3 into v.
-    eapply type_inv in tWt3 as temp; dependent destruction temp.
-    eapply type_formers_inj in conv_ty as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. subst.
-    exists (v <[ u..]). split.
-    * eapply conv_beta'; eauto.
-    * eapply erasure_subst_1_commutes; eauto.
+  (* we do type inversion in all cases *)
+  all:eapply type_inv in t0_Wt; dependent destruction t0_Wt;  ty_inj_tac;subst.
 
   (* case pi1pair *)
-  - destruct t; dependent destruction H.
-    eapply type_inv in tWt3 as temp; dependent destruction temp.
-    eapply type_formers_inj in conv_ty as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
+  - destruct t0_3; dependent destruction H.
+    rename l into i'. rename l0 into j'. rename t0_3_1 into A'.
+    rename t0_3_2 into B. rename t0_3_3 into u. rename t0_3_4 into v.
+    eapply type_inv in t_Wt as temp; dependent destruction temp.
+    eapply type_formers_inj in conv_ty0 as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
     eexists. split.
-    * eapply conv_pi1pair' ; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
+    * eapply conv_conv. 
+      eapply conv_pi1pair' ; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
       eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
       eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
-    * reflexivity.
+      eauto using conv_sym.
+    * reflexivity.    
 
   (* case pi2pair *)
-  - destruct t; dependent destruction H.
-    eapply type_inv in tWt3 as temp; dependent destruction temp.
-    eapply type_formers_inj in conv_ty as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
+  - destruct t0_3; dependent destruction H.
+    rename l into i'. rename l0 into j'. rename t0_3_1 into A'.
+    rename t0_3_2 into B. rename t0_3_3 into u. rename t0_3_4 into v.
+    eapply type_inv in t_Wt as temp; dependent destruction temp.
+    eapply type_formers_inj in conv_ty0 as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
     eexists. split.
     * eapply conv_conv.
       ** eapply conv_pi2pair'; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
          eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
          eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
-      ** eapply subst_conv; eauto using conv_refl, validity_ty_ctx.
+      ** eapply conv_trans. 
+         2:eauto using conv_sym. 
+         eapply subst_conv; eauto using conv_refl, validity_ty_ctx.
          eapply substs_one, conv_sym.
          eapply conv_pi1pair'; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
       eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
       eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
     * reflexivity.
+  
+  (* case beta *)
+  - destruct t0_3; dependent destruction H.
+    rename l into i'. rename l0 into j'. rename t0_3_1 into A'.
+    rename t0_3_2 into B. rename t0_3_3 into u.
+    eapply type_inv in t_Wt as temp; dependent destruction temp.
+    eapply type_formers_inj in conv_ty0 as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
+    eexists. split.
+    * eauto using conv_conv, conv_beta', conv_sym.
+    * eapply erasure_subst_1_commutes; eauto.
 
   (* case rec zero *)
-  - destruct t.  all : inversion H. clear H.
-    exists p_zero. split; eauto using conv_rec_zero.
+  - destruct t0_4; dependent destruction H.
+    eexists. split; eauto using conv_rec_zero, conv_conv, conv_sym.
 
   (* case rec succ *)
-  - destruct t. all : inversion H. clear H H1.
-    exists (p_succ <[ rec (ty n') P p_zero p_succ t .: t ..]).
-    split.
-    + apply type_inv in tWt4. dependent destruction tWt4. eauto using conv_rec_succ.
-    + erewrite erasure_subst_2_commutes; eauto. reflexivity.
-
+  - destruct t0_4; dependent destruction H.
+    eapply type_inv in t_Wt; dependent destruction t_Wt.
+    eexists. split.
+    * eauto using conv_rec_succ, conv_conv, conv_sym.
+    * erewrite erasure_subst_2_commutes; eauto. reflexivity.
+  
   (* case J_refl *)
   - eexists. split.
-    eapply conv_J_refl'; eauto. 2:eauto.
-    destruct l. 2:eauto using conv_irrel. eapply (proj1 eq_erased) in H; eauto.
+    eapply conv_conv.
+    eapply conv_J_refl'; eauto.
+    + destruct l. 2:eauto using conv_irrel. 
+      eapply (proj1 eq_erased) in H; eauto.
+    + eauto using conv_sym.
+    + reflexivity.
 
   (* case lift_lower *)
   - destruct l. 2: rewrite erasure_prop in H; inversion H.
-    destruct a; dependent destruction H.
-    eapply type_inv in tWt2 as temp. dependent destruction temp. subst.
+    destruct t0_2; dependent destruction H. 
+    eapply type_inv in a_Wt as temp. dependent destruction temp. subst. rewrite lvl_eq in *.
     eexists. split.
-    + eapply conv_lift_lower'; eauto using conv_sym, conv_Lift, type_conv.
+    + eauto 7 using conv_conv, conv_sym, conv_lift_lower', conv_Lift, type_conv.
     + reflexivity.
 
   (* case lower_lift *)
-  - destruct t; dependent destruction H.
-    eapply type_inv in tWt2 as temp. dependent destruction temp.
-    eapply type_formers_inj in conv_ty as (_ & A_conv_a1); eauto.
+  - destruct t0_2; dependent destruction H.
+    eapply type_inv in a_Wt as temp. dependent destruction temp.
+    eapply type_formers_inj in conv_ty0 as (_ & A_conv_a1); eauto.
     eapply Ax_inj in lvl_eq. subst.
     eexists. split.
-    + eapply conv_lower_lift'; eauto using type_conv, conv_sym.
+    + eauto 7 using conv_conv, conv_lower_lift', type_conv, conv_sym.
     + reflexivity.
 
   (* case cast_nat *)
-  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
+  - destruct t0_1; dependent destruction H. 
+    destruct t0_2; dependent destruction H0.
     eexists; eauto using conversion.
 
   (* case cast_univ *)
-  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
+  - destruct t0_1; dependent destruction H. 
+    destruct t0_2; dependent destruction H0. 
+    rewrite lvl_eq in *.
     eexists; eauto using conversion.
 
   (* case cast_pi *)
-  - destruct A; dependent destruction H. destruct B; dependent destruction H0.
-    clear l_eq_n n'. unfold_all_local.
-    eapply type_inv in tWt1. dependent destruction tWt1.
-    eapply type_inv in tWt2. dependent destruction tWt2.
+  - destruct t0_1; dependent destruction H.
+    destruct t0_2; dependent destruction H0.
+    unfold_all_local.
+    eapply type_inv in A_Wt. dependent destruction A_Wt.
+    eapply type_inv in B_Wt. dependent destruction B_Wt. 
     eexists. split.
-    + eapply conv_cast_pi; eauto.
+    + eauto using conv_conv, conv_sym,  conv_cast_pi.
     + simpl. f_equal. rasimpl. f_equal.
       * erewrite erasure_subst_commutes; eauto.
         2:{ setoid_rewrite cons_ctx_commute.
             eapply refines_cons'; eauto. eapply refines_all. }
         eapply subst_term_morphism; eauto.
         unfold pointwise_relation. intros a0; destruct a0; unfold erasure_subst; simpl.
-        ++ rewrite erasure_rename_commute. rewrite erasure_rename_commute. destruct i0; reflexivity.
+        ++ rewrite erasure_rename_commute. rewrite erasure_rename_commute. destruct i; reflexivity.
         ++  reflexivity.
-      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute.
-        f_equal. destruct i0; reflexivity.
-
-  (* sum_case_inl *)
-  - destruct t. all: noconf H.
-    eapply type_inv in tWt6. dependent destruction tWt6.
-    eapply type_formers_inj in H2 as he. 2,3: eauto.
-    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
-    ty_inj_tac. subst.
-    eexists. split.
-    + eapply conv_conv.
-      { eapply conv_sum_case_inl'.
-        all: eauto.
-        eauto using type_conv, conv_sym.
-      }
-      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
-      apply substs_one.
-      apply conv_inl. all: eauto using conv_refl, conv_sym, type_conv.
-    + erewrite erasure_subst_commutes. all: eauto.
-      2:{
-        setoid_rewrite cons_ctx_commute.
-        eapply refines_cons'; eauto. eapply refines_all.
-      }
-      apply ext_term. intros []. all: reflexivity.
-
-  (* sum_case_inr *)
-  - destruct t. all: noconf H.
-    eapply type_inv in tWt6. dependent destruction tWt6.
-    eapply type_formers_inj in H2 as he. 2,3: eauto.
-    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
-    ty_inj_tac. subst.
-    eexists. split.
-    + eapply conv_conv.
-      { eapply conv_sum_case_inr'.
-        all: eauto.
-        eauto using type_conv, conv_sym.
-      }
-      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
-      apply substs_one.
-      apply conv_inr. all: eauto using conv_refl, conv_sym, type_conv.
-    + erewrite erasure_subst_commutes. all: eauto.
-      2:{
-        setoid_rewrite cons_ctx_commute.
-        eapply refines_cons'; eauto. eapply refines_all.
-      }
-      apply ext_term. intros []. all: reflexivity.
+      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute. 
+        f_equal. destruct i; reflexivity.
 Qed.
 
 
@@ -1191,8 +1151,6 @@ Corollary subject_reduction_redd Γ l t A u :
 Proof.
   eauto using subject_reduction_redd_aux.
 Qed.
-
-
 
 Corollary convcheck_sound Γ l t u A t' u' :
   Γ ⊢< l > t : A ->
