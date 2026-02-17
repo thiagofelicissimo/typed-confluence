@@ -557,7 +557,7 @@ Proof.
   apply typing_mutind; intros.
 
   (* solves goals involving variables *)
-  1,27: solve [ cbn ; eauto using varty_subst, conv_refl ].
+  1,28: solve [ cbn ; eauto using varty_subst, conv_refl ].
 
   (* solves most goals, which are easy *)
   all: try solve [ try econstructor ; eauto 8 using WellSubst_up, ctx_cons ].
@@ -1054,8 +1054,8 @@ Proof.
 
   all:try solve [intuition eauto 5 using conversion, typing, validity_ty_ctx, valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
-  (* cases type_pi1, type_pi2 and conv_lower *)
-  5,9,10: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
+  (* cases type_pi1, conv_refl, conv_lift and conv_lower *)
+  5,8,10,11: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
 
 
@@ -1569,6 +1569,13 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (lvl_eq : l = i)
     (conv_ty : Γ ⊢< Ax i > T ≡ P <[b..] : Sort i)
     : type_inv_data Γ l (J l' i A a P p b e) T
+  | inv_data_eqrefl Γ l' A a l T
+    (A_Wt : Γ ⊢< Ax l' > A : Sort l')
+    (a_Wt : Γ ⊢< l' > a : A)
+    (lvl_eq : l = prop)
+    (conv_ty :
+       Γ ⊢< Ax prop > T ≡ Eq l' A a a : Sort prop)
+    : type_inv_data Γ l (eqrefl l' A a) T
   | type_inv_Lift Γ l l' A T
     (A_Wt : Γ ⊢< Ax l' > A : Sort l')
     (lvl_eq : l = Ax (Ax l'))
@@ -1671,7 +1678,7 @@ Lemma type_inv Γ l t T :
 Proof.
   intros.
   apply validity_ty_ty in H as T_Wt.
-  induction H. 1-25:econstructor; eauto using conv_refl.
+  induction H. 1-26:econstructor; eauto using conv_refl.
   eapply validity_conv_left in H0 as AWt.
   eapply IHtyping in AWt as IH.
   depelim IH; econstructor; subst; eauto using conv_sym, conv_trans.
@@ -1704,7 +1711,7 @@ Theorem type_sort_unique Γ l l' t A B :
 Proof.
   intros.
   induction H.
-  2-25:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
+  2-26:eapply type_inv in H0; dependent destruction H0; ty_inj_tac; subst; eauto 15 using conv_sym.
   - eapply type_inv in H0. dependent destruction H0.
     eapply var_unique in H1 as (HA & HB); eauto. subst. eauto using conv_sym.
   - eapply IHtyping in H0 as (HA & HB). subst. eauto using conv_sym, conv_trans.

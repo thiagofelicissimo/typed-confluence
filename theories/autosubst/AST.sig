@@ -23,6 +23,7 @@ rec : level -> (bind term in term) -> term -> (bind term , term in term) -> term
 
 box : term
 
+eqrefl : level -> term -> term -> term
 Eq : level -> term -> term -> term -> term
 J : level -> level -> term -> term -> (bind term in term) -> term -> term -> term -> term
 

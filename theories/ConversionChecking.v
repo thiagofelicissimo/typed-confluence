@@ -703,7 +703,7 @@ Proof.
     clear IHt1 IHt2 IHt3 IHt4.
 
     destruct A; destruct B; eauto using Ne.
-    2-27:destruct l0; eauto using Ne.
+    2-28:destruct l0; eauto using Ne.
     + eapply type_inv in A_Wt. dependent destruction A_Wt.
       eapply Ax_inj in lvl_eq. rewrite lvl_eq in *. clear lvl_eq n.
       pose (K := level_eq_dec l l0). destruct K.

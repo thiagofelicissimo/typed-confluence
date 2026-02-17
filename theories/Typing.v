@@ -147,6 +147,14 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< l > b : A ->
       Γ ⊢< Ax prop > Eq l A a b : Sort prop
 
+
+| type_eqrefl :
+    ∀ Γ l A a,
+      Γ ⊢< Ax l > A : Sort l ->
+      Γ ⊢< l > a : A ->
+      Γ ⊢< prop > eqrefl l A a : Eq l A a a
+
+
 | type_J :
     ∀ Γ l i A a P p b e,
       Γ ⊢< Ax l > A : Sort l ->
@@ -352,6 +360,12 @@ with conversion : ctx -> level -> term -> term -> term -> Prop :=
       Γ ⊢< l > a ≡ a' : A ->
       Γ ⊢< l > b ≡ b' : A ->
       Γ ⊢< Ax prop > Eq l A a b ≡ Eq l A' a' b' : Sort prop
+
+| conv_eqrefl :
+  ∀ l Γ A A' a a',
+    Γ ⊢< Ax l > A ≡ A' : Sort l ->
+    Γ ⊢< l > a ≡ a' : A ->
+    Γ ⊢< prop > eqrefl l A a ≡ eqrefl l A' a' : Eq l A a a
 
 | conv_J :
     ∀ Γ l i A A' a a' P P' p p' b b' e e',

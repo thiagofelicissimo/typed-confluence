@@ -32,6 +32,8 @@ Inductive cterm : Type :=
 | crec : cterm -> cterm -> cterm -> cterm -> cterm
 
 | cEq : cterm -> cterm -> cterm -> cterm
+| crefl : cterm
+| irefl : cterm -> cterm
 | cJ : cterm -> cterm -> cterm -> cterm
 
 | cLift : cterm -> cterm
@@ -188,6 +190,10 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< i > Mb ⇐ A ↣ b ->
     Γ ⊢< Ax prop > cEq MA Ma Mb ⇒ Sort prop ↣ Eq i A a b
 
+| infer_refl Γ l Ma A a :
+    Γ ⊢< l > Ma ⇒ A ↣ a ->
+    Γ ⊢< prop > irefl Ma ⇒ Eq l A a a ↣ box
+
 | infer_J Γ l T A a i i' MP U P Mp p b Me e :
     Γ ⊢< prop > Me ⇒ T ↣ e ->
     T -->> Eq l A a b ->
@@ -299,6 +305,13 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
     T -->> tysum (ty i) (ty j) A B →
     Γ ⊢< ty j > Mb ⇐ B ↣ b →
     Γ ⊢< l > cinr Mb ⇐ T ↣ inr_box b
+
+| check_refl Γ T l0 l A a b a' b' :
+    T -->> Eq l A a b -> 
+    a -->> a' -> nf a' ->
+    b -->> b' -> nf b' ->
+    a' = b' ->
+    Γ ⊢< l0 > crefl ⇐ T ↣ box
 
 where "Γ ⊢< l > M ⇒ T ↣ t" := (infer Γ l M T t)
 and   "Γ ⊢< l > M ⇐ T ↣ t" := (check Γ l M T t).
@@ -670,6 +683,13 @@ Proof.
     eexists. exists (Eq i A' a' b').
     repeat split; eauto using type_Eq.
 
+  (* case inferring refl *)
+  - edestruct H as (T & t' & t'_Wt & erased_t'_eq & erased_T_eq); eauto.
+    subst.
+
+    exists (Eq l T t' t'). exists (eqrefl l T t').
+    split; eauto using type_eqrefl, validity_ty_ty.
+
   (* case J *)
   - edestruct H as (V & e' & e'_Wt & erased_t'_eq & erased_V_eq); eauto.
     subst. clear H.
@@ -716,7 +736,7 @@ Proof.
     exists A0. exists (lower i A0 t').
     repeat split; eauto using type_lower.
 
-  (* case lower *)
+  (* case inferring lift *)
   - edestruct H as (T & t' & t'_Wt & erased_t'_eq & erased_T_eq); eauto.
     subst.
 
@@ -962,6 +982,21 @@ Proof.
     exists (inr (ty n) (ty m) A' B' b').
     repeat split.
     eauto using type_conv, conv_sym, typing.
+
+  (* case checking refl *)
+  - subst. (* we first derive that T' is convertible to Pi A' B',
+        and that A' B' are well-typed *)
+    eapply reduce_to in r as (A' & a'0 & b'0 & A_eq & a_eq & b_eq & conv & l_eq); eauto. subst.
+
+    apply validity_conv_right in conv as Eq_Wt.
+    apply type_inv in Eq_Wt as temp. dependent destruction temp.
+    eapply convcheck_sound in r0;eauto.
+    exists (eqrefl l A' a'0).
+    intuition eauto using erasure_prop.
+    econstructor. econstructor; eauto.
+    eapply conv_trans.
+    2:eapply conv_sym;eassumption.
+    econstructor; eauto using conv_refl, conv_sym.
 Qed.
 
 
@@ -1054,18 +1089,20 @@ Inductive label : Type := agda | rocq.
 
 Inductive CTerm : label -> cterm -> Prop :=
 
-(* in Agda we have non-annotated abstractions and pairs, and type ascriptions *)
+(* in Agda we have type ascriptions + non-annotated abstractions, pairs, ...  *)
 | clam_ M : CTerm agda M -> CTerm agda (clam M)
 | cann_ M MA : CTerm agda M -> CTerm agda MA -> CTerm agda (cann M MA)
 | cpair_ Mt Mu : CTerm agda Mt -> CTerm agda Mu -> CTerm agda (cpair Mt Mu)
 | cinl_ Ma : CTerm agda Ma → CTerm agda (cinl Ma)
 | cinr_ Mb : CTerm agda Mb → CTerm agda (cinr Mb)
+| crefl_ : CTerm agda crefl
 
-(* in Rocq we have annotated abstractions and pairs, and no ascriptions *)
+(* in Rocq we have annotated abstractions, pairs, ... and no ascriptions *)
 | clam'_ MA M : CTerm rocq MA -> CTerm rocq M -> CTerm rocq (clam' MA M)
 | cpair'_ Mt MB Mu : CTerm rocq Mt -> CTerm rocq MB -> CTerm rocq Mu -> CTerm rocq (cpair' Mt MB Mu)
 | iinl_ MB Ma : CTerm rocq MB → CTerm rocq Ma → CTerm rocq (iinl MB Ma)
 | iinr_ MA Mb : CTerm rocq MA → CTerm rocq Mb → CTerm rocq (iinr MA Mb)
+| irefl_ Ma : CTerm rocq Ma -> CTerm rocq (irefl Ma)
 
 (* all the rest is the same *)
 | cvar_ h n : CTerm h (cvar n)
@@ -1243,6 +1280,47 @@ Proof.
   exists (cSigma MA MB). eexists. exists (Sigma (ty n) (ty m) A0 B0).
   repeat split; eauto using CTerm, conv_sort, validity_ty_ctx.
   eapply infer_sigma; eauto.
+  econstructor; eauto.
+Qed.
+
+Lemma completeness_Eq h Γ l A a b :
+  wt_is_wn ->
+  Γ ⊢< Ax l > A : Sort l ->
+  Γ ⊢< l > a : A ->
+  Γ ⊢< l > b : A ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ →
+    ∃ (M : cterm) (U t0 : term), 
+      erase_ctx Δ ⊢< Ax l > M ⇒ erasure (Ax (Ax l)) U ↣ erasure (Ax l) t0 
+      ∧ Γ ⊢< Ax l > A ≡ t0 : Sort l ∧ Γ ⊢< Ax (Ax l) > Sort l ≡ U : Sort (Ax l)
+      ∧ CTerm h M) ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ →
+      ∀ U : term, 
+        Γ ⊢< Ax l > A ≡ U : Sort l → 
+          ∃ (M : cterm) (t0 : term), 
+            erase_ctx Δ ⊢< l > M ⇐ erasure (Ax l) U ↣ erasure l t0 
+            ∧ Γ ⊢< l > a ≡ t0 : A ∧ CTerm h M) ->
+  (∀ Δ : ctx, ⊢ Γ ≡ Δ →
+      ∀ U : term, 
+        Γ ⊢< Ax l > A ≡ U : Sort l → 
+          ∃ (M : cterm) (t0 : term), 
+            erase_ctx Δ ⊢< l > M ⇐ erasure (Ax l) U ↣ erasure l t0 
+            ∧ Γ ⊢< l > b ≡ t0 : A ∧ CTerm h M) ->
+  forall Δ, ⊢ Γ ≡ Δ ->
+    ∃ (M : cterm) (U t0 : term), 
+      erase_ctx Δ ⊢< Ax prop > M ⇒ erasure (Ax (Ax prop)) U ↣ erasure (Ax prop) t0
+      ∧ Γ ⊢< Ax prop > Eq l A a b ≡ t0 : Sort prop ∧ Γ ⊢< Ax (Ax prop) > Sort prop ≡ U : Sort (Ax prop) ∧ CTerm h M.
+Proof.
+  intros wt_is_wn A_Wt a_Wt b_Wt HA Ha Hb Δ Γ_eq_Δ.
+
+  edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
+  eapply gen_red in sort_eq_UA; eauto.
+
+  edestruct Ha as (Ma & a0 & Ma_checks & a_conv_a0 & Ca); eauto using conv_refl.
+  edestruct Hb as (Mb & b0 & Mb_checks & b_conv_b0 & Cb); eauto using conv_refl.
+
+  eexists (cEq MA Ma Mb). eexists (Sort prop). exists (Eq l A0 a0 b0).
+  intuition eauto using CTerm, conv_sort, validity_ty_ctx.
+  simpl. eapply infer_eq; eauto.
   econstructor; eauto.
 Qed.
 
@@ -1527,16 +1605,31 @@ Proof.
 
   (* case Eq *)
   - eapply completeness_aux_infer; eauto.
-    edestruct IHWt1 as (_ & MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
-    eapply gen_red in sort_eq_UA; eauto. clear IHWt1.
+    eapply completeness_Eq; eauto. apply IHWt1; eauto. apply IHWt2; eauto. apply IHWt3; eauto.
 
-    edestruct IHWt2 as ((Ma & a0 & Ma_checks & a_conv_a0 & Ca) & _); eauto using conv_refl.
-    edestruct IHWt3 as ((Mb & b0 & Mb_checks & b_conv_b0 & Cb) & _); eauto using conv_refl.
+  (* case refl *)
+  - destruct h.
+    + eapply completeness_aux_check; eauto.
+      * eapply completeness_Eq; eauto. apply IHWt1; eauto. apply IHWt2; eauto. apply IHWt2; eauto.
+      * intros.
+        eapply gen_red in H0 as (A' & a' & b' & A_conv & a_conv & b_conv & erasure_red); eauto.
+        eapply validity_conv_right in a_conv as a'Wt.
+        eapply validity_conv_right in b_conv as b'Wt.
+        eapply wt_is_wn in a'Wt as (a'' & ared & nfa).
+        eapply wt_is_wn in b'Wt as (b'' & bred & nfb).
 
-    eexists (cEq MA Ma Mb). eexists (Sort prop). exists (Eq l A0 a0 b0).
-    intuition eauto using CTerm, conv_sort, validity_ty_ctx.
-    simpl. eapply infer_eq; eauto.
-    econstructor; eauto.
+        eapply conv_sym in a_conv. eapply conv_trans in b_conv; eauto.
+        eapply convcheck_complete in b_conv; eauto. subst.
+
+        exists crefl. exists (eqrefl l A a).
+        intuition eauto using conversion, conv_refl, CTerm.
+        eapply check_refl; eauto.
+    
+    + eapply completeness_aux_infer; eauto.
+      edestruct IHWt2 as (_ & Ma & A' & a0 & Mr_infer & a_conv_a0 & Eq_eq_UA & Ca); eauto. clear IHWt1 IHWt2.
+      exists (irefl Ma). exists (Eq l A' a0 a0). exists (eqrefl l A' a0).
+      intuition eauto using CTerm, conversion, conv_sym.
+      simpl. eapply infer_refl; eauto.
 
   (* case J *)
   - eapply completeness_aux_infer; eauto.
