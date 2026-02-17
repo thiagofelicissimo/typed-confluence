@@ -49,6 +49,7 @@ Proof.
 Qed.
 
 
+
 (* TODO: When adding Lean's eq, these are not normal forms anymore, because J is always a neutral,
   even if a and b are the same, which would allow for the term to reduce. Maybe it would be better to call them
   Chk and Inf, for checkable and inferable terms. The important property is that the typing annotations of Chk are
@@ -77,7 +78,7 @@ with Ne : term -> Prop :=
 | ne_pi1 t : Ne t -> Ne (pi1 prop prop box box t)
 | ne_pi2 t : Ne t -> Ne (pi2 prop prop box box t)
 | ne_rec l P p_zero p_succ t : Nf P -> Nf p_zero -> Nf p_succ -> Ne t -> Ne (rec l P p_zero p_succ t)
-| ne_J l i A a P p b : Nf A -> Nf a -> Nf P -> Nf p -> Nf b -> Ne (J l i A a P p b box)
+| ne_J l i A a P p b : a <> b -> Nf A -> Nf a -> Nf P -> Nf p -> Nf b -> Ne (J l i A a P p b box)
 | ne_lower t : Ne t -> Ne (lower prop box t)
 | ne_cast1 i A B t : Ne A -> Nf B -> Nf t -> Ne (cast i A B box t)
 | ne_cast2 i A B t : Nf A -> Ne B -> Nf t -> Ne (cast i A B box t)
@@ -653,6 +654,8 @@ Definition nf t := forall u, t ---> u -> False.
 Hint Unfold ConversionChecking.nf : core.
 
 Scheme Equality for level.
+Scheme Equality for term.
+
 
 Lemma nf_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
@@ -667,7 +670,7 @@ Proof.
   (* solves all constructor cases *)
   all: try solve [ eapply type_inv in t_Wt; dependent destruction t_Wt; ty_inj_tac ; subst ; eauto 24 using Nf, Ne, red].
 
-  (* solves all elimination cases *)
+  (* solves almost all elimination cases *)
   all: try solve [
     eapply type_inv in t_Wt; dependent destruction t_Wt;
     ty_inj_tac; subst;
@@ -679,6 +682,16 @@ Proof.
     end; intro K; inversion K;
     eapply is_nf; simpl; eauto using red ].
 
+  (* case J *)
+  - destruct (term_eq_dec (erasure l t2) (erasure l t5)).
+    + exfalso.
+      eapply type_inv in t_Wt; dependent destruction t_Wt. subst.
+      eapply is_nf. cbn. rewrite e. 
+      eapply red_J_refl. eapply IHt5; eauto. intro. intro.
+      eapply is_nf. eauto using red.
+    + eapply type_inv in t_Wt; dependent destruction t_Wt. subst.
+      econstructor. cbn. econstructor; eauto using red.
+  
   (* case cast *)
   - rename A into T. rename t1 into A. rename t2 into B.
     rename t3 into e. rename t4 into a.
