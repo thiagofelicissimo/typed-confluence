@@ -977,30 +977,33 @@ Proof.
   remember (erasure l t) as lhs.
   generalize Γ l t A t_Wt Heqlhs. clear Heqlhs  Γ l t A t_Wt Heqlhs.
   induction et_red; intros Γ l0 t0 A0 t0_Wt eq.
-  
 
-  (* the case l = prop is impossible, and in the case l = ty _ 
-    erasure l t0 computes so we can destruct t0 and 
+
+  (* the case l = prop is impossible, and in the case l = ty _
+    erasure l t0 computes so we can destruct t0 and
     by inversion on the equality we know it has the right shape *)
-  all:destruct l0; [ destruct t0; dependent destruction eq | 
+  all:destruct l0; [ destruct t0; dependent destruction eq |
     rewrite erasure_prop in eq; dependent destruction eq ].
 
   (* solves all cases of a rewrite not at the root *)
   all:try solve [
-  eapply type_inv in t0_Wt; dependent destruction t0_Wt; 
-  ty_inj_tac; subst;
-  eassert (_ = _) as temp by reflexivity;
-  eapply IHet_red in temp as (u0 & conv & erased_u0); eauto; 
-  subst; 
-  eexists; split; [
-    try rewrite lvl_eq in *; eapply conv_conv; 
-      [ econstructor; eauto 6 using conv_refl 
-      | eauto using conv_sym ] 
+    eapply type_inv in t0_Wt; dependent destruction t0_Wt;
+    ty_inj_tac; subst;
+    eassert (_ = _) as temp by reflexivity;
+    eapply IHet_red in temp as (u0 & conv & erased_u0); eauto;
+    subst;
+    eexists; split; [
+      rewrite ?lvl_eq in * ;
+      eapply conv_conv ; [
+        econstructor; eauto 6 using conv_refl
+      | eauto using conv_sym
+      ]
     | reflexivity
-  ]].
+    ]
+  ].
 
   (* we do type inversion in all cases *)
-  all:eapply type_inv in t0_Wt; dependent destruction t0_Wt;  ty_inj_tac;subst.
+  all: eapply type_inv in t0_Wt; dependent destruction t0_Wt; ty_inj_tac;subst.
 
   (* case pi1pair *)
   - destruct t0_3; dependent destruction H.
@@ -1009,12 +1012,12 @@ Proof.
     eapply type_inv in t_Wt as temp; dependent destruction temp.
     eapply type_formers_inj in conv_ty0 as (eq1 & eq2 & A_conv_A' & B_conv_B'); eauto. ty_inj_tac. subst.
     eexists. split.
-    * eapply conv_conv. 
+    * eapply conv_conv.
       eapply conv_pi1pair' ; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
       eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
       eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
       eauto using conv_sym.
-    * reflexivity.    
+    * reflexivity.
 
   (* case pi2pair *)
   - destruct t0_3; dependent destruction H.
@@ -1027,15 +1030,15 @@ Proof.
       ** eapply conv_pi2pair'; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
          eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
          eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
-      ** eapply conv_trans. 
-         2:eauto using conv_sym. 
+      ** eapply conv_trans.
+         2:eauto using conv_sym.
          eapply subst_conv; eauto using conv_refl, validity_ty_ctx.
          eapply substs_one, conv_sym.
          eapply conv_pi1pair'; eauto 7 using type_conv, conv_sym, subst_conv, substs_one, validity_ty_ctx, conv_refl.
       eapply type_conv; eauto. eapply subst_conv; eauto 9 using conv_sym, substs_one, validity_ty_ctx.
       eapply substs_one;eauto using type_conv, conv_refl, conv_sym.
     * reflexivity.
-  
+
   (* case beta *)
   - destruct t0_3; dependent destruction H.
     rename l into i'. rename l0 into j'. rename t0_3_1 into A'.
@@ -1056,19 +1059,19 @@ Proof.
     eexists. split.
     * eauto using conv_rec_succ, conv_conv, conv_sym.
     * erewrite erasure_subst_2_commutes; eauto. reflexivity.
-  
+
   (* case J_refl *)
   - eexists. split.
     eapply conv_conv.
     eapply conv_J_refl'; eauto.
-    + destruct l. 2:eauto using conv_irrel. 
+    + destruct l. 2:eauto using conv_irrel.
       eapply (proj1 eq_erased) in H; eauto.
     + eauto using conv_sym.
     + reflexivity.
 
   (* case lift_lower *)
   - destruct l. 2: rewrite erasure_prop in H; inversion H.
-    destruct t0_2; dependent destruction H. 
+    destruct t0_2; dependent destruction H.
     eapply type_inv in a_Wt as temp. dependent destruction temp. subst. rewrite lvl_eq in *.
     eexists. split.
     + eauto 7 using conv_conv, conv_sym, conv_lift_lower', conv_Lift, type_conv.
@@ -1084,13 +1087,13 @@ Proof.
     + reflexivity.
 
   (* case cast_nat *)
-  - destruct t0_1; dependent destruction H. 
+  - destruct t0_1; dependent destruction H.
     destruct t0_2; dependent destruction H0.
     eexists; eauto using conversion.
 
   (* case cast_univ *)
-  - destruct t0_1; dependent destruction H. 
-    destruct t0_2; dependent destruction H0. 
+  - destruct t0_1; dependent destruction H.
+    destruct t0_2; dependent destruction H0.
     rewrite lvl_eq in *.
     eexists; eauto using conversion.
 
@@ -1099,7 +1102,7 @@ Proof.
     destruct t0_2; dependent destruction H0.
     unfold_all_local.
     eapply type_inv in A_Wt. dependent destruction A_Wt.
-    eapply type_inv in B_Wt. dependent destruction B_Wt. 
+    eapply type_inv in B_Wt. dependent destruction B_Wt.
     eexists. split.
     + eauto using conv_conv, conv_sym,  conv_cast_pi.
     + simpl. f_equal. rasimpl. f_equal.
@@ -1110,8 +1113,81 @@ Proof.
         unfold pointwise_relation. intros a0; destruct a0; unfold erasure_subst; simpl.
         ++ rewrite erasure_rename_commute. rewrite erasure_rename_commute. destruct i; reflexivity.
         ++  reflexivity.
-      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute. 
+      * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute.
         f_equal. destruct i; reflexivity.
+
+  (* No longer solved by automation :( *)
+  - ty_inj_tac ; subst ;
+    eassert (_ = _) as temp by reflexivity;
+    eapply IHet_red in temp as (u0 & conv & erased_u0); eauto;
+    subst.
+    eexists; split.
+    + match goal with
+      | lvl_eq : _ = _ :> level |- _ => rewrite ?lvl_eq in *
+      end.
+      eapply conv_conv.
+      * econstructor; eauto 6 using conv_refl.
+      * eauto using conv_sym.
+    + reflexivity.
+
+  - ty_inj_tac ; subst ;
+    eassert (_ = _) as temp by reflexivity;
+    eapply IHet_red in temp as (u0 & conv & erased_u0); eauto;
+    subst.
+    eexists; split.
+    + match goal with
+      | lvl_eq : _ = _ :> level |- _ => rewrite ?lvl_eq in *
+      end.
+      eapply conv_conv.
+      * econstructor; eauto 6 using conv_refl.
+      * eauto using conv_sym.
+    + reflexivity.
+
+  (* sum_case_inl *)
+  - destruct t0_6. all: noconf H.
+    eapply type_inv in H5. dependent destruction H5.
+    eapply type_formers_inj in H8 as he. 2,3: eauto.
+    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    eexists. split.
+    + eapply conv_conv.
+      { eapply conv_sum_case_inl'.
+        all: eauto.
+        eauto using type_conv, conv_sym.
+      }
+      eapply conv_trans. 2: eauto using conv_sym.
+      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
+      apply substs_one.
+      apply conv_inl. all: eauto using conv_refl, conv_sym, type_conv.
+    + erewrite erasure_subst_commutes. all: eauto.
+      2:{
+        setoid_rewrite cons_ctx_commute.
+        eapply refines_cons'; eauto. eapply refines_all.
+      }
+      apply ext_term. intros []. all: reflexivity.
+
+  (* sum_case_inr *)
+  - destruct t0_6. all: noconf H.
+    eapply type_inv in H5. dependent destruction H5.
+    eapply type_formers_inj in H8 as he. 2,3: eauto.
+    destruct he as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
+    ty_inj_tac. subst.
+    eexists. split.
+    + eapply conv_conv.
+      { eapply conv_sum_case_inr'.
+        all: eauto.
+        eauto using type_conv, conv_sym.
+      }
+      eapply conv_trans. 2: eauto using conv_sym.
+      eapply subst_conv. all: eauto using validity_ty_ctx, conv_refl.
+      apply substs_one.
+      apply conv_inr. all: eauto using conv_refl, conv_sym, type_conv.
+    + erewrite erasure_subst_commutes. all: eauto.
+      2:{
+        setoid_rewrite cons_ctx_commute.
+        eapply refines_cons'; eauto. eapply refines_all.
+      }
+      apply ext_term. intros []. all: reflexivity.
 Qed.
 
 
