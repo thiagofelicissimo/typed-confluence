@@ -2,7 +2,7 @@
 From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
 From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Util BasicAST Contexts Typing BasicMetaTheory Confluence ConversionChecking.
+From TypedConfluence Require Import Flags Util BasicAST Contexts Typing BasicMetaTheory Confluence ConversionChecking.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 (* Require Import Stdlib.Program.Equality. *)
 Require Import Equations.Prop.DepElim.
@@ -184,6 +184,7 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< l > crec MP Mp_zero Mp_succ Mk ⇒ P <[ k ..] ↣ rec_box l P p_zero p_succ k
 
 | infer_eq Γ i' i MA T A Ma a Mb b :
+    with_strongJ_or_obseq ->
     Γ ⊢< i' > MA ⇒ T ↣ A ->
     T -->> Sort i ->
     Γ ⊢< i > Ma ⇐ A ↣ a ->
@@ -191,10 +192,12 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< Ax prop > cEq MA Ma Mb ⇒ Sort prop ↣ Eq i A a b
 
 | infer_refl Γ l Ma A a :
+    with_strongJ_or_obseq ->
     Γ ⊢< l > Ma ⇒ A ↣ a ->
     Γ ⊢< prop > irefl Ma ⇒ Eq l A a a ↣ box
 
 | infer_J Γ l T A a i i' MP U P Mp p b Me e :
+    with_strongJ ->
     Γ ⊢< prop > Me ⇒ T ↣ e ->
     T -->> Eq l A a b ->
     Γ ,, (l, A) ⊢< i' > MP ⇒ U ↣ P ->
@@ -217,18 +220,21 @@ Inductive infer : ctx -> level -> cterm → term -> term → Prop :=
     Γ ⊢< Ax i > clift Ma ⇒ Lift i A ↣ lift prop box a
 
 | infer_cast Γ Me T e i' i A B Ma a :
+    with_obseq ->
     Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax i) (Sort i) A B ->
     Γ ⊢< i > Ma ⇐ A ↣ a ->
     Γ ⊢< i > ccast Me Ma ⇒ B ↣ cast_box i A B a
 
 | infer_injpi1 Γ Me T e i' i n A1 B1 A2 B2 :
+    with_obseq ->
     Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n)))
             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
     Γ ⊢< prop > cinjpi1 Me ⇒ Eq (Ax i) (Sort i) A2 A1 ↣ box
 
 | infer_injpi2 Γ Me T e i i' n A1 B1 A2 B2 Ma a2 :
+    with_obseq ->
     Γ ⊢< i' > Me ⇒ T ↣ e ->
     T -->> Eq (Ax (Ru i (ty n))) (Sort (Ru i (ty n)))
             (Pi i (ty n) A1 B1) (Pi i (ty n) A2 B2) ->
@@ -307,6 +313,7 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
     Γ ⊢< l > cinr Mb ⇐ T ↣ inr_box b
 
 | check_refl Γ T l0 l A a b a' b' :
+    with_strongJ_or_obseq ->
     T -->> Eq l A a b -> 
     a -->> a' -> nf a' ->
     b -->> b' -> nf b' ->
@@ -1284,6 +1291,7 @@ Proof.
 Qed.
 
 Lemma completeness_Eq h Γ l A a b :
+  with_strongJ_or_obseq ->
   wt_is_wn ->
   Γ ⊢< Ax l > A : Sort l ->
   Γ ⊢< l > a : A ->
@@ -1310,7 +1318,7 @@ Lemma completeness_Eq h Γ l A a b :
       erase_ctx Δ ⊢< Ax prop > M ⇒ erasure (Ax (Ax prop)) U ↣ erasure (Ax prop) t0
       ∧ Γ ⊢< Ax prop > Eq l A a b ≡ t0 : Sort prop ∧ Γ ⊢< Ax (Ax prop) > Sort prop ≡ U : Sort (Ax prop) ∧ CTerm h M.
 Proof.
-  intros wt_is_wn A_Wt a_Wt b_Wt HA Ha Hb Δ Γ_eq_Δ.
+  intros ? wt_is_wn A_Wt a_Wt b_Wt HA Ha Hb Δ Γ_eq_Δ.
 
   edestruct HA as (MA & UA & A0 & MA_infer & A_conv_A0 & sort_eq_UA & CA); eauto.
   eapply gen_red in sort_eq_UA; eauto.
@@ -1612,7 +1620,7 @@ Proof.
     + eapply completeness_aux_check; eauto.
       * eapply completeness_Eq; eauto. apply IHWt1; eauto. apply IHWt2; eauto. apply IHWt2; eauto.
       * intros.
-        eapply gen_red in H0 as (A' & a' & b' & A_conv & a_conv & b_conv & erasure_red); eauto.
+        eapply gen_red in H1 as (A' & a' & b' & A_conv & a_conv & b_conv & erasure_red); eauto.
         eapply validity_conv_right in a_conv as a'Wt.
         eapply validity_conv_right in b_conv as b'Wt.
         eapply wt_is_wn in a'Wt as (a'' & ared & nfa).

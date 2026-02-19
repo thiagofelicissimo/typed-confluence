@@ -3,7 +3,7 @@
 From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
 From TypedConfluence
 Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Util BasicAST Contexts Typing BasicMetaTheory Confluence.
+From TypedConfluence Require Import Flags Util BasicAST Contexts Typing BasicMetaTheory Confluence.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 (* Require Import Stdlib.Program.Equality. *)
 Require Import Equations.Prop.DepElim.
@@ -1307,7 +1307,7 @@ Proof.
     eapply IH; eauto using red; simpl; lia).
   all: try (exfalso; eapply nf_t; eauto using red).
 
-  eapply CR in H0 as (w & red1 & red2).
+  eapply CR in H1 as (w & red1 & red2).
   assert (nf (erasure l a)) by eauto using red.
   assert (nf (erasure l b)) by eauto using red.
 
@@ -1319,7 +1319,7 @@ Proof.
   rewrite <- red1 in red2.
   rewrite red2.
   eapply red_J_refl.
-  eapply validity_ty_ty, type_inv in H2. dependent destruction H2.
+  eapply validity_ty_ty, type_inv in H3. dependent destruction H3.
   eapply nf_to_Nf; eauto.
 Qed.
 

@@ -2,7 +2,7 @@
 From Stdlib Require Import Utf8 List Arith Bool Lia.
 From TypedConfluence
 Require Import core unscoped Util Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import BasicAST Contexts Typing.
+From TypedConfluence Require Import BasicAST Contexts Flags Typing.
 From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -350,7 +350,7 @@ Proof.
   (* conv_cast_pi *)
   - intros; eapply meta_conv_conv.
     + eapply meta_rhs_conv.
-      * eapply conv_cast_pi; fold ren_term; eapply meta_conv.
+      * eapply conv_cast_pi; fold ren_term; try eapply meta_conv; try eassumption.        
         1,3,5,7,9,11:eauto 12 using ctx_typing, typing, WellRen_up.
         all:rasimpl;reflexivity.
       * fold ren_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal. f_equal; substify; asimpl; reflexivity.
@@ -568,7 +568,7 @@ Proof.
 
   (* solves remaining goals involving typing rules or congruence rules *)
   1-6,8-13:solve [cbn in *; meta_conv ;
-            [ (econstructor ; try solve [ meta_conv ;
+            [ (econstructor ; try eassumption ; try solve [ meta_conv ;
               [ eauto 11 using WellRen_up, WellSubst_up, WellSubst_meta, ctx_typing, typing, ctx_cons
               | rasimpl ; reflexivity]])
             | rasimpl; reflexivity]].
@@ -624,7 +624,7 @@ Proof.
   (* conv_cast_pi *)
   - intros; eapply meta_conv_conv.
     + eapply meta_rhs_conv.
-      * eapply conv_cast_pi; fold subst_term; eapply meta_conv.
+      * eapply conv_cast_pi; fold subst_term; try eassumption; eapply meta_conv.
         1,3,5,7,9,11:eauto 12 using ctx_typing, typing, WellRen_up, WellSubst_up, WellSubst_meta.
         all:rasimpl;reflexivity.
       * fold subst_term. unfold_all_local. rasimpl. f_equal. f_equal. f_equal.  f_equal. rasimpl.  f_equal.
@@ -1058,7 +1058,6 @@ Proof.
   5,8,10,11: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
 
-
   (* cases conv_lam, conv_app, conv_sigma, conv_J and conv_cast *)
   2-4,7,8: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
 
@@ -1263,12 +1262,12 @@ Proof.
     + econstructor; eauto using typing.
     + econstructor; eauto.
       assert (Γ ,, (i, A2) ⊢< i > cast i (S ⋅ A2) (S ⋅ A1) (injpi1 i (ty n) (S ⋅ A1) (S ⋅ A2) (up_ren S ⋅ B1) (up_ren S ⋅ B2) (S ⋅ e)) (var 0) : S ⋅ A1).
-      { econstructor.
+      { econstructor. 1:eassumption.
         ** eapply type_ren; eauto using WellRen_S.
            econstructor; eauto using validity_ty_ctx.
         ** eapply type_ren; eauto using WellRen_S.
            econstructor; eauto using validity_ty_ctx.
-        ** econstructor.
+        ** econstructor. 1:eassumption.
            1-4:eapply type_ren; eauto using WellRen_S.
            1,2,4,5:econstructor; eauto using validity_ty_ctx.
            1,2:eapply type_ren; eauto using WellRen_S.
@@ -1553,6 +1552,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (conv_ty : Γ ⊢< Ax i > T ≡ P <[ t.. ] : Sort i)
     : type_inv_data Γ l (rec i P p_zero p_succ t) T
   | type_inv_eq Γ l i A a b T
+    (flag : with_strongJ_or_obseq)
     (A_Wt : Γ ⊢< Ax i > A : Sort i)
     (a_Wt : Γ ⊢< i > a : A)
     (b_Wt : Γ ⊢< i > b : A)
@@ -1560,6 +1560,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (conv_ty : Γ ⊢< Ax (Ax prop) > T ≡ Sort prop : Sort (Ax prop))
     : type_inv_data Γ l (Eq i A a b) T
   | type_inv_J Γ l l' i A a P p b e T
+    (flag : with_strongJ)
     (A_Wt : Γ ⊢< Ax l' > A : Sort l')
     (a_Wt : Γ ⊢< l' > a : A)
     (P_Wt : Γ ,, (l' , A) ⊢< Ax i > P : Sort i)
@@ -1570,6 +1571,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     (conv_ty : Γ ⊢< Ax i > T ≡ P <[b..] : Sort i)
     : type_inv_data Γ l (J l' i A a P p b e) T
   | inv_data_eqrefl Γ l' A a l T
+    (flag : with_strongJ_or_obseq)
     (A_Wt : Γ ⊢< Ax l' > A : Sort l')
     (a_Wt : Γ ⊢< l' > a : A)
     (lvl_eq : l = prop)
@@ -1595,6 +1597,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     : type_inv_data Γ l (lower l' A a) T
 
   | inv_data_cast Γ i A B e a l T
+    (flag : with_obseq)
     (A_Wt : Γ ⊢< Ax i > A : Sort i)
     (B_Wt : Γ ⊢< Ax i > B : Sort i)
     (e_Wt : Γ ⊢< prop > e : Eq (Ax i) (Sort i) A B)
@@ -1605,6 +1608,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     : type_inv_data Γ l (cast i A B e a) T
 
   | inv_data_injpi1 Γ i n A1 A2 B1 B2 e l T
+    (flag : with_obseq)
     (A1_Wt : Γ ⊢< Ax i > A1 : Sort i)
     (B1_Wt : Γ ,, (i, A1) ⊢< Ax (ty n) > B1 : Sort (ty n))
     (A2_Wt : Γ ⊢< Ax i > A2 : Sort i)
@@ -1619,6 +1623,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     : type_inv_data Γ l (injpi1 i (ty n) A1 A2 B1 B2 e) T
 
   | inv_data_injpi2 Γ i n A1 A2 B1 B2 e a2 l T
+    (flag : with_obseq)
     (A1_Wt : Γ ⊢< Ax i > A1 : Sort i)
     (B1_Wt : Γ ,, (i, A1) ⊢< Ax (ty n) > B1 : Sort (ty n))
     (A2_Wt : Γ ⊢< Ax i > A2 : Sort i)
@@ -1737,6 +1742,7 @@ Qed.
 (* Linerized versions of computation rules *)
 
 Lemma conv_J_refl' Γ l i A a b P p e :
+  with_strongJ ->
   Γ ⊢< Ax l > A : Sort l ->
   Γ ⊢< l > a ≡ b : A ->
   Γ ,, (l , A) ⊢< Ax i > P : Sort i ->
@@ -1745,11 +1751,11 @@ Lemma conv_J_refl' Γ l i A a b P p e :
   Γ ⊢< i > J l i A a P p b e ≡ p : P <[b..].
 Proof.
   intros.
-  eapply conv_trans. 1:eapply conv_J; eauto using conv_refl, validity_conv_right.
+  eapply conv_trans. 1:eapply conv_J; eauto using conv_refl, validity_conv_right. 
   eapply conv_J_refl; eauto using validity_conv_right.
   1:eapply type_conv; eauto using validity_conv_right.
   1:eapply subst_conv; eauto using substs_one, conv_refl, validity_ty_ctx.
-  1:eapply type_conv; eauto using conv_Eq, validity_conv_right, conv_refl.
+  1:eapply type_conv; eauto 7 using conv_Eq, validity_conv_right, conv_refl.
 Qed.
 
 Lemma conv_beta' Γ i j A A' B B' t u :
@@ -1834,6 +1840,7 @@ Proof.
 Qed.
 
 Lemma conv_injpi1' Γ i n A1 A1' A2 A2' B1 B1' B2 B2' e e' :
+    with_obseq ->
     Γ ⊢< Ax i > A1 ≡ A1' : Sort i ->
     Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ≡ B1' : Sort (ty n) ->
     Γ ⊢< Ax i > A2 ≡ A2' : Sort i ->
@@ -1845,6 +1852,7 @@ Proof.
 Qed.
 
 Lemma conv_injpi2' Γ i n A1 A1' A2 A2' B1 B1' B2 B2' e e' a2 a2' :
+    with_obseq ->
     Γ ⊢< Ax i > A1 ≡ A1' : Sort i ->
     Γ ,, (i, A1) ⊢< Ax (ty n) > B1 ≡ B1' : Sort (ty n) ->
     Γ ⊢< Ax i > A2 ≡ A2' : Sort i ->
