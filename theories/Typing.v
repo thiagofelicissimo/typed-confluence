@@ -1,10 +1,8 @@
-(** * Typing *)
-
-From Stdlib Require Import Utf8 List Arith Bool.
-From TypedConfluence
-Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Flags Util BasicAST Contexts.
-From Stdlib Require Import Setoid Morphisms Relation_Definitions.
+From Stdlib Require Import 
+  Utf8 List Arith Bool Setoid Morphisms Relation_Definitions.
+From TypedConfluence Require Import 
+  core unscoped Ast SubstNotations RAsimpl AST_rasimpl
+  Flags Util BasicAST.
 
 Import ListNotations.
 Import CombineNotations.
@@ -45,14 +43,7 @@ Notation "Γ ,,, Δ" :=
 Inductive varty : ctx → nat → level → term → Prop :=
 | vartyO Γ l A : Γ ,, (l , A) ∋< l > 0 : S ⋅ A
 | vartyS Γ i j A B x : Γ ∋< i > x : A → Γ ,, (j, B) ∋< i > S x : S ⋅ A
-
 where "Γ ∋< l > x : T" := (varty Γ x l T).
-(*
-1 - 11 : ok
-12 - 23 : +3
-24 - 29 : +6
-30 - 31 : +8
-*)
 
 Inductive typing : ctx -> level -> term → term → Prop :=
 

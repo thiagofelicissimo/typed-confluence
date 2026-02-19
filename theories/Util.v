@@ -1,6 +1,5 @@
-From Stdlib Require Import Utf8 List Bool Setoid Morphisms Relation_Definitions
-  Setoid Morphisms Relation_Definitions Relation_Operators.
-(* From Equations Require Import Equations. *)
+From Stdlib Require Import 
+  Utf8 List Bool Setoid Morphisms Relation_Definitions Relation_Operators.
 
 Import ListNotations.
 

@@ -1,10 +1,10 @@
-
-From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
-From TypedConfluence
-Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Flags Util BasicAST Contexts Typing BasicMetaTheory Confluence ConversionChecking.
-From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-(* Require Import Stdlib.Program.Equality. *)
+From Stdlib Require Import 
+  Utf8 List Arith Bool Lia Wellfounded.Inverse_Image 
+  Wellfounded.Inclusion Setoid Morphisms Relation_Definitions.
+From TypedConfluence Require Import 
+  core unscoped Ast SubstNotations RAsimpl AST_rasimpl
+  Flags Util BasicAST Typing BasicMetaTheory 
+  Confluence ConversionChecking.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 Import CombineNotations.

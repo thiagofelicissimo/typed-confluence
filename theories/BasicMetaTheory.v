@@ -1,9 +1,8 @@
-
-From Stdlib Require Import Utf8 List Arith Bool Lia.
-From TypedConfluence
-Require Import core unscoped Util Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import BasicAST Contexts Flags Typing.
-From Stdlib Require Import Setoid Morphisms Relation_Definitions.
+From Stdlib Require Import 
+  Utf8 List Arith Bool Lia Setoid Morphisms Relation_Definitions.
+From TypedConfluence Require Import 
+  core unscoped Util Ast SubstNotations RAsimpl 
+  AST_rasimpl BasicAST Flags Typing.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 

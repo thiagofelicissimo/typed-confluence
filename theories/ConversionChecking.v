@@ -1,18 +1,18 @@
-(** * Typing *)
-
-From Stdlib Require Import Utf8 List Arith Bool Lia Wellfounded.Inverse_Image Wellfounded.Inclusion.
-From TypedConfluence
-Require Import core unscoped Ast SubstNotations RAsimpl AST_rasimpl.
-From TypedConfluence Require Import Flags Util BasicAST Contexts Typing BasicMetaTheory Confluence.
-From Stdlib Require Import Setoid Morphisms Relation_Definitions.
-(* Require Import Stdlib.Program.Equality. *)
+From Stdlib Require Import 
+  Utf8 List Arith Bool Lia Wellfounded.Inverse_Image 
+  Wellfounded.Inclusion Setoid Morphisms Relation_Definitions.
+From TypedConfluence Require Import 
+  core unscoped Ast SubstNotations RAsimpl AST_rasimpl
+  Flags Util BasicAST Typing BasicMetaTheory Confluence.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 Import CombineNotations.
 
 
-(* I'm erasing levels to prop whenever they should be omitted.
-   It would be less dirty to introduce a specific level 'null', like we introduced 'box' for omitted subterms *)
+(* To avoid introducing a new syntax for erased terms, redefine renaming and 
+  substitution, and proving their expected properties, we simply reuse the regular 
+  syntax. For this, we replace all subterms that would not be in the erased syntax 
+  by Box, and level annotations not present in erased terms are replaced by prop *)
 Fixpoint erasure l t : term :=
   match l, t with
   | prop, _ => box
