@@ -1,6 +1,7 @@
 From Stdlib Require Import 
   Utf8 List Arith Bool Lia Wellfounded.Inverse_Image 
   Wellfounded.Inclusion Setoid Morphisms Relation_Definitions.
+From Stdlib.Classes Require Import CEquivalence.
 From TypedConfluence Require Import 
   core unscoped Ast SubstNotations RAsimpl AST_rasimpl
   Flags Util BasicAST Typing BasicMetaTheory Confluence.
@@ -50,11 +51,6 @@ Qed.
 
 
 
-(* TODO: When adding Lean's eq, these are not normal forms anymore, because J is always a neutral,
-  even if a and b are the same, which would allow for the term to reduce. Maybe it would be better to call them
-  Chk and Inf, for checkable and inferable terms. The important property is that the typing annotations of Chk are
-  uniquely determined when we know their types, whereas the typing annotations of Inf are always uniquely determined.
-  But this could cause a confusion with the terms used by the bidirectional typing system. *)
 Inductive Nf : term -> Prop :=
 | nf_pi i j A B : Nf A -> Nf B -> Nf (Pi i j A B)
 | nf_lam t : Nf t -> Nf (lam prop prop box box t)
@@ -418,9 +414,6 @@ Proof.
   eauto.
 Qed.
 
-
-From Stdlib Require Import Relation_Definitions.
-From Stdlib.Classes Require Import CEquivalence.
 
 Add Parametric Morphism : refines
   with signature ((pointwise_relation _ eq) ==> (pointwise_relation _ eq) ==> iff)
@@ -816,11 +809,11 @@ Proof.
     eapply conv_conv.
     eapply conv_lift; eauto using type_conv, conv_sym.
     eauto using conv_sym.
-  - rewrite H6.
+  - rewrite lvl_eq.
     eapply conv_conv. all: eauto 7 using conv_sym, conv_sum, conv_ty_in_ctx_ty.
   - rename t0_1 into A, t0_2 into B, t0_3 into a, u0_1 into A', u0_2 into B', u0_3 into a'.
-    rewrite H5. eapply conv_conv; eauto using conv_sym.
-    rewrite <- H5 in H4. rewrite <- H10 in H9.
+    rewrite lvl_eq. eapply conv_conv; eauto using conv_sym.
+    rewrite <- lvl_eq in H4. rewrite <- lvl_eq0 in H8.
     eassert (_ ⊢< _ > tysum _ _ A B ≡ tysum _ _ A' B' : _) as hsum
       by eauto using conv_sym, conv_trans.
     apply type_formers_inj in hsum as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
@@ -829,8 +822,8 @@ Proof.
       by eauto 9 using conv_ty_in_ctx_ty, conv_sym, type_conv, conv_ty_in_ctx_conv, subst_conv, substs_one, type_conv.
     econstructor; eauto 7 using type_conv, subst_conv, validity_ty_ctx, substs_one, conv_sym.
   - rename t0_1 into A, t0_2 into B, t0_3 into b, u0_1 into A', u0_2 into B', u0_3 into b'.
-    rewrite H5. eapply conv_conv; eauto using conv_sym.
-    rewrite <- H5 in H4. rewrite <- H10 in H9.
+    rewrite lvl_eq. eapply conv_conv; eauto using conv_sym.
+    rewrite <- lvl_eq in H4. rewrite <- lvl_eq0 in H8.
     eassert (_ ⊢< _ > tysum _ _ A B ≡ tysum _ _ A' B' : _) as hsum
       by eauto using conv_sym, conv_trans.
     apply type_formers_inj in hsum as (l_eq_l1 & l0_eq_l2 & A_eq & B_eq); eauto.
@@ -1128,33 +1121,6 @@ Proof.
         ++  reflexivity.
       * rasimpl. rewrite erasure_rename_commute. rewrite erasure_rename_commute. rewrite erasure_rename_commute.
         f_equal. destruct i; reflexivity.
-
-  (* No longer solved by automation :( *)
-  - ty_inj_tac ; subst ;
-    eassert (_ = _) as temp by reflexivity;
-    eapply IHet_red in temp as (u0 & conv & erased_u0); eauto;
-    subst.
-    eexists; split.
-    + match goal with
-      | lvl_eq : _ = _ :> level |- _ => rewrite ?lvl_eq in *
-      end.
-      eapply conv_conv.
-      * econstructor; eauto 6 using conv_refl.
-      * eauto using conv_sym.
-    + reflexivity.
-
-  - ty_inj_tac ; subst ;
-    eassert (_ = _) as temp by reflexivity;
-    eapply IHet_red in temp as (u0 & conv & erased_u0); eauto;
-    subst.
-    eexists; split.
-    + match goal with
-      | lvl_eq : _ = _ :> level |- _ => rewrite ?lvl_eq in *
-      end.
-      eapply conv_conv.
-      * econstructor; eauto 6 using conv_refl.
-      * eauto using conv_sym.
-    + reflexivity.
 
   (* sum_case_inl *)
   - destruct t0_6. all: noconf H.

@@ -1644,7 +1644,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< Ax (Ax (ty (max i j))) > T ≡ Sort (ty (max i j)) : Sort (Ax (ty (max i j))) →
-    l = Ax (ty (max i j)) →
+    forall (lvl_eq :l = Ax (ty (max i j))),
     type_inv_data Γ l (tysum (ty i) (ty j) A B) T
 
   | inv_data_inl Γ i j A B a l T :
@@ -1652,7 +1652,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< ty i > a : A →
     Γ ⊢< Ax (ty (max i j)) > T ≡ tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
-    l = ty (max i j) →
+    forall (lvl_eq :l = ty (max i j)),
     type_inv_data Γ l (inl (ty i) (ty j) A B a) T
 
   | inv_data_inr Γ i j A B b l T :
@@ -1660,7 +1660,7 @@ Inductive type_inv_data : ctx -> level -> term -> term -> Prop :=
     Γ ⊢< Ax (ty j) > B : Sort (ty j) →
     Γ ⊢< ty j > b : B →
     Γ ⊢< Ax (ty (max i j)) > T ≡ tysum (ty i) (ty j) A B : Sort (ty (max i j)) →
-    l = ty (max i j) →
+    forall (lvl_eq :l = ty (max i j)),
     type_inv_data Γ l (inr (ty i) (ty j) A B b) T
 
   | inv_data_sum_case Γ i j l A B P pl pr t k T :
