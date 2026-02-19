@@ -79,7 +79,7 @@ with Ne : term -> Prop :=
 | ne_cast1 i A B t : Ne A -> Nf B -> Nf t -> Ne (cast i A B box t)
 | ne_cast2 i A B t : Nf A -> Ne B -> Nf t -> Ne (cast i A B box t)
 | ne_cast3 i A B t : Nf A -> Nf B ->
-    (* if both A, B are in nf, then they should not have
+    (* if both A, B are in irred, then they should not have
       the same relevant head in order for the result to be a neutral *)
     not (match A, B with
     | Pi i (ty n) _ _, Pi i' (ty n') _ _ => i = i' ∧ n = n'
@@ -642,17 +642,17 @@ Proof.
 Qed.
 
 
-Definition nf t := forall u, t ---> u -> False.
+Definition irred t := forall u, t ---> u -> False.
 
 
-Hint Unfold ConversionChecking.nf : core.
+Hint Unfold irred : core.
 
 Scheme Equality for level.
 Scheme Equality for term.
 
 
 Lemma nf_to_Nf Γ l t A :
-  Γ ⊢< l > t : A -> nf (erasure l t) -> Nf (erasure l t).
+  Γ ⊢< l > t : A -> irred (erasure l t) -> Nf (erasure l t).
 Proof.
   generalize Γ l A. clear Γ l A. induction t; intros Γ l' A t_Wt is_nf.
 
@@ -964,8 +964,8 @@ Qed.
 Lemma eq_erased_nf Γ l t u A :
   Γ ⊢< l > t : A ->
   Γ ⊢< l > u : A ->
-  nf (erasure l t) ->
-  nf (erasure l u) ->
+  irred (erasure l t) ->
+  irred (erasure l u) ->
   erasure l t = erasure l u ->
   Γ ⊢< l > t ≡ u : A.
 Proof.
@@ -1208,34 +1208,40 @@ Proof.
   eauto using subject_reduction_redd_aux.
 Qed.
 
+
+Definition reddd t u := t -->> u /\ irred u.
+
+Notation "t ↘ u" := (reddd t u) (at level 50, u at next level).
+
 Corollary convcheck_sound Γ l t u A t' u' :
   Γ ⊢< l > t : A ->
   Γ ⊢< l > u : A ->
-  erasure l t -->> t' ->
-  erasure l u -->> u' ->
-  nf t' -> nf u' ->
+  erasure l t ↘ t' ->
+  erasure l u ↘ u' ->
   t' = u' ->
   Γ ⊢< l > t ≡ u : A.
 Proof.
-  intros t_wt u_wt t_redd u_redd t'_nf u'_nf t'_eq_u'.
+  intros t_wt u_wt t_reddd u_reddd t'_eq_u'.
+  destruct t_reddd as (t_redd & t'_nf).
+  destruct u_reddd as (u_redd & u'_nf).
   eapply subject_reduction_redd in t_redd as (t'' & t_eq_t'' & erased_t''_eq_t'); eauto.
   eapply subject_reduction_redd in u_redd as (u'' & u_eq_u'' & erased_u''_eq_u'); eauto.
   subst.
-  assert (nf (erasure l u'')) by
+  assert (irred (erasure l u'')) by
     (rewrite erased_u''_eq_u'; assumption).
   eauto 7 using eq_erased_nf, conv_trans, conv_sym, validity_conv_right.
 Qed.
 
 
-Hint Unfold nf : core.
+Hint Unfold irred reddd : core.
 
 
 Lemma pre_ortho_redd_to_eq Γ l t t' A :
   (∀ l' u, size (erasure l' u) <= size (erasure l t) →
-    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) →
+    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → irred (erasure l' u) →
     erasure l' u = erasure l' t') ->
   Γ ⊢< l > t ⟹* t' : A ->
-  nf (erasure l t) -> erasure l t = erasure l t'.
+  irred (erasure l t) -> erasure l t = erasure l t'.
 Proof.
   intros.
   induction H0.
@@ -1247,7 +1253,7 @@ Qed.
 
 Lemma ortho_red_to_eq Γ l t t' A :
   Γ ⊢< l > t ⟹ t' : A ->
-  nf (erasure l t) -> erasure l t = erasure l t'.
+  irred (erasure l t) -> erasure l t = erasure l t'.
 Proof.
   intros t_red_t' nf_t.
 
@@ -1261,7 +1267,7 @@ Proof.
   simpl in *.
 
   assert (∀ l' u, size (erasure l' u) < size (erasure l t) →
-    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → nf (erasure l' u) → erasure l' u = erasure l' t')
+    ∀ Γ t' A, Γ ⊢< l' > u ⟹ t' : A → irred (erasure l' u) → erasure l' u = erasure l' t')
       as IH by (intros; eapply (H (l', u)); eauto). clear H.
 
   destruct l. 2:rewrite erasure_prop; rewrite erasure_prop; reflexivity.
@@ -1273,8 +1279,8 @@ Proof.
   all: try (exfalso; eapply nf_t; eauto using red).
 
   eapply CR in H1 as (w & red1 & red2).
-  assert (nf (erasure l a)) by eauto using red.
-  assert (nf (erasure l b)) by eauto using red.
+  assert (irred (erasure l a)) by eauto using red.
+  assert (irred (erasure l b)) by eauto using red.
 
   eapply pre_ortho_redd_to_eq in red1; eauto.
   2:intros; eapply IH; eauto; simpl in *; lia.
@@ -1290,7 +1296,7 @@ Qed.
 
 Lemma ortho_redd_to_eq Γ l t t' A :
   Γ ⊢< l > t ⟹* t' : A ->
-  nf (erasure l t) -> erasure l t = erasure l t'.
+  irred (erasure l t) -> erasure l t = erasure l t'.
 Proof.
   eapply pre_ortho_redd_to_eq.
   intros. eapply ortho_red_to_eq; eauto.
@@ -1299,12 +1305,13 @@ Qed.
 
 Corollary convcheck_complete Γ l t t' u u' A :
   Γ ⊢< l > t ≡ u : A ->
-  erasure l t -->> t' ->
-  erasure l u -->> u' ->
-  nf t' -> nf u' ->
+  erasure l t ↘ t' ->
+  erasure l u ↘ u' ->
   t' = u'.
 Proof.
-  intros t_eq_u t_redd_t' u_redd_u' nf_t' nf_u'.
+  intros t_eq_u t_reddd u_reddd.
+  destruct t_reddd as (t_redd_t' & nf_t').
+  destruct u_reddd as (u_redd_u' & nf_u').
   apply validity_conv_left in t_eq_u as t_wt.
   apply validity_conv_right in t_eq_u as u_wt.
   eapply subject_reduction_redd in t_redd_t' as (t'' & t_eq_t'' & erased_t''_eq_t'). 2: eauto.
@@ -1319,9 +1326,11 @@ Proof.
 Qed.
 
 Corollary convcheck_correct Γ l t t' u u' A :
-  Γ ⊢< l > t : A -> erasure l t -->> t' -> nf t' ->
-  Γ ⊢< l > u : A -> erasure l u -->> u' -> nf u' ->
+  Γ ⊢< l > t : A ->
+  Γ ⊢< l > u : A ->
+  erasure l t ↘ t' ->
+  erasure l u ↘ u' ->
   t' = u' <-> Γ ⊢< l > t ≡ u : A.
 Proof.
-  intros. split; eauto using convcheck_sound, convcheck_complete.
+  intuition eauto using convcheck_sound, convcheck_complete.
 Qed.

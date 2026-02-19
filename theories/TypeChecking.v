@@ -281,8 +281,8 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
 | check_conv Γ Mt t l l' T T' U U' :
     Γ ⊢< l > Mt ⇒ T ↣ t ->
     l = l' ->
-    T -->> T' -> nf T' ->
-    U -->> U' -> nf U' ->
+    T ↘ T' ->
+    U ↘ U' ->
     T' = U' ->
     Γ ⊢< l' > Mt ⇐ U ↣ t
 
@@ -315,8 +315,8 @@ with check : ctx -> level -> cterm -> term → term → Prop :=
 | check_refl Γ T l0 l A a b a' b' :
     with_strongJ_or_obseq ->
     T -->> Eq l A a b -> 
-    a -->> a' -> nf a' ->
-    b -->> b' -> nf b' ->
+    a ↘ a' ->
+    b ↘ b' ->
     a' = b' ->
     Γ ⊢< l0 > crefl ⇐ T ↣ box
 
@@ -1021,7 +1021,7 @@ Qed.
 Definition wt_is_wn :=
   forall Γ l t A,
     Γ ⊢< l > t : A ->
-    exists u, (erasure l t) -->> u ∧ nf u.
+    exists u, (erasure l t) -->> u ∧ irred u.
 
 Lemma gen_red Γ T l U :
   wt_is_wn ->
