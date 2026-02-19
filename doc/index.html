@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Typed Confluence Overview</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="github-pandoc.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Typed Confluence Overview</h1>
+</header>
+<h1
+id="confluence-techniques-for-dependent-type-theory-with-typed-conversion">Confluence
+Techniques for Dependent Type Theory with Typed Conversion</h1>
+<p>The above points provide a link between the main definitions and
+theorems in the paper and their correspondants in the formalization.</p>
+<h3 id="typing-section-2">Typing (Section 2)</h3>
+<ul>
+<li><a href="coqdoc/TypedConfluence.theories.Typing.html#typing">Fig 1
+(Typing rules)</a></li>
+<li><a href="coqdoc/TypedConfluence.theories.Typing.html#conversion">Fig
+2 (Conversion rules)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.autosubst.Ast.html#Core.term">Raw
+core terms</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.BasicMetaTheory.html#typing_conversion_ren">Stability
+under renaming</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.BasicMetaTheory.html#typing_conversion_subst">Stability
+under substitution</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.BasicMetaTheory.html#validity_gen">Validity</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.BasicMetaTheory.html#type_sort_unique">Uniqueness
+of types</a></li>
+</ul>
+<h3 id="confluence-section-3">Confluence (Section 3)</h3>
+<ul>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#ortho_red">Fig 3
+(Orthogonal reduction)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#ortho_refl">Lemma
+3.1, point 1 (Reflexivity)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#ortho_to_conv">Lemma
+3.1, point 2 (Inclusion in Conversion)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#subst_ortho">Lemma
+3.1, point 3 (Stability Under Substitution)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#ortho_conv_in_ctx">Lemma
+3.1, point 4 (Context Conversion)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#diamond">Theorem
+3.2 (Diamond property)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#confluence">Corollary
+3.3 (Confluence)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#CR_equiv">Corollary
+3.4 (Church-Rosser property)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#equiv_to_conv">Proposition
+3.5 (equiv included in ≡)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#conv_to_equiv">Proposition
+3.6 (≡ included in equiv)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#type_formers_inj">Theorem
+3.7 (Injectivity and non-confusion of type formers)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Confluence.html#type_former_redd">Lemma
+3.8 (Result of canonical type reduction)</a></li>
+</ul>
+<h3 id="conversion-checking-section-4">Conversion checking (Section
+4)</h3>
+<ul>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#erasure">Fig
+4 (Erasure function)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#red">Fig 5
+(Erased reduction)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#subject_reduction">Proposition
+4.1 (Subject reduction)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#Nf">Fig 6
+(Normals and neutrals)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#nf_is_ne">Lemma
+4.2</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#irred_to_Nf">Proposition
+4.3 (Irreducible implies normal)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#eq_erased_nf">Proposition
+4.4 (Erased eqality to conversion)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#eq_erased">Lemma
+4.5 (Erased eqality to conversion)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#convcheck_sound">Theorem
+4.6 (Soundness of conversion checking)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Misc.CounterExample.html">Counter-example
+of Remark 4.1</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#ortho_red_to_eq">Lemma
+4.7</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.ConversionChecking.html#convcheck_complete">Theorem
+4.8 (Completeness of conversion checking)</a></li>
+</ul>
+<h3 id="bidirectional-typing-section-5">Bidirectional typing (Section
+5)</h3>
+<ul>
+<li><a
+href="coqdoc/TypedConfluence.theories.TypeChecking.html#cterm">Fig 7
+(User-level syntax)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.TypeChecking.html#infer">Fig 8
+(Bidirectional typing rules)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.TypeChecking.html#sound">Theorem
+5.1 (Soundness of Bidirectional Typing)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.TypeChecking.html#completeness_check">Theorem
+5.2 (Completeness of Bidirectional Typing)</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.TypeChecking.html#completeness">Lemma
+5.3</a></li>
+</ul>
+<h3 id="others">Others</h3>
+<ul>
+<li><a href="coqdoc/TypedConfluence.theories.Flags.html">Flag system for
+selection/deselecting rules</a></li>
+<li><a
+href="coqdoc/TypedConfluence.theories.Misc.DepJFromJ.html">Deriving
+dependent J from non-dependent J</a></li>
+</ul>
+<!-- - [Size of a term](coqdoc/TypedConfluence.theories.Confluence.html#size) -->
+<!-- - [Reflexive-transitive closure of ⟹](coqdoc/TypedConfluence.theories.Confluence.html#ortho_redd)
+- [Reflexive-symmetric-transitive closure of ⟹](coqdoc/TypedConfluence.theories.Confluence.html#ortho_equiv) -->
+<!-- - [Canonical type](coqdoc/TypedConfluence.theories.Confluence.html#canonical_type) -->
+<!-- 
+We define a common syntax for both MLTT and its extension.
+[BasicAST] contains the notion of references (for variables).
+`autosubst/AST.sig` is used to generate the [autosubst/AST] module.
+[autosubst/core], [autosubst/unscoped] and [autosubst/SubstNotations] contain
+the Autosubst library and some notations.
+[autosubst/RAsimpl] contains implementation for the `rasimpl` tactic,
+a faster substitution simplification tactic,
+whereas [autosubst/AST_rasimpl] provide the corresponding instance for our
+syntax.
+
+[Env] defines global, interface, and local environments.
+
+[Inst] defines operations to instantiate an interface.
+
+[BasicAST]: coqdoc/LocalComp.BasicAST.html
+[autosubst/AST]: coqdoc/LocalComp.autosubst.AST.html
+[autosubst/core]: coqdoc/LocalComp.autosubst.core.html
+[autosubst/unscoped]: coqdoc/LocalComp.autosubst.unscoped.html
+[autosubst/RAsimpl]: coqdoc/LocalComp.autosubst.RAsimpl.html
+[autosubst/AST_rasimpl]: coqdoc/LocalComp.autosubst.AST_rasimpl.html
+[autosubst/SubstNotations]: coqdoc/LocalComp.autosubst.SubstNotations.html
+[Env]: coqdoc/LocalComp.Env.html
+[Inst]: coqdoc/LocalComp.Inst.html
+
+### Type Theory and its meta-theory
+
+| Module            | Description                                   |
+| :---------------- | :-------------------------------------------- |
+| [GScope]          | Notion of global scope                        |
+| [IScope]          | Interface scoping                             |
+| [Typing]          | Conversion and typing judgements              |
+| [BasicMetaTheory] | Meta-theory like substitution and validity    |
+| [Inversion]       | Inversion of typing lemmas                    |
+| [Inlining]        | Inlining and conservativity results           |
+| [Confluence]      | Generic results about confluence              |
+| [Reduction]       | Reduction, injectvity of Π, subject reduction |
+| [Pattern]         | Proof-of-concept confluence proof             |
+
+[GScope]: coqdoc/LocalComp.GScope.html
+[IScope]: coqdoc/LocalComp.IScope.html
+[Typing]: coqdoc/LocalComp.Typing.html
+[BasicMetaTheory]: coqdoc/LocalComp.BasicMetaTheory.html
+[Inversion]: coqdoc/LocalComp.Inversion.html
+[Inlining]: coqdoc/LocalComp.Inlining.html
+[Confluence]: coqdoc/LocalComp.Confluence.html
+[Reduction]: coqdoc/LocalComp.Reduction.html
+[Pattern]: coqdoc/LocalComp.Pattern.html -->
+</body>
+</html>
