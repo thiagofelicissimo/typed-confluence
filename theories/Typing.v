@@ -191,18 +191,7 @@ Inductive typing : ctx -> level -> term → term → Prop :=
       Γ ⊢< Ax l > t : Lift l A ->
       Γ ⊢< l > lower l A t : A
 
-(* | type_obseq :
-    ∀ Γ n A a b,
-    Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
-    Γ ⊢< ty n > a : A ->
-    Γ ⊢< ty n > b : A ->
-    Γ ⊢< Ax prop > obseq (ty n) A a b : Sort prop *)
-
-(* | type_obsrefl :
-    ∀ Γ n A a,
-      Γ ⊢< Ax (ty n) > A : Sort (ty n) ->
-      Γ ⊢< ty n > a : A ->
-      Γ ⊢< prop > obsrefl (ty n) A a : obseq (ty n) A a a *)
+(* cast along with injectivity axioms *)
 
 | type_cast :
     ∀ Γ i A B e a,
@@ -234,6 +223,8 @@ Inductive typing : ctx -> level -> term → term → Prop :=
     Γ ⊢< i > a2 : A2 ->
     let a1 := cast i A2 A1 (injpi1 i (ty n) A1 A2 B1 B2 e) a2 in
     Γ ⊢< prop > injpi2 i (ty n) A1 A2 B1 B2 e a2 : Eq (Ax (ty n)) (Sort (ty n)) (B1<[a1..]) (B2 <[a2..])
+
+(* sum type *)    
 
 | type_sum Γ i j A B :
     Γ ⊢< Ax (ty i) > A : Sort (ty i) →

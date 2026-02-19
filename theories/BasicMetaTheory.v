@@ -1053,17 +1053,13 @@ Proof.
 
   all:try solve [intuition eauto 5 using conversion, typing, validity_ty_ctx, valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
-  (* cases type_pi1, conv_refl, conv_lift and conv_lower *)
+  (* cases conv_pi1, conv_refl, conv_lift and conv_lower *)
   5,8,10,11: solve [intuition eauto 7 using conversion, typing, validity_ty_ctx,  valid_varty, meta_lvl, pre_conv_ty_in_ctx_ty, subst_ty, subst_one].
 
-
-  (* cases conv_lam, conv_app, conv_sigma, conv_J and conv_cast *)
+  (* cases conv_lam, conv_app, conv_pair, conv_J and conv_cast *)
   2-4,7,8: solve [validitysplit; intuition eauto 6 using typing, conversion, pre_conv_in_ctx_ty, conv_sym, pre_conv_ty_in_ctx_ty, pre_subst_conv, validity_ty_ctx, subst_one, substs_one].
 
-
-
   (* the remaining cases are too hard to be solved by automation *)
-
 
   (* type_cast_pi1 *)
   - intuition eauto. econstructor; eauto using typing, validity_ty_ctx, subst_ty, subst_one.
@@ -1361,8 +1357,6 @@ Proof.
 Qed.
 
 
-
-
 Theorem subst_conv Γ l t u A Δ σ τ A' :
   ⊢ Δ ->
   Δ ⊢s σ ≡ τ : Γ ->
@@ -1422,8 +1416,6 @@ Proof.
   intros.
   eapply pre_conv_in_ctx_conv; eauto using validity_ctx_conv_right, ctx_conv_sym.
 Qed.
-
-
 
 (* composite lemmas, for helping automation *)
 

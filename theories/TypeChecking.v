@@ -443,12 +443,6 @@ Proof.
   - repeat rewrite erasure_prop. auto.
 Qed.
 
-(* Lemma cast_box_erasure i A B e t :
-    erasure i (cast i A B e t) = cast_box i (erasure (Ax i) A) (erasure (Ax i) B) (erasure i t).
-Proof.
-    reflexivity.
-Qed. *)
-
 Lemma J_box_erasure l i A a P p b e :
   erasure i (J l i A a P p b e) = J_box l i (erasure (Ax l) A) (erasure l a) (erasure (Ax i) P) (erasure i p) (erasure l b) box.
 Proof.

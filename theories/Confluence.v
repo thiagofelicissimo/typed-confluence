@@ -44,8 +44,6 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< i > u ⟹ u' : A →
       Γ ⊢< j > app i j A B t u ⟹ app i j A' B' t' u' : B <[ u .. ]
 
-
-
 | ortho_sigma :
     ∀ Γ n m A B A' B',
       Γ ⊢< Ax (ty n) > A ⟹ A' : Sort (ty n) →
@@ -241,7 +239,6 @@ Inductive ortho_red : ctx -> level -> term -> term → term → Prop :=
       Γ ⊢< Ax (ty n) > A1 ≡ A2 : Sort (ty n) ->
       Γ ⊢< Ax (ty n) > a ⟹ a' : Lift (ty n) A1 ->
       Γ ⊢< Ax (ty n) > lift (ty n) A1 (lower (ty n) A2 a) ⟹ a' : Lift (ty n) A1
-
 
 | ortho_cast_univ :
     ∀ Γ i e a a',
@@ -446,7 +443,7 @@ Proof.
               | rasimpl ; reflexivity]])
             | ssimpl; reflexivity]].
 
-  (* solves all goals involving computation rules, except ortho_cast_pi *)
+  (* solves most goals involving computation rules *)
   all:try solve [intros; cbn in *; eapply ortho_meta_conv2 ;
             [ ((eapply ortho_beta + eapply ortho_rec_zero + eapply ortho_rec_succ + eapply ortho_J_refl +
                 eapply ortho_lower_lift + eapply ortho_lift_lower + eapply ortho_pi1pair + eapply ortho_pi2pair) ;
@@ -649,16 +646,20 @@ Proof.
     }
     rasimpl. reflexivity.
 
-  (* for some strange reason, the following goals (rec_zero and rec_succ) are not solved by the automation *)
+  (* rec_zero *)
   - cbn. eapply ortho_meta_conv2. eapply ortho_rec_zero; eauto.
     1: eapply ortho_meta_conv; eauto; rasimpl; reflexivity.
     2,3:rasimpl;reflexivity.
     eapply subst_ty; eauto using ctx_cons, type_nat.
     eapply WellSubst_up. eapply WellSubst_up.
     all:rasimpl; eauto using type_nat, ortho_subst_to_conv, validity_subst_conv_left.
+
+  (* rec_succ *)
   - cbn. eapply ortho_meta_conv2. eapply ortho_rec_succ; eauto.
     1-3:eapply ortho_meta_conv; eauto 8 using ctx_cons, type_nat, ortho_subst_up;  rasimpl; reflexivity.
     all:rasimpl;reflexivity.
+
+  (* cast_pi *)
   - eapply ortho_meta_conv2.
     + eapply ortho_cast_pi; fold subst_term; try eassumption ; eapply ortho_meta_conv.
       1,3,5,7,9,11:eauto 13 using WellRen_up, ctx_cons, ortho_validity_left, conv_ren, validity_conv_left, type_ren, type_nat, ortho_meta_conv, ortho_subst_to_conv, validity_subst_conv_left, ortho_subst_up, subst_conv, refl_subst, subst_ty, WellSubst_up.
@@ -738,7 +739,6 @@ Proof.
   - eauto using validity_ctx_conv_right.
   - eapply ortho_subst_refl. eapply WellSubst_conv; eauto using ctx_conv_sym, subst_id, validity_ctx_conv_right.
 Qed.
-
 
 
 
@@ -1827,6 +1827,7 @@ Proof.
     destruct (IH A ltac:(simpl; lia) _ _ _ _ _ A_red_A' A_red_A'') as (A''' & A'_red_A''' & A''_red_A''').
     do 5 eexists. split; eauto using ortho_Lift.
 
+  (* lift *)
   - rename t1 into A. rename t2 into a.
     ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj).
     ttinv t_red_t''. destruct t_red_t'' as (_ & _ & disj').
@@ -1873,6 +1874,7 @@ Proof.
       destruct (IH b ltac:(simpl; lia) _ _ _ _ _ b_red_b' b_red_b'') as (b''' & b'_red_b''' & b''_red_b''').
       do 5 eexists. split; eauto.
 
+  (* lower *)
   - rename t1 into A. rename t2 into a.
     ttinv t_red_t'. destruct t_red_t' as (l_eq & _ & disj).
     ttinv t_red_t''. destruct t_red_t'' as (_ & _ & disj'). subst.
@@ -2549,6 +2551,12 @@ Derive Signature for ortho_redd.
 
 Notation "Γ ⊢< l > t ⟹* t' : A" := (ortho_redd Γ l A t t') (at level 50, l, t, t', A at next level).
 
+Inductive ortho_equiv Γ l A : term -> term -> Prop :=
+  | equiv_step t u : Γ ⊢< l > t ⟹ u : A -> ortho_equiv Γ l A t u
+  | equiv_trans t u v : ortho_equiv Γ l A t v -> ortho_equiv Γ l A v u -> ortho_equiv Γ l A t u
+  | equiv_sym t u : ortho_equiv Γ l A u t -> ortho_equiv Γ l A t u.
+
+Notation "Γ ⊢< l > t ≈ t' : A" := (ortho_equiv Γ l A t t') (at level 50, l, t, t', A at next level).
 
 Lemma confluence_aux Γ l t t' t'' A :
   Γ ⊢< l > t ⟹ t' : A ->
@@ -2577,14 +2585,23 @@ Proof.
     exists s. split; eauto using redd_trans.
 Qed.
 
+Corollary CR_equiv Γ l t u A :
+  Γ ⊢< l > t ≈ u : A ->
+  exists v, Γ ⊢< l > t ⟹* v : A ∧ Γ ⊢< l > u ⟹* v : A.
+Proof.
+  intro H. induction H.
+  - exists u. split; apply redd_step; eauto using ortho_refl, ortho_validity_right.
+  - destruct IHortho_equiv1 as (s & t_redd_s & v_redd_s).
+    destruct IHortho_equiv2 as (w & v_redd_w & u_redd_w).
+    pose (K := confluence _ _ _ _ _ _ v_redd_s v_redd_w).
+    destruct K as (x & s_redd_x & w_redd_x).
+    exists x. split; eauto using redd_trans.
+  - destruct IHortho_equiv as (v & u_redd_v & t_redd_v). exists v. eauto.
+Qed.
+
 (* --- Proof that the equiv closure of ⟹ and ≡ are the same (surprisingly hard!) --- *)
 
-Inductive ortho_equiv Γ l A : term -> term -> Prop :=
-  | equiv_step t u : Γ ⊢< l > t ⟹ u : A -> ortho_equiv Γ l A t u
-  | equiv_trans t u v : ortho_equiv Γ l A t v -> ortho_equiv Γ l A v u -> ortho_equiv Γ l A t u
-  | equiv_sym t u : ortho_equiv Γ l A u t -> ortho_equiv Γ l A t u.
 
-Notation "Γ ⊢< l > t ≈ t' : A" := (ortho_equiv Γ l A t t') (at level 50, l, t, t', A at next level).
 
 Lemma redd_to_conv Γ l t u A :
   Γ ⊢< l > t ⟹* u : A ->
@@ -2617,7 +2634,7 @@ Proof.
 Qed.
 
 
-(* The typed version of lemma equiv_red_ind from Theo's local_comp.
+(* The typed version of lemma equiv_red_ind from https://theowinterhalter.github.io/local-comp/.
   Going from the original untyped version to this typed one took me a lot of trial and error.
 
   Important: We cannot ask that Δ ⊢< i > t : A -> Γ ⊢< l > f t : P t, because the contexts f, P
@@ -3059,20 +3076,13 @@ Proof.
     equiv_sigma, equiv_pair, equiv_pi1, equiv_pi2, equiv_cast, equiv_sum, equiv_inl, equiv_inr, equiv_sum_case].
 Qed.
 
-(* --- Proof of CR --- *)
 
+(* we deduce a version of CR using ≡, which is more practical to use *)
 Corollary CR Γ l t u A :
   Γ ⊢< l > t ≡ u : A ->
   exists v, Γ ⊢< l > t ⟹* v : A ∧ Γ ⊢< l > u ⟹* v : A.
 Proof.
-  intro H. apply conv_to_equiv in H. induction H.
-  - exists u. split; apply redd_step; eauto using ortho_refl, ortho_validity_right.
-  - destruct IHortho_equiv1 as (s & t_redd_s & v_redd_s).
-    destruct IHortho_equiv2 as (w & v_redd_w & u_redd_w).
-    pose (K := confluence _ _ _ _ _ _ v_redd_s v_redd_w).
-    destruct K as (x & s_redd_x & w_redd_x).
-    exists x. split; eauto using redd_trans.
-  - destruct IHortho_equiv as (v & u_redd_v & t_redd_v). exists v. eauto.
+  intro H. eapply CR_equiv, conv_to_equiv. assumption.
 Qed.
 
 (* --- Injectivity and non-confusion properties --- *)
@@ -3108,7 +3118,7 @@ Proof.
 Qed.
 
 
-Definition is_type_former T :=
+Definition canonical_type T :=
   match T with
   | Sort i => True
   | Pi i j A B => True
@@ -3121,7 +3131,7 @@ Definition is_type_former T :=
   end.
 
 Proposition type_former_redd Γ l U T T' :
-  is_type_former T ->
+  canonical_type T ->
   Γ ⊢< l > T ⟹* T' : U ->
   match T with
   | Pi l1 l2 A B =>
@@ -3169,8 +3179,8 @@ Qed.
 
 Proposition type_formers_inj Γ l T T1 T2 :
   Γ ⊢< l > T1 ≡ T2 : T ->
-  is_type_former T1 ->
-  is_type_former T2 ->
+  canonical_type T1 ->
+  canonical_type T2 ->
   match T1, T2 with
   | Pi l0 l1 A B, Pi l2 l3 A' B' =>
     l0 = l2 ∧ l1 = l3 ∧ Γ ⊢< Ax l0 > A ≡ A' : Sort l0 ∧ Γ ,, (l0, A) ⊢< Ax l1 > B ≡ B' : Sort l1
@@ -3191,8 +3201,8 @@ Proof.
   destruct T1; destruct T2; inversion_clear H0; inversion_clear H1.
 
   all:apply CR in H; destruct H as (t & H1 & H2).
-  all:try eapply type_former_redd in H1; repeat destruct H1 as (? & H1); unfold is_type_former; eauto.
-  all:try eapply type_former_redd in H2; repeat destruct H2 as (? & H2); unfold is_type_former; eauto; subst.
+  all:try eapply type_former_redd in H1; repeat destruct H1 as (? & H1); unfold canonical_type; eauto.
+  all:try eapply type_former_redd in H2; repeat destruct H2 as (? & H2); unfold canonical_type; eauto; subst.
   all: match goal with | H : _ = _ |- _ => dependent destruction H end; subst; eauto.
 
   - intuition trivial.

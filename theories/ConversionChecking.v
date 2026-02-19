@@ -352,7 +352,8 @@ Qed.
 
 
 Lemma erasure_subst_cons2 f σ l1 l2 t1 t2 :
-  erasure_subst ((f ;; l2) ;; l1) (t1 .: (t2 .: σ >> ren_term (↑ >> ↑))) ~ (erasure l1 t1 .: (erasure l2 t2 .: erasure_subst f σ >> ren_term (↑ >> ↑))).
+  erasure_subst ((f ;; l2) ;; l1) (t1 .: (t2 .: σ >> ren_term (↑ >> ↑))) 
+    ~ (erasure l1 t1 .: (erasure l2 t2 .: erasure_subst f σ >> ren_term (↑ >> ↑))).
 Proof.
   intro x.
   destruct x.
@@ -607,13 +608,13 @@ Definition can t T :=
 end.
 
 
-Hint Unfold is_type_former : core.
+Hint Unfold canonical_type : core.
 
 Derive Signature for Nf.
 
 Lemma nf_is_ne Γ l T t :
   Γ ⊢< ty l > t : T ->
-  is_type_former T ->
+  canonical_type T ->
   Nf (erasure (ty l) t) ->
   not (can t T) ->
   Ne (erasure (ty l) t).
@@ -1225,8 +1226,6 @@ Proof.
   eauto 7 using eq_erased_nf, conv_trans, conv_sym, validity_conv_right.
 Qed.
 
-(* TODO: add the following discussion to the paper
-  Among the hypothesis of our theorem, we require the erasures of t and u to reduce to normal forms in order to conclude that t and u are convertible. Most proof assistants however implement an optimization which first checks for syntactic equality before normalizing the terms. In the presence of normalization, this optimization is sound, given that, if t and u are equal, then they will have normal forms which are also equal. Nevertheless, this optimization becomes unsound in systems like type-in-type: A counter-example is obtained by considering Howe's looping combinators, which are equal when erasing annotations, but not convertible (see the file X.v in the formalization for more details). Therefore, one must be careful to prove normalization in order to employ this optimization. On the other hand, it would be possible to drop the assumption of normalization if we considered an erased syntax with some annotations, such as domain annotations in lambdas. *)
 
 Hint Unfold nf : core.
 
