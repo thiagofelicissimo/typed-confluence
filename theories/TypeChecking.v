@@ -1088,6 +1088,8 @@ Qed.
 
 Inductive label : Type := agda | rocq.
 
+(* french terms are the ones labeled by rocq, and swedish 
+  terms are the ones labeled by agda *)
 Inductive CTerm : label -> cterm -> Prop :=
 
 (* in Agda we have type ascriptions + non-annotated abstractions, pairs, ...  *)

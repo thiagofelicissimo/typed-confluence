@@ -612,6 +612,14 @@ Hint Unfold canonical_type : core.
 
 Derive Signature for Nf.
 
+
+(* To be easier to use in the following proofs, we write 
+    not (can t T) -> Ne (erasure (ty l) t)
+  instead of 
+    can t T \/ Ne (erasure (ty l) t)
+  like in the paper. This is justified because not A -> B 
+  is intuitionistically equivalent to A \/ B when A is 
+  decidable, like is the case here for can t T, for all t, T *)
 Lemma nf_is_ne Γ l T t :
   Γ ⊢< ty l > t : T ->
   canonical_type T ->
@@ -651,7 +659,7 @@ Scheme Equality for level.
 Scheme Equality for term.
 
 
-Lemma nf_to_Nf Γ l t A :
+Lemma irred_to_Nf Γ l t A :
   Γ ⊢< l > t : A -> irred (erasure l t) -> Nf (erasure l t).
 Proof.
   generalize Γ l A. clear Γ l A. induction t; intros Γ l' A t_Wt is_nf.
@@ -970,7 +978,7 @@ Lemma eq_erased_nf Γ l t u A :
   Γ ⊢< l > t ≡ u : A.
 Proof.
   intros. destruct l.
-  - eapply (proj1 eq_erased); eauto. eapply nf_to_Nf; eauto.
+  - eapply (proj1 eq_erased); eauto. eapply irred_to_Nf; eauto.
   - eauto using conv_irrel.
 Qed.
 
@@ -1291,7 +1299,7 @@ Proof.
   rewrite red2.
   eapply red_J_refl.
   eapply validity_ty_ty, type_inv in H3. dependent destruction H3.
-  eapply nf_to_Nf; eauto.
+  eapply irred_to_Nf; eauto.
 Qed.
 
 Lemma ortho_redd_to_eq Γ l t t' A :
