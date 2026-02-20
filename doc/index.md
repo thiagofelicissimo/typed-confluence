@@ -4,6 +4,8 @@ Confluence Techniques for Dependent Type Theory with Typed Conversion
 
 The above points provide a link between the main definitions and theorems in the paper and their correspondants in the formalization.
 
+We tried our best to add these local links to the pdf to ease reviewing, but unfortunately we did not manage to do it, as local links in pdfs seem to be very problematic.
+
 ### Typing (Section 2)
 - [Fig 1 (Typing rules)](coqdoc/TypedConfluence.theories.Typing.html#typing)
 - [Fig 2 (Conversion rules)](coqdoc/TypedConfluence.theories.Typing.html#conversion)
