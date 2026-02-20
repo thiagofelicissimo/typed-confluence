@@ -55,7 +55,7 @@ Definition Y' : A := R' B M' R''.
 
 (* we can now print R, R', R'' and M, M', erase the annotations 
     and check that we get the same terms *)
-
+(*
 Print R.
     (* fun p h => h C (fun x => h (ρ x)) *)
 Print R'.
@@ -67,6 +67,7 @@ Print M.
     (* fun x k l => f (l B k (fun p => l (fun y => p (ρ y)))) *)
 Print M'.
     (* fun x k l => f (l B k (fun p => l (fun y => p (ρ y)))) *)
+*)
 
 (* As shown by coquand and bathe, we cannot have Y \conv f Y. The following proof shows Y \conv f Y', and thus we cannot have Y \conv Y' *)
 
