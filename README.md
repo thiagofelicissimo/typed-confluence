@@ -1,8 +1,8 @@
 # Confluence Techniques for Dependent Type Theory with Typed Conversion
 
-This repository contains the formalization for the paper Confluence Techniques for Dependent Type Theory with Typed Conversion.
+This repository contains the formalization for the paper [Confluence Techniques for Dependent Type Theory with Typed Conversion](https://inria.hal.science/hal-05520710).
 
-To browse the formalization, we recommend opening the file `doc/index.html` with your browser, which provides links between the paper and the formalization, with a user-friendly HTML rendering of Rocq files made with `rocqdoc`.
+[See here for an the rendered Rocq files.](https://thiagofelicissimo.github.io/typed-confluence/doc/)
 
 ### Building
 

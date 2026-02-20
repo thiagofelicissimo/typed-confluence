@@ -1,5 +1,5 @@
 
-The following list provides links between the main definitions and theorems in the paper and their counterparts in the formalization. We tried our best to add these local links to the PDF to ease reviewing, but unfortunately we did not manage to do it, as local links in PDFs seem to be very problematic. Therefore, links in the submitted PDF have been disabled.
+The following list provides links between the main definitions and theorems in the paper and their counterparts in the formalization.
 
 As explained in the paper, to deal with the extensions to the initial type system while avoiding duplicating the code, our formalization takes place in a theory containing all the rules, while using a [system of flags](coqdoc/TypedConfluence.theories.Flags.html) that allow turning on or off the rules specific to the extensions
 
