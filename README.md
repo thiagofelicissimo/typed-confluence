@@ -2,7 +2,7 @@
 
 This repository contains the formalization for the paper [Confluence Techniques for Dependent Type Theory with Typed Conversion](https://inria.hal.science/hal-05520710).
 
-[See here for an the rendered Rocq files.](https://thiagofelicissimo.github.io/typed-confluence/doc/)
+[See here for the rendered Rocq files.](https://thiagofelicissimo.github.io/typed-confluence/doc/)
 
 ### Building
 
