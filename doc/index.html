@@ -31,20 +31,28 @@
 <header id="title-block-header">
 <h1 class="title">Typed Confluence Overview</h1>
 </header>
-<h1
-id="confluence-techniques-for-dependent-type-theory-with-typed-conversion">Confluence
-Techniques for Dependent Type Theory with Typed Conversion</h1>
-<p>The above points provide a link between the main definitions and
-theorems in the paper and their correspondants in the formalization.</p>
+<!-- Confluence Techniques for Dependent Type Theory with Typed Conversion 
+================================================= -->
+<p>The following list provides links between the main definitions and
+theorems in the paper and their counterparts in the formalization. We
+tried our best to add these local links to the pdf to ease reviewing,
+but unfortunately we did not manage to do it, as local links in pdfs
+seem to be very problematic. Therefore, links in the submitted pdf have
+been disabled.</p>
+<p>As explained in the paper, to deal with the extensions to the initial
+type system while avoiding duplicating the code, our formalization takes
+place in a theory containing all the rules, while using a <a
+href="coqdoc/TypedConfluence.theories.Flags.html">system of flags</a>
+that allow turning on or off the rules specific to the extensions</p>
 <h3 id="typing-section-2">Typing (Section 2)</h3>
 <ul>
+<li><a
+href="coqdoc/TypedConfluence.theories.autosubst.Ast.html#Core.term">Raw
+core terms</a></li>
 <li><a href="coqdoc/TypedConfluence.theories.Typing.html#typing">Fig 1
 (Typing rules)</a></li>
 <li><a href="coqdoc/TypedConfluence.theories.Typing.html#conversion">Fig
 2 (Conversion rules)</a></li>
-<li><a
-href="coqdoc/TypedConfluence.theories.autosubst.Ast.html#Core.term">Raw
-core terms</a></li>
 <li><a
 href="coqdoc/TypedConfluence.theories.BasicMetaTheory.html#typing_conversion_ren">Stability
 under renaming</a></li>
@@ -155,10 +163,9 @@ href="coqdoc/TypedConfluence.theories.TypeChecking.html#completeness_check">Theo
 href="coqdoc/TypedConfluence.theories.TypeChecking.html#completeness">Lemma
 5.3</a></li>
 </ul>
-<h3 id="others">Others</h3>
+<h3 id="extensions-section-6">Extensions (Section 6)</h3>
+<p>Most links are the same as the ones given above.</p>
 <ul>
-<li><a href="coqdoc/TypedConfluence.theories.Flags.html">Flag system for
-selection/deselecting rules</a></li>
 <li><a
 href="coqdoc/TypedConfluence.theories.Misc.DepJFromJ.html">Deriving
 dependent J from non-dependent J</a></li>

@@ -1,15 +1,17 @@
-Confluence Techniques for Dependent Type Theory with Typed Conversion 
-=================================================
+<!-- Confluence Techniques for Dependent Type Theory with Typed Conversion 
+================================================= -->
 
 
-The above points provide a link between the main definitions and theorems in the paper and their correspondants in the formalization.
+The following list provides links between the main definitions and theorems in the paper and their counterparts in the formalization. We tried our best to add these local links to the pdf to ease reviewing, but unfortunately we did not manage to do it, as local links in pdfs seem to be very problematic. Therefore, links in the submitted pdf have been disabled.
 
-We tried our best to add these local links to the pdf to ease reviewing, but unfortunately we did not manage to do it, as local links in pdfs seem to be very problematic.
+As explained in the paper, to deal with the extensions to the initial type system while avoiding duplicating the code, our formalization takes place in a theory containing all the rules, while using a [system of flags](coqdoc/TypedConfluence.theories.Flags.html) that allow turning on or off the rules specific to the extensions
+
+
 
 ### Typing (Section 2)
+- [Raw core terms](coqdoc/TypedConfluence.theories.autosubst.Ast.html#Core.term)
 - [Fig 1 (Typing rules)](coqdoc/TypedConfluence.theories.Typing.html#typing)
 - [Fig 2 (Conversion rules)](coqdoc/TypedConfluence.theories.Typing.html#conversion)
-- [Raw core terms](coqdoc/TypedConfluence.theories.autosubst.Ast.html#Core.term)
 - [Stability under renaming](coqdoc/TypedConfluence.theories.BasicMetaTheory.html#typing_conversion_ren)
 - [Stability under substitution](coqdoc/TypedConfluence.theories.BasicMetaTheory.html#typing_conversion_subst)
 - [Validity](coqdoc/TypedConfluence.theories.BasicMetaTheory.html#validity_gen)
@@ -53,9 +55,11 @@ We tried our best to add these local links to the pdf to ease reviewing, but unf
 - [Theorem 5.2 (Completeness of Bidirectional Typing)](coqdoc/TypedConfluence.theories.TypeChecking.html#completeness_check)
 - [Lemma 5.3](coqdoc/TypedConfluence.theories.TypeChecking.html#completeness)
 
-### Others
 
-- [Flag system for selection/deselecting rules](coqdoc/TypedConfluence.theories.Flags.html)
+### Extensions (Section 6)
+
+Most links are the same as the ones given above.
+
 - [Deriving dependent J from non-dependent J](coqdoc/TypedConfluence.theories.Misc.DepJFromJ.html)
 
 
