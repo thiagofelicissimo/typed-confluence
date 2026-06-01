@@ -2,7 +2,7 @@
 
 This repository contains the formalization for the paper [Confluence Techniques for Dependent Type Theory with Typed Conversion](https://inria.hal.science/hal-05520710).
 
-[See here for the rendered Rocq files.](https://thiagofelicissimo.github.io/typed-confluence/doc/)
+Open [this file](doc/index.html) in your browser for an overview of the project.
 
 ### Building
 
@@ -18,5 +18,7 @@ There will be warnings about the `opam` file that can be safely ignored.
 Then to verify the proof, just use `make`:
 ```sh
 make autosubst
-make   # you may add -j JOBS to compile faster
+make
 ```
+
+On an MacBook M4, proof-checking takes around 4 minutes.
